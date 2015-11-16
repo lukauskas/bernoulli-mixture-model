@@ -130,7 +130,7 @@ class BernoulliMixture(object):
         :param observations: array of observations
         """
 
-        observations = np.asarray(observations, dtype=int)
+        observations = np.asarray(observations, dtype=bool)
 
         answer = np.empty((len(observations), self.number_of_components))
 
@@ -153,5 +153,10 @@ class BernoulliMixture(object):
         :return: (float,bool) : log likelihood of the dataset post fitting, whether the algorigthm
             converged
         """
-        pass
 
+        dataset = np.asarray(dataset, dtype=bool)
+        
+        if dataset.shape[1] != self.number_of_dimensions:
+            raise ValueError('The dataset shape does not match number of dimensions.'
+                             'Got {}, expected {}'.format(dataset.shape[1],
+                                                          self.number_of_dimensions))
