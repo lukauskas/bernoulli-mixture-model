@@ -429,5 +429,5 @@ class TestFit(unittest.TestCase):
         mixing_coefficients, emission_probabilities = BernoulliMixture._m_step(sample_z_star,
                                                                                sample_dataset)
 
-        assert_array_almost_equal(expected_mixing_coefficients, emission_probabilities)
+        assert_array_almost_equal(expected_mixing_coefficients, mixing_coefficients)
         assert_array_almost_equal(expected_emission_probabilities, emission_probabilities)

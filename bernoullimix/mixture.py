@@ -149,7 +149,20 @@ class BernoulliMixture(object):
 
     @classmethod
     def _m_step(cls, z_star, dataset):
-        pass
+
+        u = np.sum(z_star, axis=0)
+
+        N, K = z_star.shape
+        __, D = dataset.shape
+
+        v = np.empty((K, D))
+
+        for k in range(K):
+            z_star_k = z_star[:, k]
+
+            v[k] = np.sum(dataset.T * z_star_k, axis=1) / u[k]
+
+        return u/N, v
 
 
     def fit(self, dataset, iteration_limit=1000, convergence_threshold=1e-8):
