@@ -31,7 +31,6 @@ class TestInitialisation(unittest.TestCase):
         mixture = BernoulliMixture(number_of_components, number_of_dimensions,
                                    sample_mixing_coefficients, sample_emission_probabilities)
 
-
         self.assertEqual(number_of_components, mixture.number_of_components)
         self.assertEqual(number_of_dimensions, mixture.number_of_dimensions)
 
@@ -62,7 +61,7 @@ class TestInitialisation(unittest.TestCase):
 
         self.assertIsInstance(mixture.mixing_coefficients, np.ndarray)
         assert_array_equal(sample_mixing_coefficients, mixture.mixing_coefficients)
-        self.assertIsInstance(sample_emission_probabilities, np.ndarray)
+        self.assertIsInstance(mixture.emission_probabilities, np.ndarray)
         assert_array_equal(sample_emission_probabilities, mixture.emission_probabilities)
 
     def test_constant_initialisation_with_not_wrong_number_of_mixing_components(self):
@@ -84,7 +83,7 @@ class TestInitialisation(unittest.TestCase):
         self.assertRaises(ValueError, BernoulliMixture, number_of_components, number_of_dimensions,
                           too_many_components, sample_emission_probabilities)
 
-    def test_constant_initialisation_when_components_do_not_sum_to_one(self):
+    def test_constant_initialisation_when_mixing_coeffiecients_do_not_sum_to_one(self):
         """
         Given wrong number of mixing components, initialiser should raise an error.
         """
@@ -103,9 +102,28 @@ class TestInitialisation(unittest.TestCase):
         self.assertRaises(ValueError, BernoulliMixture, number_of_components, number_of_dimensions,
                           more_than_one, sample_emission_probabilities)
 
-    def test_constant_initialisation_when_emission_probabilities_do_not_sum_to_one(self):
+    def test_constant_initialisation_when_mixing_coeffiecients_not_between_0_and_1(self):
         """
-        Given that emission probabilities do not sum to one, initialiser should fail.
+        Given wrong number of mixing components, initialiser should raise an error.
+        """
+
+        number_of_components = 3
+        number_of_dimensions = 4
+
+        less_than_zero = np.array([-0.5, 1, 0.5])
+        more_than_one = np.array([1.5, -1.2, 0.7])
+        sample_emission_probabilities = np.array([[0.1, 0.2, 0.3, 0.4],
+                                                  [0.1, 0.4, 0.1, 0.4],
+                                                  [1.0, 0.0, 0.0, 0.0]])
+
+        self.assertRaises(ValueError, BernoulliMixture, number_of_components, number_of_dimensions,
+                          less_than_zero, sample_emission_probabilities)
+        self.assertRaises(ValueError, BernoulliMixture, number_of_components, number_of_dimensions,
+                          more_than_one, sample_emission_probabilities)
+
+    def test_constant_initialisation_when_emission_probabilities_are_bounded_appropriately(self):
+        """
+        Given that emission probabilities are greater than one or lower than one, raise error.
         """
 
         number_of_components = 3
@@ -114,16 +132,16 @@ class TestInitialisation(unittest.TestCase):
         sample_mixing_coefficients = np.array([0.5, 0.4, 0.1])
         more_than_one = np.array([[0.1, 0.2, 0.3, 0.4],
                                   [0.1, 0.4, 0.1, 0.4],
-                                  [1.0, 0.0, 0.8, 0.0]])
+                                  [1.0, 0.0, 1.8, 0.0]])
 
-        less_than_one = np.array([[0.1, 0.1, 0.3, 0.4],
+        less_than_zero = np.array([[0.1, 0.1, 0.3, 0.4],
                                   [0.1, 0.4, 0.1, 0.4],
-                                  [1.0, 0.0, 0.8, 0.0]])
+                                  [1.0, 0.0, -5, 0.0]])
 
         self.assertRaises(ValueError, BernoulliMixture, number_of_components, number_of_dimensions,
                           sample_mixing_coefficients, more_than_one)
         self.assertRaises(ValueError, BernoulliMixture, number_of_components, number_of_dimensions,
-                          sample_mixing_coefficients, less_than_one)
+                          sample_mixing_coefficients, less_than_zero)
 
     def test_constant_initialisation_wrong_emission_probabilities_dimension(self):
         """
