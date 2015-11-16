@@ -105,5 +105,9 @@ class BernoulliMixture(object):
 
         return observations, true_components
 
+    def log_likelihood(self, dataset):
+        pass
 
+    def _point_emission_probs(self, points):
+        pass
 
