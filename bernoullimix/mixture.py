@@ -182,3 +182,31 @@ class BernoulliMixture(object):
             raise ValueError('The dataset shape does not match number of dimensions.'
                              'Got {}, expected {}'.format(dataset.shape[1],
                                                           self.number_of_dimensions))
+
+        iterations_remaining = iteration_limit
+
+        previous_log_likelihood, current_log_likelihood = None, None
+
+        converged = True
+        while iterations_remaining is None or iterations_remaining > 0:
+            support = self._observation_emission_support(dataset)
+
+            current_log_likelihood = self._log_likelihood_from_support(support)
+            if previous_log_likelihood is not None \
+                and np.abs(current_log_likelihood - previous_log_likelihood) < convergence_threshold:
+                converged = True
+                break
+
+            z_star = self._e_step_from_support(support)
+
+            pi, e = self._m_step(z_star, dataset)
+
+            self._mixing_coefficients = pi
+            self._emission_probabilities = e
+
+            previous_log_likelihood = current_log_likelihood
+
+            if iterations_remaining is not None:
+                iterations_remaining -= 1
+
+        return current_log_likelihood, converged
