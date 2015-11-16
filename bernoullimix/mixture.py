@@ -143,6 +143,10 @@ class BernoulliMixture(object):
 
         return answer
 
+    @classmethod
+    def _e_step_from_support(cls, support):
+        pass
+
     def fit(self, dataset, iteration_limit=1000, convergence_threshold=1e-8):
         """
         Fits the mixture model to the dataset using EM algorithm.
@@ -155,7 +159,7 @@ class BernoulliMixture(object):
         """
 
         dataset = np.asarray(dataset, dtype=bool)
-        
+
         if dataset.shape[1] != self.number_of_dimensions:
             raise ValueError('The dataset shape does not match number of dimensions.'
                              'Got {}, expected {}'.format(dataset.shape[1],

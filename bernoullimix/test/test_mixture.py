@@ -391,3 +391,22 @@ class TestFit(unittest.TestCase):
 
         self.assertRaises(ValueError, mixture.fit, dataset_too_few_dims)
         self.assertRaises(ValueError, mixture.fit, dataset_too_many_dims)
+
+
+    def test_e_step_assigns_values_correctly(self):
+
+        # This is actually what
+        # sample_dataset = np.array([[True, True, False, False],
+        #                           [False, True, False, False]])
+        # generates for a given model
+
+        sample_support = np.array([[0.0042, 0.00864, 0.],
+                                   [0.0378, 0.07776, 0.]])
+
+        expected_z_star = np.empty([2, 3])
+        expected_z_star[0] = sample_support[0] / np.sum(sample_support[0])
+        expected_z_star[1] = sample_support[1] / np.sum(sample_support[1])
+
+        actual_z_star = BernoulliMixture._e_step_from_support(sample_support)
+
+        assert_array_almost_equal(expected_z_star, actual_z_star)
