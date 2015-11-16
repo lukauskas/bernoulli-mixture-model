@@ -329,7 +329,7 @@ class TestLogLikelihood(unittest.TestCase):
                     np.product(np.power(sample_emission_probabilities[component], sample_dataset[sample]) *
                                np.power(1-sample_emission_probabilities[component], 1-sample_dataset[sample]))
 
-        actual_answer = mixture._observation_emission_probs(sample_dataset)
+        actual_answer = mixture._observation_emission_support(sample_dataset)
 
         assert_array_almost_equal(expected_answer, actual_answer)
 
@@ -357,9 +357,12 @@ class TestLogLikelihood(unittest.TestCase):
         sample_dataset = np.array([[True, True, False, False],
                                    [False, True, False, False]])
 
-        point_emission_probs = mixture._observation_emission_probs(sample_dataset)
+        support = mixture._observation_emission_support(sample_dataset)
 
-        expected_answer = np.sum(np.log(np.sum(point_emission_probs, axis=1)))
+        expected_answer = np.sum(np.log(np.sum(support, axis=1)))
+
         actual_answer = mixture.log_likelihood(sample_dataset)
+        actual_answer_from_support = mixture._log_likelihood_from_support(support)
 
         self.assertEqual(expected_answer, actual_answer)
+        self.assertEqual(expected_answer, actual_answer_from_support)

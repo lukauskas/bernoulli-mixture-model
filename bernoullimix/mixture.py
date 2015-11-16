@@ -112,12 +112,20 @@ class BernoulliMixture(object):
                              'Got {}, expected {}'.format(dataset.shape[1],
                                                           self.number_of_dimensions))
 
-        observation_emission_probs = self._observation_emission_probs(dataset)
+        support = self._observation_emission_support(dataset)
+        return self._log_likelihood_from_support(support)
 
-        return np.sum(np.log(np.sum(observation_emission_probs, axis=1)))
 
+    def _log_likelihood_from_support(self, support):
+        """
+        Computes log likelihood from the support
 
-    def _observation_emission_probs(self, observations):
+        :param support: support (computed by `BernoulliMixture._observation_emission_support`)
+        :return:
+        """
+        return np.sum(np.log(np.sum(support, axis=1)))
+
+    def _observation_emission_support(self, observations):
         """
         Returns point emission probabilities for a set of observations provided as array
         :param observations: array of observations
