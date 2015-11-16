@@ -75,7 +75,6 @@ class BernoulliMixture(object):
     def mixing_coefficients(self):
         return self._mixing_coefficients
 
-
     def sample(self, size, random_state=None):
         """
         Sample a `size` amount of observations from mixture model.
@@ -85,4 +84,26 @@ class BernoulliMixture(object):
         :return: (observations, true_components) -- two arrays. The generated observations and their
                 true components.
         """
-        pass
+        random = np.random.RandomState(random_state)
+
+        true_components = np.argmax(random.multinomial(1, self.mixing_coefficients, size=size),
+                                    axis=1)
+        observations = np.empty((size, self.number_of_dimensions))
+
+        for component in range(self.number_of_components):
+            mask = true_components == component
+            n_samples_for_component = np.sum(true_components == component)
+
+            for dimension in range(self.number_of_dimensions):
+                prob = self.emission_probabilities[component, dimension]
+
+                samples_for_component = random.binomial(1,
+                                                        prob,
+                                                        size=n_samples_for_component)
+
+                observations[mask, dimension] = samples_for_component
+
+        return observations, true_components
+
+
+

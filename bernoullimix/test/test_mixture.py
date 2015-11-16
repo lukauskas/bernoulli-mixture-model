@@ -230,12 +230,12 @@ class TestSampling(unittest.TestCase):
         assert_array_equal(observations_a, observations_b)
         assert_array_equal(true_components_a, true_components_b)
 
-        self.assertNotEqual(observations_a, observations_c)
-        self.assertNotEqual(true_components_a, true_components_c)
+        self.assertTrue(np.any(observations_a != observations_c))
+        self.assertTrue(np.any(true_components_a != true_components_c))
 
     def test_sampling_generates_components_with_approximately_appropriate_probabilities(self):
         """
-        Given three components and their associated emission matrices and 10000 samples,
+        Given three components and their associated emission matrices and 100000 samples,
         the generated dataset should reflect these probabilities approximately.
         """
 
@@ -250,24 +250,23 @@ class TestSampling(unittest.TestCase):
         mixture = BernoulliMixture(number_of_components, number_of_dimensions,
                                    sample_mixing_coefficients, sample_emission_probabilities)
 
-        size = 10000
+        size = 100000
 
         observations, true_components = mixture.sample(size=size, random_state=12345)
 
-        component_counts = np.empty(number_of_components)
-        component_observation_counts = np.empty((number_of_components, number_of_dimensions))
+        empirical_mixing_coefficients = np.empty(number_of_components)
+        empirical_emission_probabilities = np.empty((number_of_components, number_of_dimensions))
 
         for component in range(number_of_components):
             mask = true_components == component
             # noinspection PyTypeChecker
-            component_counts[component] = np.sum(mask)
+            empirical_mixing_coefficients[component] = np.sum(mask) / size
 
             component_observations = observations[mask]
-            component_observation_counts[component] = np.sum(component_observations, axis=0)
+            empirical_emission_probabilities[component] = np.sum(component_observations, axis=0) / np.sum(mask)
 
-        empirical_mixing_coefficients = component_counts / size
-        empirical_emission_probabilities = component_observation_counts / size
-
-        assert_array_almost_equal(empirical_mixing_coefficients, sample_mixing_coefficients)
-        assert_array_almost_equal(empirical_emission_probabilities, sample_emission_probabilities)
+        assert_array_almost_equal(empirical_mixing_coefficients, sample_mixing_coefficients,
+                                  decimal=2)
+        assert_array_almost_equal(empirical_emission_probabilities, sample_emission_probabilities,
+                                  decimal=2)
 
