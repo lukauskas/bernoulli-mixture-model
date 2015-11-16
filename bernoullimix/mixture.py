@@ -145,7 +145,7 @@ class BernoulliMixture(object):
 
     @classmethod
     def _e_step_from_support(cls, support):
-        pass
+        return (support.T / np.sum(support, axis=1)).T
 
     def fit(self, dataset, iteration_limit=1000, convergence_threshold=1e-8):
         """
