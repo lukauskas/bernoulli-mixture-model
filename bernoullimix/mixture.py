@@ -115,7 +115,6 @@ class BernoulliMixture(object):
         support = self._observation_emission_support(dataset)
         return self._log_likelihood_from_support(support)
 
-
     def _log_likelihood_from_support(self, support):
         """
         Computes log likelihood from the support
@@ -144,5 +143,15 @@ class BernoulliMixture(object):
 
         return answer
 
+    def fit(self, dataset, iteration_limit=1000, convergence_threshold=1e-8):
+        """
+        Fits the mixture model to the dataset using EM algorithm.
 
+        :param dataset: dataset to fit to
+        :param iteration_limit: number of iterations to search. If none, will run till convergence
+        :param convergence_threshold: threshold (for log likelihood) that marks convergence
+        :return: (float,bool) : log likelihood of the dataset post fitting, whether the algorigthm
+            converged
+        """
+        pass
 

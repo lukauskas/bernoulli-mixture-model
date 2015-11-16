@@ -366,3 +366,28 @@ class TestLogLikelihood(unittest.TestCase):
 
         self.assertEqual(expected_answer, actual_answer)
         self.assertEqual(expected_answer, actual_answer_from_support)
+
+
+class TestFit(unittest.TestCase):
+    def test_fit_validates_dataset_shape(self):
+        """
+        Given a dataset that has either too few or too many dimensions,
+        fit function should raise an error message.
+        """
+
+        number_of_components = 3
+        number_of_dimensions = 4
+
+        sample_mixing_coefficients = np.array([0.5, 0.4, 0.1])
+        sample_emission_probabilities = np.array([[0.1, 0.2, 0.3, 0.4],
+                                                  [0.1, 0.4, 0.1, 0.4],
+                                                  [1.0, 0.0, 0.0, 0.0]])
+
+        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
+                                   sample_mixing_coefficients, sample_emission_probabilities)
+
+        dataset_too_many_dims = np.ones((10, 5))
+        dataset_too_few_dims = np.ones((10, 3))
+
+        self.assertRaises(ValueError, mixture.fit, dataset_too_few_dims)
+        self.assertRaises(ValueError, mixture.fit, dataset_too_many_dims)
