@@ -53,7 +53,7 @@ class BernoulliMixture(object):
 
         if not self.emission_probabilities.shape == (K, D):
             raise ValueError('Wrong shape of emission probabilities matrix. '
-                             'Expected {}, got {}'.format((K,D), self.emission_probabilities.shape))
+                             'Expected {}, got {}'.format((K, D), self.emission_probabilities.shape))
 
         if not self._bounded_between_zero_and_one(self.emission_probabilities):
             raise ValueError('Emission probabilities not bounded between 0 and 1')
