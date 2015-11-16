@@ -392,7 +392,6 @@ class TestFit(unittest.TestCase):
         self.assertRaises(ValueError, mixture.fit, dataset_too_few_dims)
         self.assertRaises(ValueError, mixture.fit, dataset_too_many_dims)
 
-
     def test_e_step_assigns_values_correctly(self):
 
         sample_support = np.array([[0.3271028, 0.6728972, 0.],
@@ -405,3 +404,30 @@ class TestFit(unittest.TestCase):
         actual_z_star = BernoulliMixture._e_step_from_support(sample_support)
 
         assert_array_almost_equal(expected_z_star, actual_z_star)
+
+    def test_z_step_computes_correct_parameters(self):
+        sample_z_star = np.array([[0.3271028, 0.6728972, 0.],
+                                  [0.65217391, 0.34782609, 0.]])
+
+        sample_dataset = np.array([[True, True, False, False],
+                                   [True, True, True, True]])
+
+        N, D = sample_dataset.shape
+        __, K =  sample_z_star.shape
+
+        u = np.sum(sample_z_star, axis=0)
+
+        expected_mixing_coefficients = u / N
+
+        expected_emission_probabilities = np.empty((K, D))
+
+        for k in range(K):
+            for d in range(D):
+                expected_emission_probabilities[k, d] = np.sum(sample_z_star[:, k] *
+                                                               sample_dataset[:, d]) / u[k]
+
+        mixing_coefficients, emission_probabilities = BernoulliMixture._m_step(sample_z_star,
+                                                                               sample_dataset)
+
+        assert_array_almost_equal(expected_mixing_coefficients, emission_probabilities)
+        assert_array_almost_equal(expected_emission_probabilities, emission_probabilities)

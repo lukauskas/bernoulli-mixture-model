@@ -147,6 +147,11 @@ class BernoulliMixture(object):
     def _e_step_from_support(cls, support):
         return (support.T / np.sum(support, axis=1)).T
 
+    @classmethod
+    def _m_step(cls, z_star, dataset):
+        pass
+
+
     def fit(self, dataset, iteration_limit=1000, convergence_threshold=1e-8):
         """
         Fits the mixture model to the dataset using EM algorithm.
