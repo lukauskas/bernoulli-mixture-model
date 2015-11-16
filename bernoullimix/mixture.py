@@ -16,6 +16,15 @@ class BernoulliMixture(object):
                  number_of_dimensions,
                  mixing_coefficients,
                  emission_probabilities):
+        """
+        Initialises a Bernoulli Mixture Model
+
+        :param number_of_components: number of components in the model (i.e. K)
+        :param number_of_dimensions: number of independent Bernoullis in the model (i.e. D)
+        :param mixing_coefficients: K-dimensional array of the mixture components for the data
+        :param emission_probabilities: (K, D)-dimensional matrix of the probabilities of emitting
+                                       `True` in each bernoulli, given the component.
+        """
 
         self._number_of_components = int(number_of_components)
         self._number_of_dimensions = int(number_of_dimensions)
@@ -64,3 +73,4 @@ class BernoulliMixture(object):
     @property
     def mixing_coefficients(self):
         return self._mixing_coefficients
+
