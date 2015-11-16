@@ -106,7 +106,16 @@ class BernoulliMixture(object):
         return observations, true_components
 
     def log_likelihood(self, dataset):
-        pass
+
+        if dataset.shape[1] != self.number_of_dimensions:
+            raise ValueError('The dataset shape does not match number of dimensions.'
+                             'Got {}, expected {}'.format(dataset.shape[1],
+                                                          self.number_of_dimensions))
+
+        observation_emission_probs = self._observation_emission_probs(dataset)
+
+        return np.sum(np.log(np.sum(observation_emission_probs, axis=1)))
+
 
     def _observation_emission_probs(self, observations):
         """
