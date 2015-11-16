@@ -45,8 +45,9 @@ class BernoulliMixture(object):
             raise ValueError('Wrong shape of mixing coefficients provided. '
                              'Expected {}, got {}'.format((K,), self.mixing_coefficients))
 
-        if not np.sum(self.mixing_coefficients) == 1:
-            raise ValueError('Mixing coefficient probabilities do not sum to one.')
+        if not np.isclose(np.sum(self.mixing_coefficients), 1.0):
+            raise ValueError('Mixing coefficient probabilities do not sum to one. Got: {}'.format(
+                np.sum(self.mixing_coefficients)))
 
         if not self._bounded_between_zero_and_one(self.mixing_coefficients):
             raise ValueError('Mixing coefficients not bounded between 0 and 1')
@@ -74,3 +75,14 @@ class BernoulliMixture(object):
     def mixing_coefficients(self):
         return self._mixing_coefficients
 
+
+    def sample(self, size, random_state=None):
+        """
+        Sample a `size` amount of observations from mixture model.
+
+        :param size: the number of observations to sample
+        :param random_state: (optional) random state to use.
+        :return: (observations, true_components) -- two arrays. The generated observations and their
+                true components.
+        """
+        pass
