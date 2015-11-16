@@ -108,6 +108,24 @@ class BernoulliMixture(object):
     def log_likelihood(self, dataset):
         pass
 
-    def _point_emission_probs(self, points):
-        pass
+    def _observation_emission_probs(self, observations):
+        """
+        Returns point emission probabilities for a set of observations provided as array
+        :param observations: array of observations
+        """
+
+        observations = np.asarray(observations, dtype=int)
+
+        answer = np.empty((len(observations), self.number_of_components))
+
+        for component in range(self.number_of_components):
+            component_emission_probs = self.emission_probabilities[component]
+            emissions = np.power(component_emission_probs, observations) * \
+                        np.power(1 - component_emission_probs, 1 - observations)
+
+            answer[:, component] = self.mixing_coefficients[component] * np.product(emissions, axis=1)
+
+        return answer
+
+
 
