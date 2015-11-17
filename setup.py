@@ -57,6 +57,7 @@ setup(
     # for example:
     # $ pip install -e .[dev,test]
     extras_require={
+        'test': ['nose']
     },
 
     # If there are data files included in your packages that need to be
@@ -78,6 +79,8 @@ setup(
     },
 
     ext_modules=cythonize(extensions),
-    include_dirs=[numpy.get_include()]
+    include_dirs=[numpy.get_include()],
+
+    test_suite='nose.collector'
 
 )
