@@ -14,7 +14,29 @@ def bernoulli_prob_for_observations(np.ndarray[np.float_t, ndim=1] p,
     # emissions = np.power(p, observations) * \
     #             np.power(1 - p, 1 - observations)
     # but in a more efficient way:
-    emissions = np.tile(p, (len(observations), 1))
-    emissions[~observations] = 1 - emissions[~observations]
-    # and then computing the product
-    return np.product(emissions, axis=1)
+    cdef int n
+    cdef int d
+
+    cdef n_max = observations.shape[0]
+    cdef d_max = observations.shape[1]
+
+    cdef np.float_t row_ans
+
+    cdef np.uint8_t obs
+
+    answer = np.empty(n_max)
+
+    for n in range(n_max):
+
+        row_ans = 1.0
+
+        for d in range(d_max):
+            obs = observations[n, d]
+            if obs == 1:
+                row_ans *= p[d]
+            else:
+                row_ans *= 1 - p[d]
+
+        answer[n] = row_ans
+
+    return answer
