@@ -92,18 +92,18 @@ class BernoulliMixture(object):
         Returns penalised likelihood computed as:
 
         $$
-            -2L + 2 \psi \eta
+            -2L + \psi \eta
         $$
         Where $L$ is the log likelihood (provided),
         $\eta$ is the number of free parameters in the model,
         and $\psi$ is the provided penalty term.
-        For instance set psi=1 to get AIC, or psi=(log N)/2 to get BIC.
+        For instance set psi=2 to get AIC, or psi=log N to get BIC.
 
         :param log_likelihood: log likelihood
         :param psi: penalty term
         :return: penalised likelihood
         """
-        return -2.0 * log_likelihood + 2 * psi * self.number_of_free_parameters
+        return -2.0 * log_likelihood + psi * self.number_of_free_parameters
 
     def BIC(self, dataset):
         """
@@ -112,7 +112,7 @@ class BernoulliMixture(object):
         :return: BIC
         """
         log_likelihood = self.log_likelihood(dataset)
-        psi = np.log(len(dataset)) / 2
+        psi = np.log(len(dataset))
         return self._penalised_likelihood(log_likelihood, psi=psi)
 
     def AIC(self, dataset):
@@ -122,7 +122,7 @@ class BernoulliMixture(object):
         :return: AIC
         """
         log_likelihood = self.log_likelihood(dataset)
-        psi = 1
+        psi = 2
         return self._penalised_likelihood(log_likelihood, psi=psi)
 
     def sample(self, size, random_state=None):

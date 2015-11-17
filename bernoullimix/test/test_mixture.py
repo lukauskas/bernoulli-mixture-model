@@ -454,29 +454,6 @@ class TestPenalisedLikelihood(unittest.TestCase):
 
         self.assertEqual(actual_number_of_free_parameters, expected_number_of_free_parameters)
 
-    def test_penalised_likelihood_computed_correctly(self):
-        number_of_components = 3
-        number_of_dimensions = 4
-
-        sample_mixing_coefficients = np.array([0.5, 0.4, 0.1])
-        sample_emission_probabilities = np.array([[0.1, 0.2, 0.3, 0.4],
-                                                  [0.1, 0.4, 0.1, 0.4],
-                                                  [0.5, 0.5, 0.5, 0.5]])
-
-        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
-                                   sample_mixing_coefficients, sample_emission_probabilities)
-
-        number_of_free_parameters = mixture.number_of_free_parameters
-
-        psi = 5
-        log_likelihood = -1
-
-        expected_answer = -2.0 * log_likelihood + 2.0 * psi * number_of_free_parameters
-
-        actual_answer = mixture._penalised_likelihood(log_likelihood, psi)
-
-        self.assertEqual(expected_answer, actual_answer)
-
     def test_bic_computed_correctly(self):
         number_of_components = 3
 
