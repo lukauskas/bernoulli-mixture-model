@@ -186,8 +186,12 @@ class BernoulliMixture(object):
 
         for component in range(self.number_of_components):
             component_emission_probs = self.emission_probabilities[component]
-            emissions = np.power(component_emission_probs, observations) * \
-                        np.power(1 - component_emission_probs, 1 - observations)
+            # We are doing
+            # emissions = np.power(component_emission_probs, observations) * \
+            #             np.power(1 - component_emission_probs, 1 - observations)
+            # but in a more efficient way:
+            emissions = np.tile(component_emission_probs, (len(observations), 1))
+            emissions[~observations] = 1 - emissions[~observations]
 
             answer[:, component] = self.mixing_coefficients[component] * np.product(emissions, axis=1)
 
