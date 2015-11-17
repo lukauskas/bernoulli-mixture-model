@@ -267,7 +267,11 @@ class BernoulliMixture(object):
         :param dataset: Dataset to assign
         :return: (N, K) matrix of probabilities of the n-th observation comming from component K
         """
-        pass
+
+        support = self._observation_emission_support(dataset)
+        probs = self._posterior_probability_of_class_given_support(support)
+
+        return probs
 
     def hard_assignment(self, dataset):
         """
@@ -276,4 +280,6 @@ class BernoulliMixture(object):
         :param dataset: Dataset to assign
         :return: N-vector of the most-likely component to generate that vector
         """
-        pass
+
+        probs = self.soft_assignment(dataset)
+        return np.argmax(probs, axis=1)
