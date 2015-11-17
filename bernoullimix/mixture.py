@@ -75,6 +75,52 @@ class BernoulliMixture(object):
     def mixing_coefficients(self):
         return self._mixing_coefficients
 
+    @property
+    def number_of_free_parameters(self):
+        """
+        Returns number of free parameters for module
+        :return:
+        """
+        # K - 1 params for mixture components
+        # (K * D) parameters for emission probabilities
+
+        return (self.number_of_components - 1) + \
+               (self.number_of_components * self.number_of_dimensions)
+
+    def _penalised_likelihood(self, log_likelihood, psi):
+        """
+        Returns penalised likelihood computed as:
+
+        $$
+            -2L + 2 \psi \eta
+        $$
+        Where $L$ is the log likelihood (provided),
+        $\eta$ is the number of free parameters in the model,
+        and $\psi$ is the provided penalty term.
+        For instance set psi=1 to get AIC, or psi=log N to get BIC.
+
+        :param log_likelihood: log likelihood
+        :param psi: penalty term
+        :return: penalised likelihood
+        """
+        return 0
+
+    def BIC(self, dataset):
+        """
+        Computes Bayesian Information Criterion
+        :param dataset: dataset to compute BIC for
+        :return: BIC
+        """
+        return 0
+
+    def AIC(self, dataset):
+        """
+        Computes Akaike Information Criterion
+        :param dataset: dataset to compute AIC for
+        :return: AIC
+        """
+        return 0
+
     def sample(self, size, random_state=None):
         """
         Sample a `size` amount of observations from mixture model.

@@ -431,3 +431,96 @@ class TestFit(unittest.TestCase):
 
         assert_array_almost_equal(expected_mixing_coefficients, mixing_coefficients)
         assert_array_almost_equal(expected_emission_probabilities, emission_probabilities)
+
+
+class TestPenalisedLikelihood(unittest.TestCase):
+
+    def test_number_of_free_parameters_computed_correctly(self):
+        number_of_components = 3
+        number_of_dimensions = 4
+
+        sample_mixing_coefficients = np.array([0.5, 0.4, 0.1])
+        sample_emission_probabilities = np.array([[0.1, 0.2, 0.3, 0.4],
+                                                  [0.1, 0.4, 0.1, 0.4],
+                                                  [0.5, 0.5, 0.5, 0.5]])
+
+        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
+                                   sample_mixing_coefficients, sample_emission_probabilities)
+
+
+        expected_number_of_free_parameters = (number_of_components - 1) + \
+                                             (number_of_dimensions * number_of_components)
+        actual_number_of_free_parameters = mixture.number_of_free_parameters
+
+        self.assertEqual(actual_number_of_free_parameters, expected_number_of_free_parameters)
+
+    def test_penalised_likelihood_computed_correctly(self):
+        number_of_components = 3
+        number_of_dimensions = 4
+
+        sample_mixing_coefficients = np.array([0.5, 0.4, 0.1])
+        sample_emission_probabilities = np.array([[0.1, 0.2, 0.3, 0.4],
+                                                  [0.1, 0.4, 0.1, 0.4],
+                                                  [0.5, 0.5, 0.5, 0.5]])
+
+        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
+                                   sample_mixing_coefficients, sample_emission_probabilities)
+
+        number_of_free_parameters = mixture.number_of_free_parameters
+
+        psi = 5
+        log_likelihood = -1
+
+        expected_answer = -2.0 * log_likelihood + 2.0 * psi * number_of_free_parameters
+
+        actual_answer = mixture._penalised_likelihood(log_likelihood, psi)
+
+        self.assertEqual(expected_answer, actual_answer)
+
+    def test_bic_computed_correctly(self):
+        number_of_components = 3
+
+        number_of_dimensions = 4
+
+        sample_mixing_coefficients = np.array([0.5, 0.4, 0.1])
+        sample_emission_probabilities = np.array([[0.1, 0.2, 0.3, 0.4],
+                                                  [0.1, 0.4, 0.1, 0.4],
+                                                  [0.5, 0.5, 0.5, 0.5]])
+
+        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
+                                   sample_mixing_coefficients, sample_emission_probabilities)
+
+        dataset = np.array([[True, True, False, False],
+                            [False, False, True, True]])
+
+        log_likelihood = mixture.log_likelihood(dataset)
+        number_of_free_parameters = mixture.number_of_free_parameters
+
+        expected_bic = -2 * log_likelihood + number_of_free_parameters * np.log(len(dataset))
+        actual_bic = mixture.BIC(dataset)
+
+        self.assertEqual(expected_bic, actual_bic)
+
+    def test_aic_computed_correctly(self):
+        number_of_components = 3
+
+        number_of_dimensions = 4
+
+        sample_mixing_coefficients = np.array([0.5, 0.4, 0.1])
+        sample_emission_probabilities = np.array([[0.1, 0.2, 0.3, 0.4],
+                                                  [0.1, 0.4, 0.1, 0.4],
+                                                  [0.5, 0.5, 0.5, 0.5]])
+
+        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
+                                   sample_mixing_coefficients, sample_emission_probabilities)
+
+        dataset = np.array([[True, True, False, False],
+                            [False, False, True, True]])
+
+        log_likelihood = mixture.log_likelihood(dataset)
+        number_of_free_parameters = mixture.number_of_free_parameters
+
+        expected_aic = -2 * log_likelihood + number_of_free_parameters * 2
+        actual_aic = mixture.AIC(dataset)
+
+        self.assertEqual(expected_aic, actual_aic)
