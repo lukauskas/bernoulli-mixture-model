@@ -1,10 +1,11 @@
 # Always prefer setuptools over distutils
 from setuptools import setup, find_packages
-# To use a consistent encoding
-from codecs import open
 from os import path
+from Cython.Build import cythonize
 
 here = path.abspath(path.dirname(__file__))
+
+extensions = "bernoullimix/_bernoulli.pyx"
 
 setup(
     name='bernoullimix',
@@ -48,7 +49,7 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['numpy'],
+    install_requires=['Cython', 'numpy'],
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
@@ -74,4 +75,7 @@ setup(
     # pip to create the appropriate form of executable for the target platform.
     entry_points={
     },
+
+    ext_modules=cythonize(extensions),
+
 )
