@@ -2,4 +2,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+
 from bernoullimix.mixture import BernoulliMixture
+from bernoullimix.random_initialisation import random_mixture_generator
