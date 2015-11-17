@@ -392,7 +392,7 @@ class TestFit(unittest.TestCase):
         self.assertRaises(ValueError, mixture.fit, dataset_too_few_dims)
         self.assertRaises(ValueError, mixture.fit, dataset_too_many_dims)
 
-    def test_e_step_assigns_values_correctly(self):
+    def test_posterior_probability_given_support_is_computed_correctly(self):
 
         sample_support = np.array([[0.3271028, 0.6728972, 0.],
                                    [0.65217391, 0.34782609, 0.]])
@@ -401,7 +401,7 @@ class TestFit(unittest.TestCase):
         expected_z_star[0] = sample_support[0] / np.sum(sample_support[0])
         expected_z_star[1] = sample_support[1] / np.sum(sample_support[1])
 
-        actual_z_star = BernoulliMixture._e_step_from_support(sample_support)
+        actual_z_star = BernoulliMixture._posterior_probability_of_class_given_support(sample_support)
 
         assert_array_almost_equal(expected_z_star, actual_z_star)
 

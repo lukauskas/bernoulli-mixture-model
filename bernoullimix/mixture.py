@@ -194,7 +194,7 @@ class BernoulliMixture(object):
         return answer
 
     @classmethod
-    def _e_step_from_support(cls, support):
+    def _posterior_probability_of_class_given_support(cls, support):
         return (support.T / np.sum(support, axis=1)).T
 
     @classmethod
@@ -213,7 +213,6 @@ class BernoulliMixture(object):
             v[k] = np.sum(dataset.T * z_star_k, axis=1) / u[k]
 
         return u/N, v
-
 
     def fit(self, dataset, iteration_limit=1000, convergence_threshold=1e-8):
         """
@@ -247,7 +246,7 @@ class BernoulliMixture(object):
                 converged = True
                 break
 
-            z_star = self._e_step_from_support(support)
+            z_star = self._posterior_probability_of_class_given_support(support)
 
             pi, e = self._m_step(z_star, dataset)
 
