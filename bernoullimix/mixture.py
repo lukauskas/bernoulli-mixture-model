@@ -4,7 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 import numpy as np
 
-from bernoullimix._bernoulli import bernoulli_prob_for_observations
+from bernoullimix._bernoulli import bernoulli_prob_for_observations, maximise_emissions
 
 
 class BernoulliMixture(object):
@@ -200,22 +200,29 @@ class BernoulliMixture(object):
     def _posterior_probability_of_class_given_support(cls, support):
         return (support.T / np.sum(support, axis=1)).T
 
+
     @classmethod
     def _m_step(cls, z_star, dataset):
 
         u = np.sum(z_star, axis=0)
 
         N, K = z_star.shape
-        __, D = dataset.shape
 
+        vs = maximise_emissions(dataset, z_star)
+
+        for k in range(K):
+            vs[k] /= u[k]
+
+        return u/N, vs
+
+    @classmethod
+    def method_name(cls, K, D, dataset, z_star, u):
         v = np.empty((K, D))
-
         for k in range(K):
             z_star_k = z_star[:, k]
 
             v[k] = np.sum(dataset.T * z_star_k, axis=1) / u[k]
-
-        return u/N, v
+        return v
 
     def fit(self, dataset, iteration_limit=1000, convergence_threshold=1e-8):
         """

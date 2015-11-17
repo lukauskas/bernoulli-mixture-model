@@ -40,3 +40,15 @@ def bernoulli_prob_for_observations(np.ndarray[np.float_t, ndim=1] p,
         answer[n] = row_ans
 
     return answer
+
+def maximise_emissions(dataset, z_star):
+    N, K = z_star.shape
+    __, D = dataset.shape
+
+    v = np.empty((K, D))
+    for k in range(K):
+        z_star_k = z_star[:, k]
+
+        v[k] = np.sum(dataset.T * z_star_k, axis=1)
+
+    return v
