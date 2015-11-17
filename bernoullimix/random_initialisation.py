@@ -35,7 +35,7 @@ def random_mixture_generator(number_of_components,
 
     mixing_coefficients = np.repeat(1/number_of_components, number_of_components)
 
-    fix_range = np.vectorize(lambda x: epsilon + (x/( (1 - epsilon) - epsilon)))
+    fix_range = np.vectorize(lambda x: epsilon + (x * ( (1 - epsilon) - epsilon)))
 
     while True:
 
