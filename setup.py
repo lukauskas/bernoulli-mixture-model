@@ -1,4 +1,5 @@
 # Always prefer setuptools over distutils
+import numpy
 from setuptools import setup, find_packages
 from os import path
 from Cython.Build import cythonize
@@ -77,5 +78,6 @@ setup(
     },
 
     ext_modules=cythonize(extensions),
+    include_dirs=[numpy.get_include()]
 
 )
