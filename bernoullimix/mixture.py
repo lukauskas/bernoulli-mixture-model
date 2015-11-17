@@ -259,3 +259,21 @@ class BernoulliMixture(object):
                 iterations_remaining -= 1
 
         return current_log_likelihood, converged
+
+    def soft_assignment(self, dataset):
+        """
+        Returns soft assignment of dataset to classes given the model.
+
+        :param dataset: Dataset to assign
+        :return: (N, K) matrix of probabilities of the n-th observation comming from component K
+        """
+        pass
+
+    def hard_assignment(self, dataset):
+        """
+        Returns hard assignment of dataset to classes given the model
+
+        :param dataset: Dataset to assign
+        :return: N-vector of the most-likely component to generate that vector
+        """
+        pass

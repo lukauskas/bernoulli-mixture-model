@@ -501,3 +501,79 @@ class TestPenalisedLikelihood(unittest.TestCase):
         actual_aic = mixture.AIC(dataset)
 
         self.assertEqual(expected_aic, actual_aic)
+
+class TestAssignment(unittest.TestCase):
+
+    def test_soft_assignment_computed_correctly(self):
+        number_of_components = 3
+
+        number_of_dimensions = 4
+
+        sample_mixing_coefficients = np.array([0.5, 0.4, 0.1])
+        sample_emission_probabilities = np.array([[0.1, 0.2, 0.3, 0.4],
+                                                  [0.1, 0.4, 0.1, 0.4],
+                                                  [0.5, 0.5, 0.5, 0.5]])
+
+        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
+                                   sample_mixing_coefficients, sample_emission_probabilities)
+
+        dataset = np.array([[True, True, False, False],
+                            [False, False, True, True]])
+
+        N = len(dataset)
+
+        expected_assignments = np.empty((N, number_of_components))
+
+        for n in range(N):
+            for k in range(number_of_components):
+
+                prob = sample_mixing_coefficients[k]
+                prob *= np.product(np.power(sample_emission_probabilities[k], dataset[n]) *
+                                   np.power(1 - sample_emission_probabilities[k], 1 - dataset[n]))
+
+
+                expected_assignments[n, k] = prob
+
+            sum_ = np.sum(expected_assignments[n])
+
+            expected_assignments[n] /= sum_
+
+        actual_assignments = mixture.soft_assignment(dataset)
+
+        assert_array_almost_equal(expected_assignments, actual_assignments)
+
+    def test_hard_assignment_computed_correctly(self):
+        number_of_components = 3
+
+        number_of_dimensions = 4
+
+        sample_mixing_coefficients = np.array([0.5, 0.4, 0.1])
+        sample_emission_probabilities = np.array([[0.1, 0.2, 0.3, 0.4],
+                                                  [0.1, 0.4, 0.1, 0.4],
+                                                  [0.5, 0.5, 0.5, 0.5]])
+
+        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
+                                   sample_mixing_coefficients, sample_emission_probabilities)
+
+        dataset = np.array([[True, True, False, False],
+                            [False, False, True, True]])
+
+        N = len(dataset)
+
+        expected_assignments = np.empty(N, dtype=int)
+
+        for n in range(N):
+            assignment_probabilities = np.empty(number_of_components)
+
+            for k in range(number_of_components):
+                prob = sample_mixing_coefficients[k]
+                prob *= np.product(np.power(sample_emission_probabilities[k], dataset[n]) *
+                                   np.power(1 - sample_emission_probabilities[k], 1 - dataset[n]))
+
+                assignment_probabilities[k] = prob
+
+            expected_assignments[n] = np.argmax(assignment_probabilities)
+
+        actual_assignments = mixture.hard_assignment(dataset)
+
+        assert_array_equal(expected_assignments, actual_assignments)
