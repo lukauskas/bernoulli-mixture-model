@@ -236,7 +236,7 @@ class BernoulliMixture(object):
 
         previous_log_likelihood, current_log_likelihood = None, None
 
-        converged = True
+        converged = False
         while iterations_remaining is None or iterations_remaining > 0:
             support = self._observation_emission_support(dataset)
 
