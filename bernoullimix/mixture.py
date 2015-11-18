@@ -275,9 +275,9 @@ class BernoulliMixture(object):
                 converged = True
                 break
 
-            z_star = self._posterior_probability_of_class_given_support(unique_support)
+            unique_z_star = self._posterior_probability_of_class_given_support(unique_support)
 
-            pi, e = self._m_step(z_star, dataset)
+            pi, e = self._m_step(unique_z_star, unique_dataset, counts)
 
             self._mixing_coefficients = pi
             self._emission_probabilities = e
