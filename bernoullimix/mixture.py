@@ -260,7 +260,7 @@ class BernoulliMixture(object):
 
         return u / sum_of_weights, vs
 
-    def fit(self, dataset, iteration_limit=1000, convergence_threshold=1e-8,
+    def fit(self, dataset, iteration_limit=1000, convergence_threshold=1e-6,
             trace_likelihood=False):
         """
         Fits the mixture model to the dataset using EM algorithm.
@@ -329,7 +329,7 @@ class BernoulliMixture(object):
                 likelihood_trace = np.array(likelihood_trace)
             elif iterations_done < len(likelihood_trace):
                 likelihood_trace = likelihood_trace[:iterations_done]
-                
+
         convergence_status = ConvergenceStatus(converged, iterations_done, likelihood_trace)
 
         return current_log_likelihood, convergence_status
