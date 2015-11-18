@@ -469,10 +469,10 @@ class TestFit(unittest.TestCase):
                                    [False, False, False, False],  # row C
                                    [True, True, False, False]])  # row A
 
-        expected_aggregated_dataset = np.array([[[True, True, False, False],   # A, three times
+        expected_aggregated_dataset = np.array([[True, True, False, False],   # A, three times
                                                  [False, True, False, False],  # B, twice
                                                  [False, False, False, False]  # C, once
-                                                 ]])
+                                               ])
 
         expected_aggregated_weights = np.array([3, 2, 1], dtype=int)
 

@@ -99,7 +99,15 @@ class BernoulliMixture(object):
         :return: tuple. First element is the unique rows in data,
                         second element is the number of times they occur.
         """
-        pass
+        # based on http://stackoverflow.com/a/16971224/171400
+
+        rows, columns = dataset.shape
+
+        structured = dataset.view(dataset.dtype.descr * columns)
+        unique, counts = np.unique(structured, return_counts=True)
+
+        unique = unique.view(dataset.dtype).reshape(-1, columns)
+        return unique, counts
 
     def _penalised_likelihood(self, log_likelihood, psi):
         """
