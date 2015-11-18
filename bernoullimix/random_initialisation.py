@@ -6,6 +6,26 @@ from __future__ import unicode_literals
 import numpy as np
 from bernoullimix.mixture import BernoulliMixture
 
+
+def _adjust_probabilities(unadjusted_array, epsilon, domain=(0, 1)):
+
+    if domain[1] <= domain[0]:
+        raise ValueError('Incorrect domain specified, expecting domain[0] < domain[1]')
+
+    domain_width = domain[1] - domain[0]
+    projected_domain_width = 1 - 2 * epsilon
+
+    def _adjust(x):
+        if x < domain[0] or x > domain[1]:
+            raise ValueError('value {!r} not within the domain [{}, {}]'.format(x, domain[0], domain[1]))
+
+        return ((x - domain[0]) / domain_width) * projected_domain_width + epsilon
+
+    adjust = np.vectorize(_adjust)
+
+    return adjust(unadjusted_array)
+
+
 def random_mixture_generator(number_of_components,
                              dataset,
                              random_state=None,
