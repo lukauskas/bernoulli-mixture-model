@@ -260,14 +260,16 @@ class BernoulliMixture(object):
 
         return u / sum_of_weights, vs
 
-
-    def fit(self, dataset, iteration_limit=1000, convergence_threshold=1e-8):
+    def fit(self, dataset, iteration_limit=1000, convergence_threshold=1e-8,
+            trace_likelihood=False):
         """
         Fits the mixture model to the dataset using EM algorithm.
 
         :param dataset: dataset to fit to
         :param iteration_limit: number of iterations to search. If none, will run till convergence
         :param convergence_threshold: threshold (for log likelihood) that marks convergence
+        :param trace_likelihood: if set to true, the likelihood trace from optimisation
+                                 will be returned
         :return: (float, `ConvergenceStatus`) : log likelihood of the dataset post fitting,
             and the information about convergence of the algorithm
         """
@@ -284,9 +286,15 @@ class BernoulliMixture(object):
 
         iterations_done = 0
 
-        iterations_remaining = iteration_limit
-
         previous_log_likelihood, current_log_likelihood = None, None
+
+        if trace_likelihood:
+            if iteration_limit:
+                likelihood_trace = np.empty(iteration_limit, dtype=float)
+            else:
+                likelihood_trace = []
+        else:
+            likelihood_trace = None
 
         converged = False
         while iteration_limit is None or iterations_done < iteration_limit:
@@ -294,7 +302,8 @@ class BernoulliMixture(object):
 
             current_log_likelihood = self._log_likelihood_from_support(unique_support, counts)
             if previous_log_likelihood is not None \
-                and np.abs(current_log_likelihood - previous_log_likelihood) < convergence_threshold:
+                and np.isclose(current_log_likelihood, previous_log_likelihood,
+                               rtol=0, atol=convergence_threshold):
                 converged = True
                 break
 
@@ -305,11 +314,23 @@ class BernoulliMixture(object):
             self._mixing_coefficients = pi
             self._emission_probabilities = e
 
+            if trace_likelihood:
+                if iteration_limit:
+                    likelihood_trace[iterations_done] = current_log_likelihood
+                else:
+                    likelihood_trace.append(current_log_likelihood)
+
             previous_log_likelihood = current_log_likelihood
 
             iterations_done += 1
 
-        convergence_status = ConvergenceStatus(converged, iterations_done)
+        if trace_likelihood:
+            if not iteration_limit:
+                likelihood_trace = np.array(likelihood_trace)
+            elif iterations_done < len(likelihood_trace):
+                likelihood_trace = likelihood_trace[:iterations_done]
+                
+        convergence_status = ConvergenceStatus(converged, iterations_done, likelihood_trace)
 
         return current_log_likelihood, convergence_status
 
