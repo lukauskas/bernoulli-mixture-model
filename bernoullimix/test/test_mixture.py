@@ -377,6 +377,7 @@ class TestLogLikelihood(unittest.TestCase):
 
 
 class TestFit(unittest.TestCase):
+
     def test_fit_validates_dataset_shape(self):
         """
         Given a dataset that has either too few or too many dimensions,
@@ -451,6 +452,45 @@ class TestFit(unittest.TestCase):
 
         assert_array_almost_equal(expected_mixing_coefficients, mixing_coefficients)
         assert_array_almost_equal(expected_emission_probabilities, emission_probabilities)
+
+
+    def test_dataset_aggregation(self):
+        """
+        Given a dataset with repeating rows `_aggregate_dataset()` function should return
+        a reduced dataset with all unique rows, as well as a vector of weights for each row.
+
+        The resulting rows can be in any order.
+
+        """
+        sample_dataset = np.array([[True, True, False, False],  # row A
+                                   [False, True, False, False],  # row B
+                                   [True, True, False, False],  # row A
+                                   [False, True, False, False],  # row B
+                                   [False, False, False, False],  # row C
+                                   [True, True, False, False]])  # row A
+
+        expected_aggregated_dataset = np.array([[[True, True, False, False],   # A, three times
+                                                 [False, True, False, False],  # B, twice
+                                                 [False, False, False, False]  # C, once
+                                                 ]])
+
+        expected_aggregated_weights = np.array([3, 2, 1], dtype=int)
+
+        actual_aggregated_dataset, actual_weights = BernoulliMixture._aggregate_dataset(sample_dataset)
+
+        # Check that shapes are the same
+        self.assertEqual(expected_aggregated_dataset.shape, actual_aggregated_dataset.shape)
+        self.assertEqual(expected_aggregated_weights.shape, actual_weights.shape)
+
+        # Since the order returned doesn't matter, let's turn results into dict and compare those
+        expected_lookup = dict(zip(map(tuple, expected_aggregated_dataset),
+                                   expected_aggregated_weights))
+        actual_lookup = dict(zip(map(tuple, actual_aggregated_dataset),
+                                 actual_weights))
+        self.assertDictEqual(expected_lookup, actual_lookup)
+
+
+
 
 
 class TestPenalisedLikelihood(unittest.TestCase):

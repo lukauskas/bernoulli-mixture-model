@@ -90,6 +90,17 @@ class BernoulliMixture(object):
         return (self.number_of_components - 1) + \
                (self.number_of_components * self.number_of_dimensions)
 
+    @classmethod
+    def _aggregate_dataset(cls, dataset):
+        """
+        Take the dataset and return only its unique rows, along with their counts
+
+        :param dataset: dataset to process
+        :return: tuple. First element is the unique rows in data,
+                        second element is the number of times they occur.
+        """
+        pass
+
     def _penalised_likelihood(self, log_likelihood, psi):
         """
         Returns penalised likelihood computed as:
