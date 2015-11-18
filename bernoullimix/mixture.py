@@ -184,21 +184,25 @@ class BernoulliMixture(object):
                              'Got {}, expected {}'.format(dataset.shape[1],
                                                           self.number_of_dimensions))
 
-        support = self._observation_emission_support(dataset)
-        return self._log_likelihood_from_support(support)
+        unique_dataset, weights = self._aggregate_dataset(dataset)
+        support = self._observation_emission_support(unique_dataset)
+        return self._log_likelihood_from_support(support, weights)
 
-    def _log_likelihood_from_support(self, support):
+    def _log_likelihood_from_support(self, support, weights):
         """
         Computes log likelihood from the support
 
         :param support: support (computed by `BernoulliMixture._observation_emission_support`)
+        :param weights: weights for each support row (i.e. how many rows does it represent)
         :return:
         """
-        return np.sum(np.log(np.sum(support, axis=1)))
+        return np.sum(np.log(np.sum(support, axis=1)) * weights)
 
     def _observation_emission_support(self, observations):
         """
-        Returns point emission probabilities for a set of observations provided as array
+        Returns point emission probabilities for a set of observations provided as array.
+        Usually the code would just compute it for unique observations, and then
+        weigh the support appropriately in calculations.
         :param observations: array of observations
         """
 
@@ -260,6 +264,9 @@ class BernoulliMixture(object):
             raise ValueError('The dataset shape does not match number of dimensions.'
                              'Got {}, expected {}'.format(dataset.shape[1],
                                                           self.number_of_dimensions))
+
+        # Get only unique rows and their counts
+        unique_dataset, counts = self._aggregate_dataset(dataset)
 
         iterations_remaining = iteration_limit
 

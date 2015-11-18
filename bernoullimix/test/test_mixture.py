@@ -365,15 +365,20 @@ class TestLogLikelihood(unittest.TestCase):
                                    [False, False, False, False],
                                    [True, True, False, False]])
 
-        support = mixture._observation_emission_support(sample_dataset)
+        unique_dataset, weights = BernoulliMixture._aggregate_dataset(sample_dataset)
 
+        # Compute support on whole dataset for the test
+        # even though code would compute it for unique_dataset only
+        support = mixture._observation_emission_support(sample_dataset)
         expected_answer = np.sum(np.log(np.sum(support, axis=1)))
 
         actual_answer = mixture.log_likelihood(sample_dataset)
-        actual_answer_from_support = mixture._log_likelihood_from_support(support)
 
-        self.assertEqual(expected_answer, actual_answer)
-        self.assertEqual(expected_answer, actual_answer_from_support)
+        unique_support = mixture._observation_emission_support(unique_dataset)
+        actual_answer_from_support = mixture._log_likelihood_from_support(unique_support, weights)
+
+        self.assertAlmostEqual(expected_answer, actual_answer)
+        self.assertAlmostEqual(expected_answer, actual_answer_from_support)
 
 
 class TestFit(unittest.TestCase):
