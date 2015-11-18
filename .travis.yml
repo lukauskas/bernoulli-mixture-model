@@ -9,4 +9,6 @@ install:
   - pip install numpy
   - pip install .
 # command to run tests
-script: python setup.py test
+script: 
+  - python setup.py test
+  - time python benchmark.py
