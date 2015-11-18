@@ -225,27 +225,20 @@ class BernoulliMixture(object):
 
 
     @classmethod
-    def _m_step(cls, z_star, dataset):
+    def _m_step(cls, unique_zstar, unique_dataset, weights):
 
-        u = np.sum(z_star, axis=0)
+        u = np.sum(unique_zstar.T * weights, axis=1)
+        sum_of_weights = np.sum(weights)
 
-        N, K = z_star.shape
+        N, K = unique_zstar.shape
 
-        vs = maximise_emissions(dataset, z_star)
+        vs = maximise_emissions(unique_dataset, unique_zstar, weights)
 
         for k in range(K):
             vs[k] /= u[k]
 
-        return u/N, vs
+        return u / sum_of_weights, vs
 
-    @classmethod
-    def method_name(cls, K, D, dataset, z_star, u):
-        v = np.empty((K, D))
-        for k in range(K):
-            z_star_k = z_star[:, k]
-
-            v[k] = np.sum(dataset.T * z_star_k, axis=1) / u[k]
-        return v
 
     def fit(self, dataset, iteration_limit=1000, convergence_threshold=1e-8):
         """
@@ -274,15 +267,15 @@ class BernoulliMixture(object):
 
         converged = False
         while iterations_remaining is None or iterations_remaining > 0:
-            support = self._observation_emission_support(dataset)
+            unique_support = self._observation_emission_support(unique_dataset)
 
-            current_log_likelihood = self._log_likelihood_from_support(support)
+            current_log_likelihood = self._log_likelihood_from_support(unique_dataset, counts)
             if previous_log_likelihood is not None \
                 and np.abs(current_log_likelihood - previous_log_likelihood) < convergence_threshold:
                 converged = True
                 break
 
-            z_star = self._posterior_probability_of_class_given_support(support)
+            z_star = self._posterior_probability_of_class_given_support(unique_support)
 
             pi, e = self._m_step(z_star, dataset)
 

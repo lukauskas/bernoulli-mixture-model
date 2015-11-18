@@ -431,12 +431,25 @@ class TestFit(unittest.TestCase):
                                   [0.55562318, 0.4286236, 0.01575322],
                                   [0.24522862, 0.50447031, 0.25030106]])
 
+        unique_z_star = np.array([[0.24522862, 0.50447031, 0.25030106],
+                                  [0.3264654, 0.67158596, 0.00194864],
+                                  [0.55562318, 0.4286236, 0.01575322]])
+
         sample_dataset = np.array([[True, True, False, False],
                                    [False, True, False, False],
                                    [True, True, False, False],
                                    [False, True, False, False],
                                    [False, False, False, False],
                                    [True, True, False, False]])
+
+        unique_dataset = np.array([[True, True, False, False],
+                                   [False, True, False, False],
+                                   [False, False, False, False],
+                                   ])
+
+        weights = np.array([3, 2, 1], dtype=int)
+
+        # -- Compute correct parameters from the full dataset
 
         N, D = sample_dataset.shape
         __, K = sample_z_star.shape
@@ -452,8 +465,19 @@ class TestFit(unittest.TestCase):
                 expected_emission_probabilities[k, d] = np.sum(sample_z_star[:, k] *
                                                                sample_dataset[:, d]) / u[k]
 
-        mixing_coefficients, emission_probabilities = BernoulliMixture._m_step(sample_z_star,
-                                                                               sample_dataset)
+        # First, perform the test with the same dataset, and weights set to one
+        mc_ones, ep_ones = BernoulliMixture._m_step(sample_z_star,
+                                                    sample_dataset,
+                                                    np.ones(N, dtype=int))
+
+        assert_array_almost_equal(expected_mixing_coefficients, mc_ones)
+        assert_array_almost_equal(expected_emission_probabilities, ep_ones)
+
+        # Use unique dataset & weights to compute values for test.
+
+        mixing_coefficients, emission_probabilities = BernoulliMixture._m_step(unique_z_star,
+                                                                               unique_dataset,
+                                                                               weights)
 
         assert_array_almost_equal(expected_mixing_coefficients, mixing_coefficients)
         assert_array_almost_equal(expected_emission_probabilities, emission_probabilities)

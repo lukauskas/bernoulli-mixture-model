@@ -43,12 +43,13 @@ def bernoulli_prob_for_observations(np.ndarray[np.float_t, ndim=1] p,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def maximise_emissions(np.ndarray[np.uint8_t, cast=True, ndim=2] dataset,
-                       np.ndarray[np.float_t, ndim=2] z_star):
-    cdef int N = z_star.shape[0]
-    cdef int K = z_star.shape[1]
+def maximise_emissions(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
+                       np.ndarray[np.float_t, ndim=2] unique_zstar,
+                       np.ndarray[np.int64_t, ndim=1] weights):
+    cdef int N = unique_zstar.shape[0]
+    cdef int K = unique_zstar.shape[1]
 
-    cdef int D = dataset.shape[1]
+    cdef int D = unique_dataset.shape[1]
 
     cdef int n;
     cdef int k;
@@ -61,7 +62,7 @@ def maximise_emissions(np.ndarray[np.uint8_t, cast=True, ndim=2] dataset,
         for d in range(D):
             v_kd = 0
             for n in range(N):
-                v_kd += dataset[n, d] * z_star[n, k]
+                v_kd += unique_dataset[n, d] * unique_zstar[n, k] * weights[n]
             v[k, d] = v_kd
 
     return v
