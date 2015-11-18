@@ -62,6 +62,18 @@ def _expected_domain(range_a, range_b, alpha):
     return tuple(range_a * alpha + range_b * (1-alpha))
 
 
+def _random_numbers_within_domain(random, domain, shape):
+    """
+    Generates random numbers within the specified domain
+    :param random:
+    :type random: np.random.RandomState
+    :param domain: domain to compute numbers for
+    :param shape: shape of array to produce
+    :return:
+    """
+    return random.randn(*shape)
+
+
 def random_mixture_generator(number_of_components,
                              dataset,
                              random_state=None,
@@ -93,14 +105,18 @@ def random_mixture_generator(number_of_components,
 
     mixing_coefficients = np.repeat(1/number_of_components, number_of_components)
 
-    expected_domain = _expected_domain((-1, 1),  # Range of `random.randn`
-                                       (0, 1),  # Range of `dataset`
+    random_domain = (-1, 1)
+    dataset_domain = (0, 1)
+
+    expected_domain = _expected_domain(random_domain,
+                                       dataset_domain,
                                        alpha=alpha)
     while True:
 
         N, D = dataset.shape
 
-        random_emissions = random.randn(number_of_components, D)
+        random_emissions = _random_numbers_within_domain(random, random_domain,
+                                                         (number_of_components, D))
 
         random_rows = random.randint(N, size=number_of_components)
 

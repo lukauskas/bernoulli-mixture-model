@@ -8,7 +8,8 @@ import unittest
 import numpy as np
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-from bernoullimix.random_initialisation import _adjust_probabilities, _expected_domain
+from bernoullimix.random_initialisation import _adjust_probabilities, _expected_domain, \
+    _random_numbers_within_domain
 
 
 class TestProbabilityAdjustment(unittest.TestCase):
@@ -122,3 +123,55 @@ class TestDomainCalculation(unittest.TestCase):
         actual = _expected_domain(domain_a, domain_b, alpha)
 
         self.assertEqual(expected, actual)
+
+class TestRandomNumberGeneration(unittest.TestCase):
+
+    def _isin_domain_func(self, domain):
+        return np.vectorize(lambda x: domain[0] <= x <= domain[1])
+
+    def test_random_number_generator_produces_numbers_within_correct_domain(self):
+
+        domain_a = (17.0, 130.0)
+        domain_b = (-4.0, -5)
+
+        random = np.random.RandomState(12345)
+
+        numbers_a = _random_numbers_within_domain(random, domain_a, (10,))
+        numbers_b = _random_numbers_within_domain(random, domain_b, (10,))
+
+        isin_domain_a = self._isin_domain_func(domain_a)
+        isin_domain_b = self._isin_domain_func(domain_b)
+
+        all_in_a = np.all(isin_domain_a(numbers_a))
+        all_in_b = np.all(isin_domain_b(numbers_b))
+
+        self.assertTrue(all_in_a, 'Some numbers not in the domain {}:\n{!r}'.format(domain_a,
+                                                                                    numbers_a))
+
+        self.assertTrue(all_in_b, 'Some numbers not in the domain {}:\n{!r}'.format(domain_b,
+                                                                                    numbers_b))
+
+    def test_random_number_generator_samples_numbers_within_whole_domain(self):
+
+        linspace = np.linspace(-10, 10, 10)
+        complete_domain = linspace[0], linspace[-1]
+
+        subdomains = zip(linspace, linspace[1:])
+
+        random = np.random.RandomState(12345)
+
+        numbers_to_generate = 10000
+
+        numbers = _random_numbers_within_domain(random, complete_domain, (numbers_to_generate, ))
+
+        for subdomain in subdomains:
+            isin_subdomain = self._isin_domain_func(subdomain)
+
+            some_in_subdomain = np.any(isin_subdomain(numbers))
+
+            self.assertTrue(some_in_subdomain,
+                            'Out of {:,} numbers generated for {} '
+                            'none in domain {}'.format(numbers_to_generate,
+                                                       complete_domain,
+                                                       subdomain))
+
