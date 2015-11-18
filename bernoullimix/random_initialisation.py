@@ -87,24 +87,27 @@ def random_mixture_generator(number_of_components,
     :return:
     """
 
+    dataset = np.asarray(dataset, dtype=bool)
+
     random = np.random.RandomState(random_state)
 
     mixing_coefficients = np.repeat(1/number_of_components, number_of_components)
 
-    fix_range = np.vectorize(lambda x: epsilon + (x * ( (1 - epsilon) - epsilon)))
-
+    expected_domain = _expected_domain((-1, 1),  # Range of `random.randn`
+                                       (0, 1),  # Range of `dataset`
+                                       alpha=alpha)
     while True:
 
         N, D = dataset.shape
 
-        random_emissions = random.rand(number_of_components, D)
+        random_emissions = random.randn(number_of_components, D)
 
         random_rows = random.randint(N, size=number_of_components)
 
         random_row_emissions = dataset[random_rows, :]
 
         emissions = alpha * random_emissions + (1-alpha) * random_row_emissions
-        emissions = fix_range(emissions)
+        emissions = _adjust_probabilities(emissions, epsilon, domain=expected_domain)
 
         yield BernoulliMixture(number_of_components, D,
                                mixing_coefficients, emissions)

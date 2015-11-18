@@ -27,6 +27,19 @@ class TestProbabilityAdjustment(unittest.TestCase):
         actual_result = _adjust_probabilities(test_array, epsilon, domain=domain)
         assert_array_almost_equal(expected_result, actual_result)
 
+    def test_probabilities_are_adjusted_correctly_given_domain_2d(self):
+        domain = (-5, 5)
+        epsilon = 0.05
+
+        test_array = np.array([[-5.0, 5.0],
+                               [0.0, 4.0]])
+
+        expected_result = np.array([[epsilon, 1 - epsilon],
+                                    [0.5, ((4.0 - (-5)) / 10) * (1 - 2 * epsilon) + epsilon]])
+
+        actual_result = _adjust_probabilities(test_array, epsilon, domain=domain)
+        assert_array_almost_equal(expected_result, actual_result)
+
     def test_probabilities_out_of_domain_raise_value_error(self):
         epsilon = 0.05
 
