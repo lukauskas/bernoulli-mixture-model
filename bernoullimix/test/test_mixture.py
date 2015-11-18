@@ -286,7 +286,7 @@ class TestLogLikelihood(unittest.TestCase):
         sample_mixing_coefficients = np.array([0.5, 0.4, 0.1])
         sample_emission_probabilities = np.array([[0.1, 0.2, 0.3, 0.4],
                                                   [0.1, 0.4, 0.1, 0.4],
-                                                  [1.0, 0.0, 0.0, 0.0]])
+                                                  [0.95, 0.05, 0.05, 0.05]])
 
         mixture = BernoulliMixture(number_of_components, number_of_dimensions,
                                    sample_mixing_coefficients, sample_emission_probabilities)
@@ -313,7 +313,7 @@ class TestLogLikelihood(unittest.TestCase):
         sample_mixing_coefficients = np.array([0.5, 0.4, 0.1])
         sample_emission_probabilities = np.array([[0.1, 0.2, 0.3, 0.4],
                                                   [0.1, 0.4, 0.1, 0.4],
-                                                  [1.0, 0.0, 0.0, 0.0]])
+                                                  [0.95, 0.05, 0.05, 0.05]])
 
         mixture = BernoulliMixture(number_of_components, number_of_dimensions,
                                    sample_mixing_coefficients, sample_emission_probabilities)
@@ -353,7 +353,7 @@ class TestLogLikelihood(unittest.TestCase):
         sample_mixing_coefficients = np.array([0.5, 0.4, 0.1])
         sample_emission_probabilities = np.array([[0.1, 0.2, 0.3, 0.4],
                                                   [0.1, 0.4, 0.1, 0.4],
-                                                  [1.0, 0.0, 0.0, 0.0]])
+                                                  [0.95, 0.05, 0.05, 0.05]])
 
         mixture = BernoulliMixture(number_of_components, number_of_dimensions,
                                    sample_mixing_coefficients, sample_emission_probabilities)
@@ -389,7 +389,7 @@ class TestFit(unittest.TestCase):
         sample_mixing_coefficients = np.array([0.5, 0.4, 0.1])
         sample_emission_probabilities = np.array([[0.1, 0.2, 0.3, 0.4],
                                                   [0.1, 0.4, 0.1, 0.4],
-                                                  [1.0, 0.0, 0.0, 0.0]])
+                                                  [0.95, 0.05, 0.05, 0.05]])
 
         mixture = BernoulliMixture(number_of_components, number_of_dimensions,
                                    sample_mixing_coefficients, sample_emission_probabilities)
@@ -402,26 +402,38 @@ class TestFit(unittest.TestCase):
 
     def test_posterior_probability_given_support_is_computed_correctly(self):
 
-        sample_support = np.array([[0.3271028, 0.6728972, 0.],
-                                   [0.65217391, 0.34782609, 0.]])
+        sample_support = np.array([[0.0042, 0.00864, 0.00428687],
+                                   [0.0378, 0.07776, 0.00022563],
+                                   [0.0042, 0.00864, 0.00428687],
+                                   [0.0378, 0.07776, 0.00022563],
+                                   [0.1512, 0.11664, 0.00428688],
+                                   [0.0042, 0.00864, 0.00428687]])
 
-        expected_z_star = np.empty([2, 3])
-        expected_z_star[0] = sample_support[0] / np.sum(sample_support[0])
-        expected_z_star[1] = sample_support[1] / np.sum(sample_support[1])
+        expected_z_star = np.empty([6, 3])
+        for i in range(len(sample_support)):
+            expected_z_star[i] = sample_support[i] / np.sum(sample_support[i])
 
         actual_z_star = BernoulliMixture._posterior_probability_of_class_given_support(sample_support)
 
         assert_array_almost_equal(expected_z_star, actual_z_star)
 
     def test_z_step_computes_correct_parameters(self):
-        sample_z_star = np.array([[0.3271028, 0.6728972, 0.],
-                                  [0.65217391, 0.34782609, 0.]])
+        sample_z_star = np.array([[0.24522862, 0.50447031, 0.25030106],
+                                  [0.3264654, 0.67158596, 0.00194864],
+                                  [0.24522862, 0.50447031, 0.25030106],
+                                  [0.3264654, 0.67158596, 0.00194864],
+                                  [0.55562318, 0.4286236, 0.01575322],
+                                  [0.24522862, 0.50447031, 0.25030106]])
 
         sample_dataset = np.array([[True, True, False, False],
-                                   [True, True, True, True]])
+                                   [False, True, False, False],
+                                   [True, True, False, False],
+                                   [False, True, False, False],
+                                   [False, False, False, False],
+                                   [True, True, False, False]])
 
         N, D = sample_dataset.shape
-        __, K =  sample_z_star.shape
+        __, K = sample_z_star.shape
 
         u = np.sum(sample_z_star, axis=0)
 
@@ -476,7 +488,11 @@ class TestPenalisedLikelihood(unittest.TestCase):
                                    sample_mixing_coefficients, sample_emission_probabilities)
 
         dataset = np.array([[True, True, False, False],
-                            [False, False, True, True]])
+                            [False, True, False, False],
+                            [True, True, False, False],
+                            [False, True, False, False],
+                            [False, False, False, False],
+                            [True, True, False, False]])
 
         log_likelihood = mixture.log_likelihood(dataset)
         number_of_free_parameters = mixture.number_of_free_parameters
@@ -500,7 +516,11 @@ class TestPenalisedLikelihood(unittest.TestCase):
                                    sample_mixing_coefficients, sample_emission_probabilities)
 
         dataset = np.array([[True, True, False, False],
-                            [False, False, True, True]])
+                            [False, True, False, False],
+                            [True, True, False, False],
+                            [False, True, False, False],
+                            [False, False, False, False],
+                            [True, True, False, False]])
 
         log_likelihood = mixture.log_likelihood(dataset)
         number_of_free_parameters = mixture.number_of_free_parameters
@@ -526,7 +546,11 @@ class TestAssignment(unittest.TestCase):
                                    sample_mixing_coefficients, sample_emission_probabilities)
 
         dataset = np.array([[True, True, False, False],
-                            [False, False, True, True]])
+                            [False, True, False, False],
+                            [True, True, False, False],
+                            [False, True, False, False],
+                            [False, False, False, False],
+                            [True, True, False, False]])
 
         N = len(dataset)
 
@@ -538,7 +562,6 @@ class TestAssignment(unittest.TestCase):
                 prob = sample_mixing_coefficients[k]
                 prob *= np.product(np.power(sample_emission_probabilities[k], dataset[n]) *
                                    np.power(1 - sample_emission_probabilities[k], 1 - dataset[n]))
-
 
                 expected_assignments[n, k] = prob
 
@@ -564,7 +587,11 @@ class TestAssignment(unittest.TestCase):
                                    sample_mixing_coefficients, sample_emission_probabilities)
 
         dataset = np.array([[True, True, False, False],
-                            [False, False, True, True]])
+                            [False, True, False, False],
+                            [True, True, False, False],
+                            [False, True, False, False],
+                            [False, False, False, False],
+                            [True, True, False, False]])
 
         N = len(dataset)
 
