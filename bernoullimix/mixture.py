@@ -269,7 +269,7 @@ class BernoulliMixture(object):
         while iterations_remaining is None or iterations_remaining > 0:
             unique_support = self._observation_emission_support(unique_dataset)
 
-            current_log_likelihood = self._log_likelihood_from_support(unique_dataset, counts)
+            current_log_likelihood = self._log_likelihood_from_support(unique_support, counts)
             if previous_log_likelihood is not None \
                 and np.abs(current_log_likelihood - previous_log_likelihood) < convergence_threshold:
                 converged = True
