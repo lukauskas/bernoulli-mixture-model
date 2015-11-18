@@ -8,6 +8,15 @@ from bernoullimix.mixture import BernoulliMixture
 
 
 def _adjust_probabilities(unadjusted_array, epsilon, domain=(0, 1)):
+    """
+    Adjusts the values in an array that are all in the specified `domain`
+    to be within the domain [`epsilon`, `1-epsilon`].
+
+    :param unadjusted_array:
+    :param epsilon:
+    :param domain:
+    :return:
+    """
 
     if domain[1] <= domain[0]:
         raise ValueError('Incorrect domain specified, expecting domain[0] < domain[1]')
@@ -24,6 +33,33 @@ def _adjust_probabilities(unadjusted_array, epsilon, domain=(0, 1)):
     adjust = np.vectorize(_adjust)
 
     return adjust(unadjusted_array)
+
+
+def _expected_domain(range_a, range_b, alpha):
+    """
+    Computes the expected domain for the weighted of two ranges as follows:
+
+        `alpha * A + (1-alpha) B`
+    where  `range_a` and `range_b` are the possible ranges for components A and B
+
+    :param range_a: range for component A
+    :param range_b: range for component B
+    :param alpha: mixing parameter
+    :return: a tuple of min and max values for the sum domain.
+    """
+    range_a = np.asarray(range_a)
+    range_b = np.asarray(range_b)
+
+    if len(range_a) != 2 or len(range_b) != 2:
+        raise ValueError('Ranges provided should be of length 2')
+
+    if range_a[0] > range_a[1] or range_b[0] > range_b[1]:
+        raise ValueError('Invalid ranges provided. First value should be lower than the second')
+
+    if not (0 <= alpha <= 1):
+        raise ValueError('Expecting alpha to be between 0 and 1, got: {!r}'.format(alpha))
+
+    return tuple(range_a * alpha + range_b * (1-alpha))
 
 
 def random_mixture_generator(number_of_components,
