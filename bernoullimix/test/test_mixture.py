@@ -359,7 +359,11 @@ class TestLogLikelihood(unittest.TestCase):
                                    sample_mixing_coefficients, sample_emission_probabilities)
 
         sample_dataset = np.array([[True, True, False, False],
-                                   [False, True, False, False]])
+                                   [False, True, False, False],
+                                   [True, True, False, False],
+                                   [False, True, False, False],
+                                   [False, False, False, False],
+                                   [True, True, False, False]])
 
         support = mixture._observation_emission_support(sample_dataset)
 
