@@ -132,7 +132,7 @@ class TestRandomNumberGeneration(unittest.TestCase):
     def test_random_number_generator_produces_numbers_within_correct_domain(self):
 
         domain_a = (17.0, 130.0)
-        domain_b = (-4.0, -5)
+        domain_b = (-5.0, -4)
 
         random = np.random.RandomState(12345)
 
@@ -153,7 +153,7 @@ class TestRandomNumberGeneration(unittest.TestCase):
 
     def test_random_number_generator_samples_numbers_within_whole_domain(self):
 
-        linspace = np.linspace(-10, 10, 10)
+        linspace = np.linspace(-1, 1, 10)
         complete_domain = linspace[0], linspace[-1]
 
         subdomains = zip(linspace, linspace[1:])

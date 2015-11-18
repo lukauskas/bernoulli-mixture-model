@@ -71,8 +71,17 @@ def _random_numbers_within_domain(random, domain, shape):
     :param shape: shape of array to produce
     :return:
     """
-    return random.randn(*shape)
 
+    # Generates numbers between 0 and 1
+    random_numbers = random.rand(*shape)
+
+    domain_width = domain[1] - domain[0]
+
+    # Shift the random numbers to be within correct domain
+    random_numbers *= domain_width
+    random_numbers += domain[0]
+
+    return random_numbers
 
 def random_mixture_generator(number_of_components,
                              dataset,
