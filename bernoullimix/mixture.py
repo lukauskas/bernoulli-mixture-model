@@ -7,8 +7,29 @@ import numpy as np
 from bernoullimix._bernoulli import bernoulli_prob_for_observations, maximise_emissions
 
 
-class BernoulliMixture(object):
+class ConvergenceStatus(object):
 
+    converged = None
+    number_of_iterations = None
+    likelihood_trace = None
+
+    def __init__(self, converged, number_of_iterations, likelihood_trace=None):
+        self.converged = converged
+        self.number_of_iterations = number_of_iterations
+        self.likelihood_trace = likelihood_trace
+
+    @property
+    def trace_available(self):
+        return self.likelihood_trace is not None
+
+    def __repr__(self):
+        converged_text = 'converged' if self.converged else 'did not converge'
+        trace_text = ' (trace available)' if self.trace_available else ''
+        return '<{} in {:,} iterations{}>'.format(converged_text, self.number_of_iterations,
+                                                  trace_text)
+
+
+class BernoulliMixture(object):
     _number_of_components = None
     _number_of_dimensions = None
 
@@ -247,8 +268,8 @@ class BernoulliMixture(object):
         :param dataset: dataset to fit to
         :param iteration_limit: number of iterations to search. If none, will run till convergence
         :param convergence_threshold: threshold (for log likelihood) that marks convergence
-        :return: (float,bool) : log likelihood of the dataset post fitting, whether the algorigthm
-            converged
+        :return: (float, `ConvergenceStatus`) : log likelihood of the dataset post fitting,
+            and the information about convergence of the algorithm
         """
 
         dataset = np.asarray(dataset, dtype=bool)
@@ -261,12 +282,14 @@ class BernoulliMixture(object):
         # Get only unique rows and their counts
         unique_dataset, counts = self._aggregate_dataset(dataset)
 
+        iterations_done = 0
+
         iterations_remaining = iteration_limit
 
         previous_log_likelihood, current_log_likelihood = None, None
 
         converged = False
-        while iterations_remaining is None or iterations_remaining > 0:
+        while iteration_limit is None or iterations_done < iteration_limit:
             unique_support = self._observation_emission_support(unique_dataset)
 
             current_log_likelihood = self._log_likelihood_from_support(unique_support, counts)
@@ -284,10 +307,11 @@ class BernoulliMixture(object):
 
             previous_log_likelihood = current_log_likelihood
 
-            if iterations_remaining is not None:
-                iterations_remaining -= 1
+            iterations_done += 1
 
-        return current_log_likelihood, converged
+        convergence_status = ConvergenceStatus(converged, iterations_done)
+
+        return current_log_likelihood, convergence_status
 
     def soft_assignment(self, dataset):
         """

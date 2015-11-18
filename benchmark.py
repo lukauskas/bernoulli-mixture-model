@@ -30,7 +30,7 @@ def main(max_iter):
     log_likelihood, converged = random_bernoulli.fit(sample, iteration_limit=max_iter)
 
     print('Log Likelihood: ', log_likelihood)
-    print('converged' if converged else 'did not converge')
+    print(converged)
 
 
 if __name__ == '__main__':
