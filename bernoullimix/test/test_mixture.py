@@ -319,7 +319,11 @@ class TestLogLikelihood(unittest.TestCase):
                                    sample_mixing_coefficients, sample_emission_probabilities)
 
         sample_dataset = np.array([[True, True, False, False],
-                                   [False, True, False, False]])
+                                   [False, True, False, False],
+                                   [True, True, False, False],
+                                   [False, True, False, False],
+                                   [False, False, False, False],
+                                   [True, True, False, False]])
 
         expected_answer = np.empty((len(sample_dataset), number_of_components))
 
