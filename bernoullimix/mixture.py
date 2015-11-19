@@ -122,6 +122,9 @@ class BernoulliMixture(object):
         """
         # based on http://stackoverflow.com/a/16971224/171400
 
+        # This is required to work with pandas DataFrames sometimes
+        dataset = np.ascontiguousarray(dataset)
+
         rows, columns = dataset.shape
 
         structured = dataset.view(dataset.dtype.descr * columns)
