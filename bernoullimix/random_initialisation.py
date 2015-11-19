@@ -114,7 +114,7 @@ def random_mixture_generator(number_of_components,
 
     mixing_coefficients = np.repeat(1/number_of_components, number_of_components)
 
-    random_domain = (-1, 1)
+    random_domain = (0, 1)
     dataset_domain = (0, 1)
 
     expected_domain = _expected_domain(random_domain,
