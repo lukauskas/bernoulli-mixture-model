@@ -423,6 +423,49 @@ class TestFit(unittest.TestCase):
 
         assert_array_almost_equal(expected_z_star, actual_z_star)
 
+    def test_z_star_values_always_sum_to_one(self):
+        """
+        Z-star values must always sum to one
+        """
+
+        raise unittest.SkipTest('Not sure if this is an issue yet '
+                                'as the differences are within the eps tolerance')
+        # These come from actual datasets where z_star generated did not have sum to one
+        suspicious_support = np.array([
+                                       # Rows below used to sum to >1
+                                       [1.53612947e-04, 9.88770995e-09, 7.31954865e-08,
+                                        3.68751524e-12],
+                                       [1.87860595e-08, 7.52234428e-10, 5.20148206e-08,
+                                        6.21544388e-15],
+                                       [3.19482931e-06, 8.96332090e-11, 6.21308954e-09,
+                                        8.57877361e-15],
+                                       [5.58900957e-24, 7.89065644e-09, 5.01641557e-20,
+                                        0.00000000e+00],
+                                       [1.20063058e-18, 2.99752427e-08, 4.05523428e-15,
+                                        0.00000000e+00],
+                                       [3.22436625e-22, 1.70696284e-08, 2.83703853e-21,
+                                        0.00000000e+00],
+                                       # Rows below used to sum to <1:
+                                       [4.48894642e-07, 1.25938281e-09, 4.89169020e-11,
+                                        1.33770571e-14],
+                                       [3.26362569e-06, 1.31062689e-09, 5.37580436e-07,
+                                        9.38841678e-14],
+                                       [3.58296743e-06, 2.24325747e-11, 6.55336297e-09,
+                                        1.59294917e-14],
+                                       [5.28134593e-24, 7.78303030e-11, 6.02972119e-29,
+                                        0.00000000e+00],
+                                       [2.24817618e-23, 7.34013933e-12, 2.76654735e-32,
+                                        0.00000000e+00],
+                                       [2.55102334e-31, 7.17632935e-16, 1.30407144e-42,
+                                        0.00000000e+00]
+                                    ])
+
+        z_star = BernoulliMixture._posterior_probability_of_class_given_support(suspicious_support)
+        z_star_sums = np.sum(z_star, axis=1)
+
+        for sum_ in z_star_sums:
+            self.assertEqual(sum_, 1.0)
+
     def test_z_step_computes_correct_parameters(self):
         sample_z_star = np.array([[0.24522862, 0.50447031, 0.25030106],
                                   [0.3264654, 0.67158596, 0.00194864],
@@ -482,6 +525,85 @@ class TestFit(unittest.TestCase):
         assert_array_almost_equal(expected_mixing_coefficients, mixing_coefficients)
         assert_array_almost_equal(expected_emission_probabilities, emission_probabilities)
 
+    def test_m_step_error_for_large_datasets(self):
+        """
+        This tests that the error (due to floating point, probably)
+        does not accumulate over a large N
+        :return:
+        """
+
+        def random_zstar(shape, random):
+            zstar = random.rand(*shape)
+            normalise = lambda x: x / x.sum()
+            zstar = np.apply_along_axis(normalise, 1, zstar)
+            return zstar
+
+        def random_dataset(shape, random):
+            dataset = np.asarray(random.randint(2, size=shape), dtype=bool)
+            return BernoulliMixture._aggregate_dataset(dataset)
+
+        def random_zstar_and_dataset(N, D, K, random_state):
+            random = np.random.RandomState(random_state)
+            rd, rw = random_dataset((N, D), random)
+            rz = random_zstar((rd.shape[0], K), random)
+            return rd, rw, rz
+
+        N, D, K = 44001, 20, 4
+
+        unique_dataset, unique_counts, unique_zstar = random_zstar_and_dataset(N, D, K,
+                                                                               random_state=100)
+
+        u = np.sum((unique_zstar.T * unique_counts), axis=1)
+        vs = np.empty((K, unique_dataset.shape[1]))
+
+        for k in range(K):
+            v_k = np.sum(unique_dataset.T * unique_counts * unique_zstar[:, k], axis=1)
+            vs[k] = v_k / u[k]
+
+        expected_u = u / np.sum(u)
+        expected_v = vs
+
+        actual_u, actual_v = BernoulliMixture._m_step(unique_zstar, unique_dataset, unique_counts)
+
+        assert_array_almost_equal(expected_u, actual_u)
+        assert_array_almost_equal(expected_v, actual_v)
+
+    def test_m_step_produces_probabilities_in_correct_range_for_repeating_datasets(self):
+        unique_dataset = np.array([[True, False, True, True],
+                            [True, False, False, True],
+                            [True, False, True, False],
+                            [True, False, False, False]])
+
+        unique_counts = np.array([4, 3, 2, 1])
+
+        # This was randomly generated, any z-star should work
+        unique_zstar = np.array([[0.25986956, 0.13312306, 0.20301472, 0.40399265],
+                                 [0.00290769, 0.07490904, 0.41330538, 0.5088779],
+                                 [0.07543165, 0.31732369, 0.49181159, 0.11543307],
+                                 [0.12421243, 0.07263738, 0.14724773, 0.65590246]])
+        K=4
+
+        u = np.sum((unique_zstar.T * unique_counts), axis=1)
+        vs = np.empty((K, unique_dataset.shape[1]))
+
+        for k in range(K):
+            v_k = np.sum(unique_dataset.T * unique_counts * unique_zstar[:, k], axis=1)
+            vs[k] = v_k / u[k]
+
+        expected_u = u / np.sum(u)
+        expected_v = vs
+
+        actual_u, actual_v = BernoulliMixture._m_step(unique_zstar, unique_dataset, unique_counts)
+
+        assert np.all((expected_v <= 1) & (expected_v >= 0))  # for the sake of sanity...
+
+        # Actual test
+        self.assertTrue(np.all(actual_v <= 1),
+                        'Some values returned are >1: {!r}'.format(actual_v[actual_v > 1])
+                        )
+        self.assertTrue(np.all(actual_v >= 0),
+                        'Some values returned are <0: {!r}'.format(actual_v[actual_v < 0])
+                        )
 
     def test_dataset_aggregation(self):
         """
