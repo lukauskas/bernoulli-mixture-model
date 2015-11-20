@@ -6,6 +6,8 @@ import numpy as np
 
 from bernoullimix._bernoulli import bernoulli_prob_for_observations, maximise_emissions
 
+_EPSILON = np.finfo(np.float).eps
+
 
 class ConvergenceStatus(object):
 
@@ -263,7 +265,7 @@ class BernoulliMixture(object):
 
         return u / sum_of_weights, vs
 
-    def fit(self, dataset, iteration_limit=1000, convergence_threshold=1e-6,
+    def fit(self, dataset, iteration_limit=1000, convergence_threshold=_EPSILON,
             trace_likelihood=False):
         """
         Fits the mixture model to the dataset using EM algorithm.
