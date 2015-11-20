@@ -252,7 +252,7 @@ class BernoulliMixture(object):
     def _m_step(cls, unique_zstar, unique_dataset, weights):
 
         u = np.sum(unique_zstar.T * weights, axis=1)
-        sum_of_weights = np.sum(weights)
+        sum_of_weights = np.sum(u)
 
         N, K = unique_zstar.shape
 
@@ -261,7 +261,7 @@ class BernoulliMixture(object):
         for k in range(K):
             vs[k] /= u[k]
 
-        return u / np.sum(u), vs
+        return u / sum_of_weights, vs
 
     def fit(self, dataset, iteration_limit=1000, convergence_threshold=1e-6,
             trace_likelihood=False):
