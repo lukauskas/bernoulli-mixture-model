@@ -55,9 +55,10 @@ def maximise_emissions(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
     cdef int k;
     cdef int d;
 
-    cdef float v_kd;
+    cdef np.float_t v_kd;
 
-    v = np.empty((K, D))
+    cdef np.ndarray[np.float_t, ndim=2] v = np.empty((K, D), dtype=np.float)
+
     for k in range(K):
         for d in range(D):
             v_kd = 0

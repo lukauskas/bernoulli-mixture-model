@@ -261,7 +261,7 @@ class BernoulliMixture(object):
         for k in range(K):
             vs[k] /= u[k]
 
-        return u / sum_of_weights, vs
+        return u / np.sum(u), vs
 
     def fit(self, dataset, iteration_limit=1000, convergence_threshold=1e-6,
             trace_likelihood=False):
