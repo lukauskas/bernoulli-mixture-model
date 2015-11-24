@@ -308,6 +308,12 @@ class BernoulliMixture(object):
         :return: (float, `ConvergenceStatus`) : log likelihood of the dataset post fitting,
             and the information about convergence of the algorithm
         """
+
+        unique_dataset = np.asarray(unique_dataset)
+        counts = np.asarray(counts)
+
+        assert unique_dataset.shape[0] == counts.shape[0]
+
         mixing_coefficients, emission_probabilities, \
         converged, current_log_likelihood, iterations_done, likelihood_trace = self._em(
             unique_dataset, counts, iteration_limit, convergence_threshold, trace_likelihood)
