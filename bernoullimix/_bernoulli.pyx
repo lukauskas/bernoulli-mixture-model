@@ -56,7 +56,7 @@ def observation_emission_support_c(
 
     cdef np.ndarray[np.float_t, ndim=2] answer
 
-    answer = np.empty((N, K), dtype=np.float)
+    answer = np.empty((N, K), dtype=np.float, order='F')
 
     cdef int component
 
