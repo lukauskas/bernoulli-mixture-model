@@ -93,3 +93,71 @@ def maximise_emissions(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
                 v[k, d] += unique_dataset[n, d] * unique_zstar[n, k] * weights[n]
 
     return v
+
+@cython.inline
+cpdef _log_likelihood_from_support(np.ndarray[np.float_t, ndim=2] support,
+                                   np.ndarray[np.int64_t, ndim=1] weights):
+
+    return np.sum(np.log(np.sum(support, axis=1)) * weights)
+
+
+@cython.inline
+cpdef _posterior_probability_of_class_given_support(support):
+    return (support.T / np.sum(support, axis=1)).T
+
+cpdef _m_step(unique_zstar, unique_dataset, weights):
+    u = np.sum(unique_zstar.T * weights, axis=1)
+    sum_of_weights = np.sum(u)
+
+    N, K = unique_zstar.shape
+
+    vs = maximise_emissions(unique_dataset, unique_zstar, weights)
+
+    for k in range(K):
+        vs[k] /= u[k]
+
+    return u / sum_of_weights, vs
+
+def _em(unique_dataset, counts,
+        mixing_coefficients, emission_probabilities,
+        iteration_limit, convergence_threshold, trace_likelihood):
+
+    iterations_done = 0
+    previous_log_likelihood, current_log_likelihood = None, None
+    if trace_likelihood:
+        likelihood_trace = []
+    else:
+        likelihood_trace = None
+
+    converged = False
+    while iteration_limit is None or iterations_done < iteration_limit:
+
+        unique_support = observation_emission_support_c(unique_dataset,
+                                                        emission_probabilities,
+                                                        mixing_coefficients)
+
+        current_log_likelihood = _log_likelihood_from_support(unique_support, counts)
+        if previous_log_likelihood is not None \
+                and np.isclose(current_log_likelihood, previous_log_likelihood,
+                               rtol=0, atol=convergence_threshold):
+            converged = True
+            break
+
+        unique_z_star = _posterior_probability_of_class_given_support(unique_support)
+
+        pi, e = _m_step(unique_z_star, unique_dataset, counts)
+
+        mixing_coefficients = pi
+        emission_probabilities = e
+
+        if trace_likelihood:
+            likelihood_trace.append(current_log_likelihood)
+
+        previous_log_likelihood = current_log_likelihood
+
+        iterations_done += 1
+
+    if trace_likelihood:
+        likelihood_trace = np.array(likelihood_trace)
+
+    return converged, current_log_likelihood, iterations_done, likelihood_trace

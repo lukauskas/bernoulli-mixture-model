@@ -4,7 +4,8 @@ from __future__ import print_function
 from __future__ import unicode_literals
 import numpy as np
 
-from bernoullimix._bernoulli import observation_emission_support_c, maximise_emissions
+from bernoullimix._bernoulli import observation_emission_support_c, maximise_emissions, \
+    _log_likelihood_from_support, _posterior_probability_of_class_given_support, _m_step, _em
 
 _EPSILON = np.finfo(np.float).eps
 
@@ -222,7 +223,7 @@ class BernoulliMixture(object):
         :param weights: weights for each support row (i.e. how many rows does it represent)
         :return:
         """
-        return np.sum(np.log(np.sum(support, axis=1)) * weights)
+        return _log_likelihood_from_support(support, weights)
 
     def _observation_emission_support(self, observations):
         """
@@ -239,23 +240,12 @@ class BernoulliMixture(object):
 
     @classmethod
     def _posterior_probability_of_class_given_support(cls, support):
-        return (support.T / np.sum(support, axis=1)).T
+        return _posterior_probability_of_class_given_support(support)
 
 
     @classmethod
     def _m_step(cls, unique_zstar, unique_dataset, weights):
-
-        u = np.sum(unique_zstar.T * weights, axis=1)
-        sum_of_weights = np.sum(u)
-
-        N, K = unique_zstar.shape
-
-        vs = maximise_emissions(unique_dataset, unique_zstar, weights)
-
-        for k in range(K):
-            vs[k] /= u[k]
-
-        return u / sum_of_weights, vs
+        return _m_step(unique_zstar, unique_dataset, weights)
 
     def fit(self, dataset, iteration_limit=1000, convergence_threshold=_EPSILON,
             trace_likelihood=False):
@@ -289,42 +279,9 @@ class BernoulliMixture(object):
         return current_log_likelihood, convergence_status
 
     def _em(self, unique_dataset, counts, iteration_limit, convergence_threshold, trace_likelihood):
-        iterations_done = 0
-        previous_log_likelihood, current_log_likelihood = None, None
-        if trace_likelihood:
-            likelihood_trace = []
-        else:
-            likelihood_trace = None
-
-        converged = False
-        while iteration_limit is None or iterations_done < iteration_limit:
-            unique_support = self._observation_emission_support(unique_dataset)
-
-            current_log_likelihood = self._log_likelihood_from_support(unique_support, counts)
-            if previous_log_likelihood is not None \
-                    and np.isclose(current_log_likelihood, previous_log_likelihood,
-                                   rtol=0, atol=convergence_threshold):
-                converged = True
-                break
-
-            unique_z_star = self._posterior_probability_of_class_given_support(unique_support)
-
-            pi, e = self._m_step(unique_z_star, unique_dataset, counts)
-
-            self._mixing_coefficients = pi
-            self._emission_probabilities = e
-
-            if trace_likelihood:
-                likelihood_trace.append(current_log_likelihood)
-
-            previous_log_likelihood = current_log_likelihood
-
-            iterations_done += 1
-
-        if trace_likelihood:
-            likelihood_trace = np.array(likelihood_trace)
-            
-        return converged, current_log_likelihood, iterations_done, likelihood_trace
+        return _em(unique_dataset, counts,
+                   self.mixing_coefficients, self.emission_probabilities,
+                   iteration_limit, convergence_threshold, trace_likelihood)
 
     def soft_assignment(self, dataset):
         """

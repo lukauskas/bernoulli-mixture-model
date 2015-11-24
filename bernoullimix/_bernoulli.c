@@ -942,11 +942,41 @@ static CYTHON_INLINE PyObject *__Pyx_GetItemInt_Generic(PyObject *o, PyObject* j
 static CYTHON_INLINE PyObject *__Pyx_GetItemInt_Fast(PyObject *o, Py_ssize_t i,
                                                      int is_list, int wraparound, int boundscheck);
 
-static void __Pyx_Raise(PyObject *type, PyObject *value, PyObject *tb, PyObject *cause);
+#if CYTHON_COMPILING_IN_CPYTHON
+static CYTHON_INLINE PyObject* __Pyx_PyObject_CallMethO(PyObject *func, PyObject *arg);
+#endif
+
+static CYTHON_INLINE PyObject* __Pyx_PyObject_CallOneArg(PyObject *func, PyObject *arg);
 
 static CYTHON_INLINE void __Pyx_RaiseTooManyValuesError(Py_ssize_t expected);
 
 static CYTHON_INLINE void __Pyx_RaiseNeedMoreValuesError(Py_ssize_t index);
+
+static CYTHON_INLINE int __Pyx_IterFinish(void);
+
+static int __Pyx_IternextUnpackEndCheck(PyObject *retval, Py_ssize_t expected);
+
+#if CYTHON_COMPILING_IN_CPYTHON
+static CYTHON_INLINE int __Pyx_PyList_Append(PyObject* list, PyObject* x) {
+    PyListObject* L = (PyListObject*) list;
+    Py_ssize_t len = Py_SIZE(list);
+    if (likely(L->allocated > len) & likely(len > (L->allocated >> 1))) {
+        Py_INCREF(x);
+        PyList_SET_ITEM(list, len, x);
+        Py_SIZE(list) = len+1;
+        return 0;
+    }
+    return PyList_Append(list, x);
+}
+#else
+#define __Pyx_PyList_Append(L,x) PyList_Append(L,x)
+#endif
+
+static PyObject* __Pyx_PyObject_CallMethod1(PyObject* obj, PyObject* method_name, PyObject* arg);
+
+static CYTHON_INLINE int __Pyx_PyObject_Append(PyObject* L, PyObject* x);
+
+static void __Pyx_Raise(PyObject *type, PyObject *value, PyObject *tb, PyObject *cause);
 
 static CYTHON_INLINE void __Pyx_RaiseNoneNotIterableError(void);
 
@@ -1148,6 +1178,9 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *, cha
 
 /* Module declarations from 'bernoullimix._bernoulli' */
 static PyObject *__pyx_f_12bernoullimix_10_bernoulli_bernoulli_prob_for_observations(PyArrayObject *, PyArrayObject *, int __pyx_skip_dispatch); /*proto*/
+static PyObject *__pyx_f_12bernoullimix_10_bernoulli__log_likelihood_from_support(PyArrayObject *, PyArrayObject *, int __pyx_skip_dispatch); /*proto*/
+static PyObject *__pyx_f_12bernoullimix_10_bernoulli__posterior_probability_of_class_given_support(PyObject *, int __pyx_skip_dispatch); /*proto*/
+static PyObject *__pyx_f_12bernoullimix_10_bernoulli__m_step(PyObject *, PyObject *, PyObject *, int __pyx_skip_dispatch); /*proto*/
 static __Pyx_TypeInfo __Pyx_TypeInfo_nn___pyx_t_5numpy_float_t = { "float_t", NULL, sizeof(__pyx_t_5numpy_float_t), { 0 }, 0, 'R', 0, 0 };
 static __Pyx_TypeInfo __Pyx_TypeInfo_nn___pyx_t_5numpy_uint8_t = { "uint8_t", NULL, sizeof(__pyx_t_5numpy_uint8_t), { 0 }, 0, IS_UNSIGNED(__pyx_t_5numpy_uint8_t) ? 'U' : 'I', IS_UNSIGNED(__pyx_t_5numpy_uint8_t), 0 };
 static __Pyx_TypeInfo __Pyx_TypeInfo_nn___pyx_t_5numpy_int64_t = { "int64_t", NULL, sizeof(__pyx_t_5numpy_int64_t), { 0 }, 0, IS_UNSIGNED(__pyx_t_5numpy_int64_t) ? 'U' : 'I', IS_UNSIGNED(__pyx_t_5numpy_int64_t), 0 };
@@ -1161,6 +1194,10 @@ static PyObject *__pyx_builtin_RuntimeError;
 static PyObject *__pyx_pf_12bernoullimix_10_bernoulli_bernoulli_prob_for_observations(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_p, PyArrayObject *__pyx_v_observations); /* proto */
 static PyObject *__pyx_pf_12bernoullimix_10_bernoulli_2observation_emission_support_c(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_observations, PyArrayObject *__pyx_v_emission_probabilities, PyArrayObject *__pyx_v_mixing_coefficients); /* proto */
 static PyObject *__pyx_pf_12bernoullimix_10_bernoulli_4maximise_emissions(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_unique_dataset, PyArrayObject *__pyx_v_unique_zstar, PyArrayObject *__pyx_v_weights); /* proto */
+static PyObject *__pyx_pf_12bernoullimix_10_bernoulli_6_log_likelihood_from_support(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_support, PyArrayObject *__pyx_v_weights); /* proto */
+static PyObject *__pyx_pf_12bernoullimix_10_bernoulli_8_posterior_probability_of_class_given_support(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_support); /* proto */
+static PyObject *__pyx_pf_12bernoullimix_10_bernoulli_10_m_step(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_unique_zstar, PyObject *__pyx_v_unique_dataset, PyObject *__pyx_v_weights); /* proto */
+static PyObject *__pyx_pf_12bernoullimix_10_bernoulli_12_em(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_unique_dataset, PyObject *__pyx_v_counts, PyObject *__pyx_v_mixing_coefficients, PyObject *__pyx_v_emission_probabilities, PyObject *__pyx_v_iteration_limit, PyObject *__pyx_v_convergence_threshold, PyObject *__pyx_v_trace_likelihood); /* proto */
 static int __pyx_pf_5numpy_7ndarray___getbuffer__(PyArrayObject *__pyx_v_self, Py_buffer *__pyx_v_info, int __pyx_v_flags); /* proto */
 static void __pyx_pf_5numpy_7ndarray_2__releasebuffer__(PyArrayObject *__pyx_v_self, Py_buffer *__pyx_v_info); /* proto */
 static char __pyx_k_B[] = "B";
@@ -1173,8 +1210,10 @@ static char __pyx_k_L[] = "L";
 static char __pyx_k_N[] = "N";
 static char __pyx_k_O[] = "O";
 static char __pyx_k_Q[] = "Q";
+static char __pyx_k_T[] = "T";
 static char __pyx_k_b[] = "b";
 static char __pyx_k_d[] = "d";
+static char __pyx_k_e[] = "e";
 static char __pyx_k_f[] = "f";
 static char __pyx_k_g[] = "g";
 static char __pyx_k_h[] = "h";
@@ -1188,30 +1227,53 @@ static char __pyx_k_v[] = "v";
 static char __pyx_k_Zd[] = "Zd";
 static char __pyx_k_Zf[] = "Zf";
 static char __pyx_k_Zg[] = "Zg";
+static char __pyx_k_em[] = "_em";
 static char __pyx_k_np[] = "np";
+static char __pyx_k_pi[] = "pi";
+static char __pyx_k_log[] = "log";
+static char __pyx_k_sum[] = "sum";
+static char __pyx_k_atol[] = "atol";
+static char __pyx_k_axis[] = "axis";
 static char __pyx_k_main[] = "__main__";
+static char __pyx_k_rtol[] = "rtol";
 static char __pyx_k_test[] = "__test__";
 static char __pyx_k_v_kd[] = "v_kd";
+static char __pyx_k_array[] = "array";
 static char __pyx_k_dtype[] = "dtype";
 static char __pyx_k_empty[] = "empty";
 static char __pyx_k_float[] = "float";
 static char __pyx_k_numpy[] = "numpy";
 static char __pyx_k_order[] = "order";
 static char __pyx_k_range[] = "range";
+static char __pyx_k_shape[] = "shape";
 static char __pyx_k_zeros[] = "zeros";
 static char __pyx_k_answer[] = "answer";
+static char __pyx_k_append[] = "append";
+static char __pyx_k_counts[] = "counts";
 static char __pyx_k_import[] = "__import__";
+static char __pyx_k_isclose[] = "isclose";
+static char __pyx_k_support[] = "support";
 static char __pyx_k_weights[] = "weights";
 static char __pyx_k_component[] = "component";
+static char __pyx_k_converged[] = "converged";
 static char __pyx_k_ValueError[] = "ValueError";
 static char __pyx_k_RuntimeError[] = "RuntimeError";
 static char __pyx_k_observations[] = "observations";
 static char __pyx_k_unique_zstar[] = "unique_zstar";
+static char __pyx_k_unique_z_star[] = "unique_z_star";
 static char __pyx_k_unique_dataset[] = "unique_dataset";
+static char __pyx_k_unique_support[] = "unique_support";
+static char __pyx_k_iteration_limit[] = "iteration_limit";
+static char __pyx_k_iterations_done[] = "iterations_done";
+static char __pyx_k_likelihood_trace[] = "likelihood_trace";
+static char __pyx_k_trace_likelihood[] = "trace_likelihood";
 static char __pyx_k_maximise_emissions[] = "maximise_emissions";
 static char __pyx_k_mixing_coefficients[] = "mixing_coefficients";
+static char __pyx_k_convergence_threshold[] = "convergence_threshold";
+static char __pyx_k_current_log_likelihood[] = "current_log_likelihood";
 static char __pyx_k_emission_probabilities[] = "emission_probabilities";
 static char __pyx_k_bernoullimix__bernoulli[] = "bernoullimix._bernoulli";
+static char __pyx_k_previous_log_likelihood[] = "previous_log_likelihood";
 static char __pyx_k_component_emission_probs[] = "component_emission_probs";
 static char __pyx_k_ndarray_is_not_C_contiguous[] = "ndarray is not C contiguous";
 static char __pyx_k_observation_emission_support_c[] = "observation_emission_support_c";
@@ -1229,19 +1291,35 @@ static PyObject *__pyx_n_s_K;
 static PyObject *__pyx_n_s_N;
 static PyObject *__pyx_kp_u_Non_native_byte_order_not_suppor;
 static PyObject *__pyx_n_s_RuntimeError;
+static PyObject *__pyx_n_s_T;
 static PyObject *__pyx_n_s_ValueError;
 static PyObject *__pyx_n_s_answer;
+static PyObject *__pyx_n_s_append;
+static PyObject *__pyx_n_s_array;
+static PyObject *__pyx_n_s_atol;
+static PyObject *__pyx_n_s_axis;
 static PyObject *__pyx_n_s_bernoullimix__bernoulli;
 static PyObject *__pyx_n_s_component;
 static PyObject *__pyx_n_s_component_emission_probs;
+static PyObject *__pyx_n_s_converged;
+static PyObject *__pyx_n_s_convergence_threshold;
+static PyObject *__pyx_n_s_counts;
+static PyObject *__pyx_n_s_current_log_likelihood;
 static PyObject *__pyx_n_s_d;
 static PyObject *__pyx_n_s_dtype;
+static PyObject *__pyx_n_s_e;
+static PyObject *__pyx_n_s_em;
 static PyObject *__pyx_n_s_emission_probabilities;
 static PyObject *__pyx_n_s_empty;
 static PyObject *__pyx_n_s_float;
 static PyObject *__pyx_kp_s_home_saulius_dev_bernoulli_mixt;
 static PyObject *__pyx_n_s_import;
+static PyObject *__pyx_n_s_isclose;
+static PyObject *__pyx_n_s_iteration_limit;
+static PyObject *__pyx_n_s_iterations_done;
 static PyObject *__pyx_n_s_k;
+static PyObject *__pyx_n_s_likelihood_trace;
+static PyObject *__pyx_n_s_log;
 static PyObject *__pyx_n_s_main;
 static PyObject *__pyx_n_s_maximise_emissions;
 static PyObject *__pyx_n_s_mixing_coefficients;
@@ -1254,15 +1332,26 @@ static PyObject *__pyx_n_s_observation_emission_support_c;
 static PyObject *__pyx_n_s_observations;
 static PyObject *__pyx_n_s_order;
 static PyObject *__pyx_n_s_p;
+static PyObject *__pyx_n_s_pi;
+static PyObject *__pyx_n_s_previous_log_likelihood;
 static PyObject *__pyx_n_s_range;
+static PyObject *__pyx_n_s_rtol;
+static PyObject *__pyx_n_s_shape;
+static PyObject *__pyx_n_s_sum;
+static PyObject *__pyx_n_s_support;
 static PyObject *__pyx_n_s_test;
+static PyObject *__pyx_n_s_trace_likelihood;
 static PyObject *__pyx_n_s_unique_dataset;
+static PyObject *__pyx_n_s_unique_support;
+static PyObject *__pyx_n_s_unique_z_star;
 static PyObject *__pyx_n_s_unique_zstar;
 static PyObject *__pyx_kp_u_unknown_dtype_code_in_numpy_pxd;
 static PyObject *__pyx_n_s_v;
 static PyObject *__pyx_n_s_v_kd;
 static PyObject *__pyx_n_s_weights;
 static PyObject *__pyx_n_s_zeros;
+static PyObject *__pyx_int_0;
+static PyObject *__pyx_int_1;
 static PyObject *__pyx_slice_;
 static PyObject *__pyx_tuple__2;
 static PyObject *__pyx_tuple__3;
@@ -1272,8 +1361,10 @@ static PyObject *__pyx_tuple__6;
 static PyObject *__pyx_tuple__7;
 static PyObject *__pyx_tuple__8;
 static PyObject *__pyx_tuple__10;
+static PyObject *__pyx_tuple__12;
 static PyObject *__pyx_codeobj__9;
 static PyObject *__pyx_codeobj__11;
+static PyObject *__pyx_codeobj__13;
 
 /* "bernoullimix/_bernoulli.pyx":12
  * @cython.boundscheck(False)
@@ -2351,6 +2442,8 @@ static PyObject *__pyx_pf_12bernoullimix_10_bernoulli_4maximise_emissions(CYTHON
  *                 v[k, d] += unique_dataset[n, d] * unique_zstar[n, k] * weights[n]
  * 
  *     return v             # <<<<<<<<<<<<<<
+ * 
+ * @cython.inline
  */
   __Pyx_XDECREF(__pyx_r);
   __Pyx_INCREF(((PyObject *)__pyx_v_v));
@@ -2389,6 +2482,1535 @@ static PyObject *__pyx_pf_12bernoullimix_10_bernoulli_4maximise_emissions(CYTHON
   __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_weights.rcbuffer->pybuffer);
   __pyx_L2:;
   __Pyx_XDECREF((PyObject *)__pyx_v_v);
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_TraceReturn(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "bernoullimix/_bernoulli.pyx":98
+ * 
+ * @cython.inline
+ * cpdef _log_likelihood_from_support(np.ndarray[np.float_t, ndim=2] support,             # <<<<<<<<<<<<<<
+ *                                    np.ndarray[np.int64_t, ndim=1] weights):
+ * 
+ */
+
+static PyObject *__pyx_pw_12bernoullimix_10_bernoulli_7_log_likelihood_from_support(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_f_12bernoullimix_10_bernoulli__log_likelihood_from_support(PyArrayObject *__pyx_v_support, PyArrayObject *__pyx_v_weights, CYTHON_UNUSED int __pyx_skip_dispatch) {
+  __Pyx_LocalBuf_ND __pyx_pybuffernd_support;
+  __Pyx_Buffer __pyx_pybuffer_support;
+  __Pyx_LocalBuf_ND __pyx_pybuffernd_weights;
+  __Pyx_Buffer __pyx_pybuffer_weights;
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  PyObject *__pyx_t_2 = NULL;
+  PyObject *__pyx_t_3 = NULL;
+  PyObject *__pyx_t_4 = NULL;
+  PyObject *__pyx_t_5 = NULL;
+  PyObject *__pyx_t_6 = NULL;
+  PyObject *__pyx_t_7 = NULL;
+  PyObject *__pyx_t_8 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_TraceDeclarations
+  __Pyx_RefNannySetupContext("_log_likelihood_from_support", 0);
+  __Pyx_TraceCall("_log_likelihood_from_support", __pyx_f[0], 98);
+  __pyx_pybuffer_support.pybuffer.buf = NULL;
+  __pyx_pybuffer_support.refcount = 0;
+  __pyx_pybuffernd_support.data = NULL;
+  __pyx_pybuffernd_support.rcbuffer = &__pyx_pybuffer_support;
+  __pyx_pybuffer_weights.pybuffer.buf = NULL;
+  __pyx_pybuffer_weights.refcount = 0;
+  __pyx_pybuffernd_weights.data = NULL;
+  __pyx_pybuffernd_weights.rcbuffer = &__pyx_pybuffer_weights;
+  {
+    __Pyx_BufFmt_StackElem __pyx_stack[1];
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_support.rcbuffer->pybuffer, (PyObject*)__pyx_v_support, &__Pyx_TypeInfo_nn___pyx_t_5numpy_float_t, PyBUF_FORMAT| PyBUF_STRIDES, 2, 0, __pyx_stack) == -1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 98; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  }
+  __pyx_pybuffernd_support.diminfo[0].strides = __pyx_pybuffernd_support.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_support.diminfo[0].shape = __pyx_pybuffernd_support.rcbuffer->pybuffer.shape[0]; __pyx_pybuffernd_support.diminfo[1].strides = __pyx_pybuffernd_support.rcbuffer->pybuffer.strides[1]; __pyx_pybuffernd_support.diminfo[1].shape = __pyx_pybuffernd_support.rcbuffer->pybuffer.shape[1];
+  {
+    __Pyx_BufFmt_StackElem __pyx_stack[1];
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_weights.rcbuffer->pybuffer, (PyObject*)__pyx_v_weights, &__Pyx_TypeInfo_nn___pyx_t_5numpy_int64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 98; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  }
+  __pyx_pybuffernd_weights.diminfo[0].strides = __pyx_pybuffernd_weights.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_weights.diminfo[0].shape = __pyx_pybuffernd_weights.rcbuffer->pybuffer.shape[0];
+
+  /* "bernoullimix/_bernoulli.pyx":101
+ *                                    np.ndarray[np.int64_t, ndim=1] weights):
+ * 
+ *     return np.sum(np.log(np.sum(support, axis=1)) * weights)             # <<<<<<<<<<<<<<
+ * 
+ * 
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_2 = __Pyx_GetModuleGlobalName(__pyx_n_s_np); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 101; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_sum); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 101; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_3);
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_t_4 = __Pyx_GetModuleGlobalName(__pyx_n_s_np); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 101; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_4);
+  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_log); if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 101; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_5);
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  __pyx_t_4 = __Pyx_GetModuleGlobalName(__pyx_n_s_np); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 101; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_4);
+  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_sum); if (unlikely(!__pyx_t_6)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 101; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_6);
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  __pyx_t_4 = PyTuple_New(1); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 101; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_4);
+  __Pyx_INCREF(((PyObject *)__pyx_v_support));
+  PyTuple_SET_ITEM(__pyx_t_4, 0, ((PyObject *)__pyx_v_support));
+  __Pyx_GIVEREF(((PyObject *)__pyx_v_support));
+  __pyx_t_7 = PyDict_New(); if (unlikely(!__pyx_t_7)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 101; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_7);
+  if (PyDict_SetItem(__pyx_t_7, __pyx_n_s_axis, __pyx_int_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 101; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_8 = __Pyx_PyObject_Call(__pyx_t_6, __pyx_t_4, __pyx_t_7); if (unlikely(!__pyx_t_8)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 101; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_8);
+  __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+  __pyx_t_7 = NULL;
+  if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_5))) {
+    __pyx_t_7 = PyMethod_GET_SELF(__pyx_t_5);
+    if (likely(__pyx_t_7)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_5);
+      __Pyx_INCREF(__pyx_t_7);
+      __Pyx_INCREF(function);
+      __Pyx_DECREF_SET(__pyx_t_5, function);
+    }
+  }
+  if (!__pyx_t_7) {
+    __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_t_5, __pyx_t_8); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 101; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_GOTREF(__pyx_t_2);
+  } else {
+    __pyx_t_4 = PyTuple_New(1+1); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 101; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_4);
+    PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_t_7); __Pyx_GIVEREF(__pyx_t_7); __pyx_t_7 = NULL;
+    PyTuple_SET_ITEM(__pyx_t_4, 0+1, __pyx_t_8);
+    __Pyx_GIVEREF(__pyx_t_8);
+    __pyx_t_8 = 0;
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_4, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 101; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  }
+  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+  __pyx_t_5 = PyNumber_Multiply(__pyx_t_2, ((PyObject *)__pyx_v_weights)); if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 101; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_5);
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_t_2 = NULL;
+  if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_3))) {
+    __pyx_t_2 = PyMethod_GET_SELF(__pyx_t_3);
+    if (likely(__pyx_t_2)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_3);
+      __Pyx_INCREF(__pyx_t_2);
+      __Pyx_INCREF(function);
+      __Pyx_DECREF_SET(__pyx_t_3, function);
+    }
+  }
+  if (!__pyx_t_2) {
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_5); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 101; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_GOTREF(__pyx_t_1);
+  } else {
+    __pyx_t_4 = PyTuple_New(1+1); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 101; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_4);
+    PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_t_2); __Pyx_GIVEREF(__pyx_t_2); __pyx_t_2 = NULL;
+    PyTuple_SET_ITEM(__pyx_t_4, 0+1, __pyx_t_5);
+    __Pyx_GIVEREF(__pyx_t_5);
+    __pyx_t_5 = 0;
+    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_4, NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 101; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_1);
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  }
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* "bernoullimix/_bernoulli.pyx":98
+ * 
+ * @cython.inline
+ * cpdef _log_likelihood_from_support(np.ndarray[np.float_t, ndim=2] support,             # <<<<<<<<<<<<<<
+ *                                    np.ndarray[np.int64_t, ndim=1] weights):
+ * 
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_3);
+  __Pyx_XDECREF(__pyx_t_4);
+  __Pyx_XDECREF(__pyx_t_5);
+  __Pyx_XDECREF(__pyx_t_6);
+  __Pyx_XDECREF(__pyx_t_7);
+  __Pyx_XDECREF(__pyx_t_8);
+  { PyObject *__pyx_type, *__pyx_value, *__pyx_tb;
+    __Pyx_ErrFetch(&__pyx_type, &__pyx_value, &__pyx_tb);
+    __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_support.rcbuffer->pybuffer);
+    __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_weights.rcbuffer->pybuffer);
+  __Pyx_ErrRestore(__pyx_type, __pyx_value, __pyx_tb);}
+  __Pyx_AddTraceback("bernoullimix._bernoulli._log_likelihood_from_support", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = 0;
+  goto __pyx_L2;
+  __pyx_L0:;
+  __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_support.rcbuffer->pybuffer);
+  __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_weights.rcbuffer->pybuffer);
+  __pyx_L2:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_TraceReturn(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static PyObject *__pyx_pw_12bernoullimix_10_bernoulli_7_log_likelihood_from_support(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_12bernoullimix_10_bernoulli_7_log_likelihood_from_support(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+  PyArrayObject *__pyx_v_support = 0;
+  PyArrayObject *__pyx_v_weights = 0;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("_log_likelihood_from_support (wrapper)", 0);
+  {
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_support,&__pyx_n_s_weights,0};
+    PyObject* values[2] = {0,0};
+    if (unlikely(__pyx_kwds)) {
+      Py_ssize_t kw_args;
+      const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
+      switch (pos_args) {
+        case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      kw_args = PyDict_Size(__pyx_kwds);
+      switch (pos_args) {
+        case  0:
+        if (likely((values[0] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_support)) != 0)) kw_args--;
+        else goto __pyx_L5_argtuple_error;
+        case  1:
+        if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_weights)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("_log_likelihood_from_support", 1, 2, 2, 1); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 98; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+        }
+      }
+      if (unlikely(kw_args > 0)) {
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "_log_likelihood_from_support") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 98; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+      }
+    } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
+      goto __pyx_L5_argtuple_error;
+    } else {
+      values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+      values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+    }
+    __pyx_v_support = ((PyArrayObject *)values[0]);
+    __pyx_v_weights = ((PyArrayObject *)values[1]);
+  }
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("_log_likelihood_from_support", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 98; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+  __pyx_L3_error:;
+  __Pyx_AddTraceback("bernoullimix._bernoulli._log_likelihood_from_support", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return NULL;
+  __pyx_L4_argument_unpacking_done:;
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_support), __pyx_ptype_5numpy_ndarray, 1, "support", 0))) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 98; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_weights), __pyx_ptype_5numpy_ndarray, 1, "weights", 0))) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 99; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_r = __pyx_pf_12bernoullimix_10_bernoulli_6_log_likelihood_from_support(__pyx_self, __pyx_v_support, __pyx_v_weights);
+
+  /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_12bernoullimix_10_bernoulli_6_log_likelihood_from_support(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_support, PyArrayObject *__pyx_v_weights) {
+  __Pyx_LocalBuf_ND __pyx_pybuffernd_support;
+  __Pyx_Buffer __pyx_pybuffer_support;
+  __Pyx_LocalBuf_ND __pyx_pybuffernd_weights;
+  __Pyx_Buffer __pyx_pybuffer_weights;
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_TraceDeclarations
+  __Pyx_RefNannySetupContext("_log_likelihood_from_support", 0);
+  __Pyx_TraceCall("_log_likelihood_from_support", __pyx_f[0], 98);
+  __pyx_pybuffer_support.pybuffer.buf = NULL;
+  __pyx_pybuffer_support.refcount = 0;
+  __pyx_pybuffernd_support.data = NULL;
+  __pyx_pybuffernd_support.rcbuffer = &__pyx_pybuffer_support;
+  __pyx_pybuffer_weights.pybuffer.buf = NULL;
+  __pyx_pybuffer_weights.refcount = 0;
+  __pyx_pybuffernd_weights.data = NULL;
+  __pyx_pybuffernd_weights.rcbuffer = &__pyx_pybuffer_weights;
+  {
+    __Pyx_BufFmt_StackElem __pyx_stack[1];
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_support.rcbuffer->pybuffer, (PyObject*)__pyx_v_support, &__Pyx_TypeInfo_nn___pyx_t_5numpy_float_t, PyBUF_FORMAT| PyBUF_STRIDES, 2, 0, __pyx_stack) == -1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 98; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  }
+  __pyx_pybuffernd_support.diminfo[0].strides = __pyx_pybuffernd_support.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_support.diminfo[0].shape = __pyx_pybuffernd_support.rcbuffer->pybuffer.shape[0]; __pyx_pybuffernd_support.diminfo[1].strides = __pyx_pybuffernd_support.rcbuffer->pybuffer.strides[1]; __pyx_pybuffernd_support.diminfo[1].shape = __pyx_pybuffernd_support.rcbuffer->pybuffer.shape[1];
+  {
+    __Pyx_BufFmt_StackElem __pyx_stack[1];
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_weights.rcbuffer->pybuffer, (PyObject*)__pyx_v_weights, &__Pyx_TypeInfo_nn___pyx_t_5numpy_int64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 98; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  }
+  __pyx_pybuffernd_weights.diminfo[0].strides = __pyx_pybuffernd_weights.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_weights.diminfo[0].shape = __pyx_pybuffernd_weights.rcbuffer->pybuffer.shape[0];
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = __pyx_f_12bernoullimix_10_bernoulli__log_likelihood_from_support(__pyx_v_support, __pyx_v_weights, 0); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 98; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  { PyObject *__pyx_type, *__pyx_value, *__pyx_tb;
+    __Pyx_ErrFetch(&__pyx_type, &__pyx_value, &__pyx_tb);
+    __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_support.rcbuffer->pybuffer);
+    __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_weights.rcbuffer->pybuffer);
+  __Pyx_ErrRestore(__pyx_type, __pyx_value, __pyx_tb);}
+  __Pyx_AddTraceback("bernoullimix._bernoulli._log_likelihood_from_support", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  goto __pyx_L2;
+  __pyx_L0:;
+  __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_support.rcbuffer->pybuffer);
+  __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_weights.rcbuffer->pybuffer);
+  __pyx_L2:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_TraceReturn(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "bernoullimix/_bernoulli.pyx":105
+ * 
+ * @cython.inline
+ * cpdef _posterior_probability_of_class_given_support(support):             # <<<<<<<<<<<<<<
+ *     return (support.T / np.sum(support, axis=1)).T
+ * 
+ */
+
+static PyObject *__pyx_pw_12bernoullimix_10_bernoulli_9_posterior_probability_of_class_given_support(PyObject *__pyx_self, PyObject *__pyx_v_support); /*proto*/
+static PyObject *__pyx_f_12bernoullimix_10_bernoulli__posterior_probability_of_class_given_support(PyObject *__pyx_v_support, CYTHON_UNUSED int __pyx_skip_dispatch) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  PyObject *__pyx_t_2 = NULL;
+  PyObject *__pyx_t_3 = NULL;
+  PyObject *__pyx_t_4 = NULL;
+  PyObject *__pyx_t_5 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_TraceDeclarations
+  __Pyx_RefNannySetupContext("_posterior_probability_of_class_given_support", 0);
+  __Pyx_TraceCall("_posterior_probability_of_class_given_support", __pyx_f[0], 105);
+
+  /* "bernoullimix/_bernoulli.pyx":106
+ * @cython.inline
+ * cpdef _posterior_probability_of_class_given_support(support):
+ *     return (support.T / np.sum(support, axis=1)).T             # <<<<<<<<<<<<<<
+ * 
+ * cpdef _m_step(unique_zstar, unique_dataset, weights):
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_support, __pyx_n_s_T); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 106; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_2 = __Pyx_GetModuleGlobalName(__pyx_n_s_np); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 106; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_sum); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 106; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_3);
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_t_2 = PyTuple_New(1); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 106; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_INCREF(__pyx_v_support);
+  PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_v_support);
+  __Pyx_GIVEREF(__pyx_v_support);
+  __pyx_t_4 = PyDict_New(); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 106; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_4);
+  if (PyDict_SetItem(__pyx_t_4, __pyx_n_s_axis, __pyx_int_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 106; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_5 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_2, __pyx_t_4); if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 106; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_5);
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  __pyx_t_4 = __Pyx_PyNumber_Divide(__pyx_t_1, __pyx_t_5); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 106; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_4);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_T); if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 106; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_5);
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  __pyx_r = __pyx_t_5;
+  __pyx_t_5 = 0;
+  goto __pyx_L0;
+
+  /* "bernoullimix/_bernoulli.pyx":105
+ * 
+ * @cython.inline
+ * cpdef _posterior_probability_of_class_given_support(support):             # <<<<<<<<<<<<<<
+ *     return (support.T / np.sum(support, axis=1)).T
+ * 
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_3);
+  __Pyx_XDECREF(__pyx_t_4);
+  __Pyx_XDECREF(__pyx_t_5);
+  __Pyx_AddTraceback("bernoullimix._bernoulli._posterior_probability_of_class_given_support", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = 0;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_TraceReturn(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static PyObject *__pyx_pw_12bernoullimix_10_bernoulli_9_posterior_probability_of_class_given_support(PyObject *__pyx_self, PyObject *__pyx_v_support); /*proto*/
+static PyObject *__pyx_pw_12bernoullimix_10_bernoulli_9_posterior_probability_of_class_given_support(PyObject *__pyx_self, PyObject *__pyx_v_support) {
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("_posterior_probability_of_class_given_support (wrapper)", 0);
+  __pyx_r = __pyx_pf_12bernoullimix_10_bernoulli_8_posterior_probability_of_class_given_support(__pyx_self, ((PyObject *)__pyx_v_support));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_12bernoullimix_10_bernoulli_8_posterior_probability_of_class_given_support(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_support) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_TraceDeclarations
+  __Pyx_RefNannySetupContext("_posterior_probability_of_class_given_support", 0);
+  __Pyx_TraceCall("_posterior_probability_of_class_given_support", __pyx_f[0], 105);
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = __pyx_f_12bernoullimix_10_bernoulli__posterior_probability_of_class_given_support(__pyx_v_support, 0); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 105; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("bernoullimix._bernoulli._posterior_probability_of_class_given_support", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_TraceReturn(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "bernoullimix/_bernoulli.pyx":108
+ *     return (support.T / np.sum(support, axis=1)).T
+ * 
+ * cpdef _m_step(unique_zstar, unique_dataset, weights):             # <<<<<<<<<<<<<<
+ *     u = np.sum(unique_zstar.T * weights, axis=1)
+ *     sum_of_weights = np.sum(u)
+ */
+
+static PyObject *__pyx_pw_12bernoullimix_10_bernoulli_11_m_step(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_f_12bernoullimix_10_bernoulli__m_step(PyObject *__pyx_v_unique_zstar, PyObject *__pyx_v_unique_dataset, PyObject *__pyx_v_weights, CYTHON_UNUSED int __pyx_skip_dispatch) {
+  PyObject *__pyx_v_u = NULL;
+  PyObject *__pyx_v_sum_of_weights = NULL;
+  CYTHON_UNUSED PyObject *__pyx_v_N = NULL;
+  PyObject *__pyx_v_K = NULL;
+  PyObject *__pyx_v_vs = NULL;
+  PyObject *__pyx_v_k = NULL;
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  PyObject *__pyx_t_2 = NULL;
+  PyObject *__pyx_t_3 = NULL;
+  PyObject *__pyx_t_4 = NULL;
+  PyObject *(*__pyx_t_5)(PyObject *);
+  Py_ssize_t __pyx_t_6;
+  PyObject *(*__pyx_t_7)(PyObject *);
+  PyObject *__pyx_t_8 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_TraceDeclarations
+  __Pyx_RefNannySetupContext("_m_step", 0);
+  __Pyx_TraceCall("_m_step", __pyx_f[0], 108);
+
+  /* "bernoullimix/_bernoulli.pyx":109
+ * 
+ * cpdef _m_step(unique_zstar, unique_dataset, weights):
+ *     u = np.sum(unique_zstar.T * weights, axis=1)             # <<<<<<<<<<<<<<
+ *     sum_of_weights = np.sum(u)
+ * 
+ */
+  __pyx_t_1 = __Pyx_GetModuleGlobalName(__pyx_n_s_np); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 109; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_sum); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 109; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_unique_zstar, __pyx_n_s_T); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 109; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_3 = PyNumber_Multiply(__pyx_t_1, __pyx_v_weights); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 109; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_3);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = PyTuple_New(1); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 109; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_t_3);
+  __Pyx_GIVEREF(__pyx_t_3);
+  __pyx_t_3 = 0;
+  __pyx_t_3 = PyDict_New(); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 109; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_3);
+  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_axis, __pyx_int_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 109; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_4 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_1, __pyx_t_3); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 109; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_4);
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  __pyx_v_u = __pyx_t_4;
+  __pyx_t_4 = 0;
+
+  /* "bernoullimix/_bernoulli.pyx":110
+ * cpdef _m_step(unique_zstar, unique_dataset, weights):
+ *     u = np.sum(unique_zstar.T * weights, axis=1)
+ *     sum_of_weights = np.sum(u)             # <<<<<<<<<<<<<<
+ * 
+ *     N, K = unique_zstar.shape
+ */
+  __pyx_t_3 = __Pyx_GetModuleGlobalName(__pyx_n_s_np); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 110; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_3);
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_sum); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 110; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  __pyx_t_3 = NULL;
+  if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_1))) {
+    __pyx_t_3 = PyMethod_GET_SELF(__pyx_t_1);
+    if (likely(__pyx_t_3)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_1);
+      __Pyx_INCREF(__pyx_t_3);
+      __Pyx_INCREF(function);
+      __Pyx_DECREF_SET(__pyx_t_1, function);
+    }
+  }
+  if (!__pyx_t_3) {
+    __pyx_t_4 = __Pyx_PyObject_CallOneArg(__pyx_t_1, __pyx_v_u); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 110; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_4);
+  } else {
+    __pyx_t_2 = PyTuple_New(1+1); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 110; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_2);
+    PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_t_3); __Pyx_GIVEREF(__pyx_t_3); __pyx_t_3 = NULL;
+    __Pyx_INCREF(__pyx_v_u);
+    PyTuple_SET_ITEM(__pyx_t_2, 0+1, __pyx_v_u);
+    __Pyx_GIVEREF(__pyx_v_u);
+    __pyx_t_4 = __Pyx_PyObject_Call(__pyx_t_1, __pyx_t_2, NULL); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 110; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_4);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  }
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_v_sum_of_weights = __pyx_t_4;
+  __pyx_t_4 = 0;
+
+  /* "bernoullimix/_bernoulli.pyx":112
+ *     sum_of_weights = np.sum(u)
+ * 
+ *     N, K = unique_zstar.shape             # <<<<<<<<<<<<<<
+ * 
+ *     vs = maximise_emissions(unique_dataset, unique_zstar, weights)
+ */
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_v_unique_zstar, __pyx_n_s_shape); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 112; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_4);
+  if ((likely(PyTuple_CheckExact(__pyx_t_4))) || (PyList_CheckExact(__pyx_t_4))) {
+    PyObject* sequence = __pyx_t_4;
+    #if CYTHON_COMPILING_IN_CPYTHON
+    Py_ssize_t size = Py_SIZE(sequence);
+    #else
+    Py_ssize_t size = PySequence_Size(sequence);
+    #endif
+    if (unlikely(size != 2)) {
+      if (size > 2) __Pyx_RaiseTooManyValuesError(2);
+      else if (size >= 0) __Pyx_RaiseNeedMoreValuesError(size);
+      {__pyx_filename = __pyx_f[0]; __pyx_lineno = 112; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    }
+    #if CYTHON_COMPILING_IN_CPYTHON
+    if (likely(PyTuple_CheckExact(sequence))) {
+      __pyx_t_1 = PyTuple_GET_ITEM(sequence, 0); 
+      __pyx_t_2 = PyTuple_GET_ITEM(sequence, 1); 
+    } else {
+      __pyx_t_1 = PyList_GET_ITEM(sequence, 0); 
+      __pyx_t_2 = PyList_GET_ITEM(sequence, 1); 
+    }
+    __Pyx_INCREF(__pyx_t_1);
+    __Pyx_INCREF(__pyx_t_2);
+    #else
+    __pyx_t_1 = PySequence_ITEM(sequence, 0); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 112; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_1);
+    __pyx_t_2 = PySequence_ITEM(sequence, 1); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 112; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_2);
+    #endif
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  } else {
+    Py_ssize_t index = -1;
+    __pyx_t_3 = PyObject_GetIter(__pyx_t_4); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 112; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_3);
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __pyx_t_5 = Py_TYPE(__pyx_t_3)->tp_iternext;
+    index = 0; __pyx_t_1 = __pyx_t_5(__pyx_t_3); if (unlikely(!__pyx_t_1)) goto __pyx_L3_unpacking_failed;
+    __Pyx_GOTREF(__pyx_t_1);
+    index = 1; __pyx_t_2 = __pyx_t_5(__pyx_t_3); if (unlikely(!__pyx_t_2)) goto __pyx_L3_unpacking_failed;
+    __Pyx_GOTREF(__pyx_t_2);
+    if (__Pyx_IternextUnpackEndCheck(__pyx_t_5(__pyx_t_3), 2) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 112; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_5 = NULL;
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L4_unpacking_done;
+    __pyx_L3_unpacking_failed:;
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __pyx_t_5 = NULL;
+    if (__Pyx_IterFinish() == 0) __Pyx_RaiseNeedMoreValuesError(index);
+    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 112; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_L4_unpacking_done:;
+  }
+  __pyx_v_N = __pyx_t_1;
+  __pyx_t_1 = 0;
+  __pyx_v_K = __pyx_t_2;
+  __pyx_t_2 = 0;
+
+  /* "bernoullimix/_bernoulli.pyx":114
+ *     N, K = unique_zstar.shape
+ * 
+ *     vs = maximise_emissions(unique_dataset, unique_zstar, weights)             # <<<<<<<<<<<<<<
+ * 
+ *     for k in range(K):
+ */
+  __pyx_t_2 = __Pyx_GetModuleGlobalName(__pyx_n_s_maximise_emissions); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 114; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_1 = NULL;
+  __pyx_t_6 = 0;
+  if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_2))) {
+    __pyx_t_1 = PyMethod_GET_SELF(__pyx_t_2);
+    if (likely(__pyx_t_1)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_2);
+      __Pyx_INCREF(__pyx_t_1);
+      __Pyx_INCREF(function);
+      __Pyx_DECREF_SET(__pyx_t_2, function);
+      __pyx_t_6 = 1;
+    }
+  }
+  __pyx_t_3 = PyTuple_New(3+__pyx_t_6); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 114; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_3);
+  if (__pyx_t_1) {
+    PyTuple_SET_ITEM(__pyx_t_3, 0, __pyx_t_1); __Pyx_GIVEREF(__pyx_t_1); __pyx_t_1 = NULL;
+  }
+  __Pyx_INCREF(__pyx_v_unique_dataset);
+  PyTuple_SET_ITEM(__pyx_t_3, 0+__pyx_t_6, __pyx_v_unique_dataset);
+  __Pyx_GIVEREF(__pyx_v_unique_dataset);
+  __Pyx_INCREF(__pyx_v_unique_zstar);
+  PyTuple_SET_ITEM(__pyx_t_3, 1+__pyx_t_6, __pyx_v_unique_zstar);
+  __Pyx_GIVEREF(__pyx_v_unique_zstar);
+  __Pyx_INCREF(__pyx_v_weights);
+  PyTuple_SET_ITEM(__pyx_t_3, 2+__pyx_t_6, __pyx_v_weights);
+  __Pyx_GIVEREF(__pyx_v_weights);
+  __pyx_t_4 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_3, NULL); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 114; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_4);
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_v_vs = __pyx_t_4;
+  __pyx_t_4 = 0;
+
+  /* "bernoullimix/_bernoulli.pyx":116
+ *     vs = maximise_emissions(unique_dataset, unique_zstar, weights)
+ * 
+ *     for k in range(K):             # <<<<<<<<<<<<<<
+ *         vs[k] /= u[k]
+ * 
+ */
+  __pyx_t_4 = PyTuple_New(1); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 116; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_4);
+  __Pyx_INCREF(__pyx_v_K);
+  PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_v_K);
+  __Pyx_GIVEREF(__pyx_v_K);
+  __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_range, __pyx_t_4, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 116; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  if (likely(PyList_CheckExact(__pyx_t_2)) || PyTuple_CheckExact(__pyx_t_2)) {
+    __pyx_t_4 = __pyx_t_2; __Pyx_INCREF(__pyx_t_4); __pyx_t_6 = 0;
+    __pyx_t_7 = NULL;
+  } else {
+    __pyx_t_6 = -1; __pyx_t_4 = PyObject_GetIter(__pyx_t_2); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 116; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_4);
+    __pyx_t_7 = Py_TYPE(__pyx_t_4)->tp_iternext; if (unlikely(!__pyx_t_7)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 116; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  }
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  for (;;) {
+    if (likely(!__pyx_t_7)) {
+      if (likely(PyList_CheckExact(__pyx_t_4))) {
+        if (__pyx_t_6 >= PyList_GET_SIZE(__pyx_t_4)) break;
+        #if CYTHON_COMPILING_IN_CPYTHON
+        __pyx_t_2 = PyList_GET_ITEM(__pyx_t_4, __pyx_t_6); __Pyx_INCREF(__pyx_t_2); __pyx_t_6++; if (unlikely(0 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 116; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        #else
+        __pyx_t_2 = PySequence_ITEM(__pyx_t_4, __pyx_t_6); __pyx_t_6++; if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 116; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        #endif
+      } else {
+        if (__pyx_t_6 >= PyTuple_GET_SIZE(__pyx_t_4)) break;
+        #if CYTHON_COMPILING_IN_CPYTHON
+        __pyx_t_2 = PyTuple_GET_ITEM(__pyx_t_4, __pyx_t_6); __Pyx_INCREF(__pyx_t_2); __pyx_t_6++; if (unlikely(0 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 116; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        #else
+        __pyx_t_2 = PySequence_ITEM(__pyx_t_4, __pyx_t_6); __pyx_t_6++; if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 116; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        #endif
+      }
+    } else {
+      __pyx_t_2 = __pyx_t_7(__pyx_t_4);
+      if (unlikely(!__pyx_t_2)) {
+        PyObject* exc_type = PyErr_Occurred();
+        if (exc_type) {
+          if (likely(exc_type == PyExc_StopIteration || PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
+          else {__pyx_filename = __pyx_f[0]; __pyx_lineno = 116; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        }
+        break;
+      }
+      __Pyx_GOTREF(__pyx_t_2);
+    }
+    __Pyx_XDECREF_SET(__pyx_v_k, __pyx_t_2);
+    __pyx_t_2 = 0;
+
+    /* "bernoullimix/_bernoulli.pyx":117
+ * 
+ *     for k in range(K):
+ *         vs[k] /= u[k]             # <<<<<<<<<<<<<<
+ * 
+ *     return u / sum_of_weights, vs
+ */
+    __Pyx_INCREF(__pyx_v_k);
+    __pyx_t_2 = __pyx_v_k;
+    __pyx_t_3 = PyObject_GetItem(__pyx_v_vs, __pyx_t_2); if (unlikely(__pyx_t_3 == NULL)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 117; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+    __Pyx_GOTREF(__pyx_t_3);
+    __pyx_t_1 = PyObject_GetItem(__pyx_v_u, __pyx_v_k); if (unlikely(__pyx_t_1 == NULL)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 117; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+    __Pyx_GOTREF(__pyx_t_1);
+    __pyx_t_8 = __Pyx_PyNumber_InPlaceDivide(__pyx_t_3, __pyx_t_1); if (unlikely(!__pyx_t_8)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 117; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_8);
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+    if (unlikely(PyObject_SetItem(__pyx_v_vs, __pyx_t_2, __pyx_t_8) < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 117; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "bernoullimix/_bernoulli.pyx":116
+ *     vs = maximise_emissions(unique_dataset, unique_zstar, weights)
+ * 
+ *     for k in range(K):             # <<<<<<<<<<<<<<
+ *         vs[k] /= u[k]
+ * 
+ */
+  }
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+
+  /* "bernoullimix/_bernoulli.pyx":119
+ *         vs[k] /= u[k]
+ * 
+ *     return u / sum_of_weights, vs             # <<<<<<<<<<<<<<
+ * 
+ * def _em(unique_dataset, counts,
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_4 = __Pyx_PyNumber_Divide(__pyx_v_u, __pyx_v_sum_of_weights); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 119; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_4);
+  __pyx_t_2 = PyTuple_New(2); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 119; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_2);
+  PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_t_4);
+  __Pyx_GIVEREF(__pyx_t_4);
+  __Pyx_INCREF(__pyx_v_vs);
+  PyTuple_SET_ITEM(__pyx_t_2, 1, __pyx_v_vs);
+  __Pyx_GIVEREF(__pyx_v_vs);
+  __pyx_t_4 = 0;
+  __pyx_r = __pyx_t_2;
+  __pyx_t_2 = 0;
+  goto __pyx_L0;
+
+  /* "bernoullimix/_bernoulli.pyx":108
+ *     return (support.T / np.sum(support, axis=1)).T
+ * 
+ * cpdef _m_step(unique_zstar, unique_dataset, weights):             # <<<<<<<<<<<<<<
+ *     u = np.sum(unique_zstar.T * weights, axis=1)
+ *     sum_of_weights = np.sum(u)
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_3);
+  __Pyx_XDECREF(__pyx_t_4);
+  __Pyx_XDECREF(__pyx_t_8);
+  __Pyx_AddTraceback("bernoullimix._bernoulli._m_step", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = 0;
+  __pyx_L0:;
+  __Pyx_XDECREF(__pyx_v_u);
+  __Pyx_XDECREF(__pyx_v_sum_of_weights);
+  __Pyx_XDECREF(__pyx_v_N);
+  __Pyx_XDECREF(__pyx_v_K);
+  __Pyx_XDECREF(__pyx_v_vs);
+  __Pyx_XDECREF(__pyx_v_k);
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_TraceReturn(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static PyObject *__pyx_pw_12bernoullimix_10_bernoulli_11_m_step(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_12bernoullimix_10_bernoulli_11_m_step(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+  PyObject *__pyx_v_unique_zstar = 0;
+  PyObject *__pyx_v_unique_dataset = 0;
+  PyObject *__pyx_v_weights = 0;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("_m_step (wrapper)", 0);
+  {
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_unique_zstar,&__pyx_n_s_unique_dataset,&__pyx_n_s_weights,0};
+    PyObject* values[3] = {0,0,0};
+    if (unlikely(__pyx_kwds)) {
+      Py_ssize_t kw_args;
+      const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
+      switch (pos_args) {
+        case  3: values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
+        case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      kw_args = PyDict_Size(__pyx_kwds);
+      switch (pos_args) {
+        case  0:
+        if (likely((values[0] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_unique_zstar)) != 0)) kw_args--;
+        else goto __pyx_L5_argtuple_error;
+        case  1:
+        if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_unique_dataset)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("_m_step", 1, 3, 3, 1); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 108; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+        }
+        case  2:
+        if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_weights)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("_m_step", 1, 3, 3, 2); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 108; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+        }
+      }
+      if (unlikely(kw_args > 0)) {
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "_m_step") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 108; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+      }
+    } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
+      goto __pyx_L5_argtuple_error;
+    } else {
+      values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+      values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+      values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
+    }
+    __pyx_v_unique_zstar = values[0];
+    __pyx_v_unique_dataset = values[1];
+    __pyx_v_weights = values[2];
+  }
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("_m_step", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 108; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+  __pyx_L3_error:;
+  __Pyx_AddTraceback("bernoullimix._bernoulli._m_step", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return NULL;
+  __pyx_L4_argument_unpacking_done:;
+  __pyx_r = __pyx_pf_12bernoullimix_10_bernoulli_10_m_step(__pyx_self, __pyx_v_unique_zstar, __pyx_v_unique_dataset, __pyx_v_weights);
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_12bernoullimix_10_bernoulli_10_m_step(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_unique_zstar, PyObject *__pyx_v_unique_dataset, PyObject *__pyx_v_weights) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_TraceDeclarations
+  __Pyx_RefNannySetupContext("_m_step", 0);
+  __Pyx_TraceCall("_m_step", __pyx_f[0], 108);
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = __pyx_f_12bernoullimix_10_bernoulli__m_step(__pyx_v_unique_zstar, __pyx_v_unique_dataset, __pyx_v_weights, 0); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 108; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("bernoullimix._bernoulli._m_step", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_TraceReturn(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "bernoullimix/_bernoulli.pyx":121
+ *     return u / sum_of_weights, vs
+ * 
+ * def _em(unique_dataset, counts,             # <<<<<<<<<<<<<<
+ *         mixing_coefficients, emission_probabilities,
+ *         iteration_limit, convergence_threshold, trace_likelihood):
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_12bernoullimix_10_bernoulli_13_em(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_12bernoullimix_10_bernoulli_13_em = {"_em", (PyCFunction)__pyx_pw_12bernoullimix_10_bernoulli_13_em, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_12bernoullimix_10_bernoulli_13_em(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+  PyObject *__pyx_v_unique_dataset = 0;
+  PyObject *__pyx_v_counts = 0;
+  PyObject *__pyx_v_mixing_coefficients = 0;
+  PyObject *__pyx_v_emission_probabilities = 0;
+  PyObject *__pyx_v_iteration_limit = 0;
+  PyObject *__pyx_v_convergence_threshold = 0;
+  PyObject *__pyx_v_trace_likelihood = 0;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("_em (wrapper)", 0);
+  {
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_unique_dataset,&__pyx_n_s_counts,&__pyx_n_s_mixing_coefficients,&__pyx_n_s_emission_probabilities,&__pyx_n_s_iteration_limit,&__pyx_n_s_convergence_threshold,&__pyx_n_s_trace_likelihood,0};
+    PyObject* values[7] = {0,0,0,0,0,0,0};
+    if (unlikely(__pyx_kwds)) {
+      Py_ssize_t kw_args;
+      const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
+      switch (pos_args) {
+        case  7: values[6] = PyTuple_GET_ITEM(__pyx_args, 6);
+        case  6: values[5] = PyTuple_GET_ITEM(__pyx_args, 5);
+        case  5: values[4] = PyTuple_GET_ITEM(__pyx_args, 4);
+        case  4: values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
+        case  3: values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
+        case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      kw_args = PyDict_Size(__pyx_kwds);
+      switch (pos_args) {
+        case  0:
+        if (likely((values[0] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_unique_dataset)) != 0)) kw_args--;
+        else goto __pyx_L5_argtuple_error;
+        case  1:
+        if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_counts)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("_em", 1, 7, 7, 1); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 121; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+        }
+        case  2:
+        if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_mixing_coefficients)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("_em", 1, 7, 7, 2); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 121; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+        }
+        case  3:
+        if (likely((values[3] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_emission_probabilities)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("_em", 1, 7, 7, 3); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 121; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+        }
+        case  4:
+        if (likely((values[4] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_iteration_limit)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("_em", 1, 7, 7, 4); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 121; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+        }
+        case  5:
+        if (likely((values[5] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_convergence_threshold)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("_em", 1, 7, 7, 5); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 121; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+        }
+        case  6:
+        if (likely((values[6] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_trace_likelihood)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("_em", 1, 7, 7, 6); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 121; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+        }
+      }
+      if (unlikely(kw_args > 0)) {
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "_em") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 121; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+      }
+    } else if (PyTuple_GET_SIZE(__pyx_args) != 7) {
+      goto __pyx_L5_argtuple_error;
+    } else {
+      values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+      values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+      values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
+      values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
+      values[4] = PyTuple_GET_ITEM(__pyx_args, 4);
+      values[5] = PyTuple_GET_ITEM(__pyx_args, 5);
+      values[6] = PyTuple_GET_ITEM(__pyx_args, 6);
+    }
+    __pyx_v_unique_dataset = values[0];
+    __pyx_v_counts = values[1];
+    __pyx_v_mixing_coefficients = values[2];
+    __pyx_v_emission_probabilities = values[3];
+    __pyx_v_iteration_limit = values[4];
+    __pyx_v_convergence_threshold = values[5];
+    __pyx_v_trace_likelihood = values[6];
+  }
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("_em", 1, 7, 7, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 121; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+  __pyx_L3_error:;
+  __Pyx_AddTraceback("bernoullimix._bernoulli._em", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return NULL;
+  __pyx_L4_argument_unpacking_done:;
+  __pyx_r = __pyx_pf_12bernoullimix_10_bernoulli_12_em(__pyx_self, __pyx_v_unique_dataset, __pyx_v_counts, __pyx_v_mixing_coefficients, __pyx_v_emission_probabilities, __pyx_v_iteration_limit, __pyx_v_convergence_threshold, __pyx_v_trace_likelihood);
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_12bernoullimix_10_bernoulli_12_em(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_unique_dataset, PyObject *__pyx_v_counts, PyObject *__pyx_v_mixing_coefficients, PyObject *__pyx_v_emission_probabilities, PyObject *__pyx_v_iteration_limit, PyObject *__pyx_v_convergence_threshold, PyObject *__pyx_v_trace_likelihood) {
+  PyObject *__pyx_v_iterations_done = NULL;
+  PyObject *__pyx_v_previous_log_likelihood = NULL;
+  PyObject *__pyx_v_current_log_likelihood = NULL;
+  PyObject *__pyx_v_likelihood_trace = NULL;
+  int __pyx_v_converged;
+  PyObject *__pyx_v_unique_support = NULL;
+  PyObject *__pyx_v_unique_z_star = NULL;
+  PyObject *__pyx_v_pi = NULL;
+  PyObject *__pyx_v_e = NULL;
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  PyObject *__pyx_t_2 = NULL;
+  int __pyx_t_3;
+  int __pyx_t_4;
+  int __pyx_t_5;
+  PyObject *__pyx_t_6 = NULL;
+  Py_ssize_t __pyx_t_7;
+  PyObject *__pyx_t_8 = NULL;
+  PyObject *(*__pyx_t_9)(PyObject *);
+  int __pyx_t_10;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_TraceDeclarations
+  __Pyx_RefNannySetupContext("_em", 0);
+  __Pyx_TraceCall("_em", __pyx_f[0], 121);
+  __Pyx_INCREF(__pyx_v_mixing_coefficients);
+  __Pyx_INCREF(__pyx_v_emission_probabilities);
+
+  /* "bernoullimix/_bernoulli.pyx":125
+ *         iteration_limit, convergence_threshold, trace_likelihood):
+ * 
+ *     iterations_done = 0             # <<<<<<<<<<<<<<
+ *     previous_log_likelihood, current_log_likelihood = None, None
+ *     if trace_likelihood:
+ */
+  __Pyx_INCREF(__pyx_int_0);
+  __pyx_v_iterations_done = __pyx_int_0;
+
+  /* "bernoullimix/_bernoulli.pyx":126
+ * 
+ *     iterations_done = 0
+ *     previous_log_likelihood, current_log_likelihood = None, None             # <<<<<<<<<<<<<<
+ *     if trace_likelihood:
+ *         likelihood_trace = []
+ */
+  __pyx_t_1 = Py_None;
+  __Pyx_INCREF(__pyx_t_1);
+  __pyx_t_2 = Py_None;
+  __Pyx_INCREF(__pyx_t_2);
+  __pyx_v_previous_log_likelihood = __pyx_t_1;
+  __pyx_t_1 = 0;
+  __pyx_v_current_log_likelihood = __pyx_t_2;
+  __pyx_t_2 = 0;
+
+  /* "bernoullimix/_bernoulli.pyx":127
+ *     iterations_done = 0
+ *     previous_log_likelihood, current_log_likelihood = None, None
+ *     if trace_likelihood:             # <<<<<<<<<<<<<<
+ *         likelihood_trace = []
+ *     else:
+ */
+  __pyx_t_3 = __Pyx_PyObject_IsTrue(__pyx_v_trace_likelihood); if (unlikely(__pyx_t_3 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 127; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (__pyx_t_3) {
+
+    /* "bernoullimix/_bernoulli.pyx":128
+ *     previous_log_likelihood, current_log_likelihood = None, None
+ *     if trace_likelihood:
+ *         likelihood_trace = []             # <<<<<<<<<<<<<<
+ *     else:
+ *         likelihood_trace = None
+ */
+    __pyx_t_2 = PyList_New(0); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 128; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_2);
+    __pyx_v_likelihood_trace = __pyx_t_2;
+    __pyx_t_2 = 0;
+    goto __pyx_L3;
+  }
+  /*else*/ {
+
+    /* "bernoullimix/_bernoulli.pyx":130
+ *         likelihood_trace = []
+ *     else:
+ *         likelihood_trace = None             # <<<<<<<<<<<<<<
+ * 
+ *     converged = False
+ */
+    __Pyx_INCREF(Py_None);
+    __pyx_v_likelihood_trace = Py_None;
+  }
+  __pyx_L3:;
+
+  /* "bernoullimix/_bernoulli.pyx":132
+ *         likelihood_trace = None
+ * 
+ *     converged = False             # <<<<<<<<<<<<<<
+ *     while iteration_limit is None or iterations_done < iteration_limit:
+ * 
+ */
+  __pyx_v_converged = 0;
+
+  /* "bernoullimix/_bernoulli.pyx":133
+ * 
+ *     converged = False
+ *     while iteration_limit is None or iterations_done < iteration_limit:             # <<<<<<<<<<<<<<
+ * 
+ *         unique_support = observation_emission_support_c(unique_dataset,
+ */
+  while (1) {
+    __pyx_t_4 = (__pyx_v_iteration_limit == Py_None);
+    __pyx_t_5 = (__pyx_t_4 != 0);
+    if (!__pyx_t_5) {
+    } else {
+      __pyx_t_3 = __pyx_t_5;
+      goto __pyx_L6_bool_binop_done;
+    }
+    __pyx_t_2 = PyObject_RichCompare(__pyx_v_iterations_done, __pyx_v_iteration_limit, Py_LT); __Pyx_XGOTREF(__pyx_t_2); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 133; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_5 = __Pyx_PyObject_IsTrue(__pyx_t_2); if (unlikely(__pyx_t_5 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 133; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __pyx_t_3 = __pyx_t_5;
+    __pyx_L6_bool_binop_done:;
+    if (!__pyx_t_3) break;
+
+    /* "bernoullimix/_bernoulli.pyx":135
+ *     while iteration_limit is None or iterations_done < iteration_limit:
+ * 
+ *         unique_support = observation_emission_support_c(unique_dataset,             # <<<<<<<<<<<<<<
+ *                                                         emission_probabilities,
+ *                                                         mixing_coefficients)
+ */
+    __pyx_t_1 = __Pyx_GetModuleGlobalName(__pyx_n_s_observation_emission_support_c); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 135; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_1);
+
+    /* "bernoullimix/_bernoulli.pyx":137
+ *         unique_support = observation_emission_support_c(unique_dataset,
+ *                                                         emission_probabilities,
+ *                                                         mixing_coefficients)             # <<<<<<<<<<<<<<
+ * 
+ *         current_log_likelihood = _log_likelihood_from_support(unique_support, counts)
+ */
+    __pyx_t_6 = NULL;
+    __pyx_t_7 = 0;
+    if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_1))) {
+      __pyx_t_6 = PyMethod_GET_SELF(__pyx_t_1);
+      if (likely(__pyx_t_6)) {
+        PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_1);
+        __Pyx_INCREF(__pyx_t_6);
+        __Pyx_INCREF(function);
+        __Pyx_DECREF_SET(__pyx_t_1, function);
+        __pyx_t_7 = 1;
+      }
+    }
+    __pyx_t_8 = PyTuple_New(3+__pyx_t_7); if (unlikely(!__pyx_t_8)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 135; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_8);
+    if (__pyx_t_6) {
+      PyTuple_SET_ITEM(__pyx_t_8, 0, __pyx_t_6); __Pyx_GIVEREF(__pyx_t_6); __pyx_t_6 = NULL;
+    }
+    __Pyx_INCREF(__pyx_v_unique_dataset);
+    PyTuple_SET_ITEM(__pyx_t_8, 0+__pyx_t_7, __pyx_v_unique_dataset);
+    __Pyx_GIVEREF(__pyx_v_unique_dataset);
+    __Pyx_INCREF(__pyx_v_emission_probabilities);
+    PyTuple_SET_ITEM(__pyx_t_8, 1+__pyx_t_7, __pyx_v_emission_probabilities);
+    __Pyx_GIVEREF(__pyx_v_emission_probabilities);
+    __Pyx_INCREF(__pyx_v_mixing_coefficients);
+    PyTuple_SET_ITEM(__pyx_t_8, 2+__pyx_t_7, __pyx_v_mixing_coefficients);
+    __Pyx_GIVEREF(__pyx_v_mixing_coefficients);
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_1, __pyx_t_8, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 135; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+    __Pyx_XDECREF_SET(__pyx_v_unique_support, __pyx_t_2);
+    __pyx_t_2 = 0;
+
+    /* "bernoullimix/_bernoulli.pyx":139
+ *                                                         mixing_coefficients)
+ * 
+ *         current_log_likelihood = _log_likelihood_from_support(unique_support, counts)             # <<<<<<<<<<<<<<
+ *         if previous_log_likelihood is not None \
+ *                 and np.isclose(current_log_likelihood, previous_log_likelihood,
+ */
+    if (!(likely(((__pyx_v_unique_support) == Py_None) || likely(__Pyx_TypeTest(__pyx_v_unique_support, __pyx_ptype_5numpy_ndarray))))) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 139; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (!(likely(((__pyx_v_counts) == Py_None) || likely(__Pyx_TypeTest(__pyx_v_counts, __pyx_ptype_5numpy_ndarray))))) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 139; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_2 = __pyx_f_12bernoullimix_10_bernoulli__log_likelihood_from_support(((PyArrayObject *)__pyx_v_unique_support), ((PyArrayObject *)__pyx_v_counts), 0); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 139; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_DECREF_SET(__pyx_v_current_log_likelihood, __pyx_t_2);
+    __pyx_t_2 = 0;
+
+    /* "bernoullimix/_bernoulli.pyx":140
+ * 
+ *         current_log_likelihood = _log_likelihood_from_support(unique_support, counts)
+ *         if previous_log_likelihood is not None \             # <<<<<<<<<<<<<<
+ *                 and np.isclose(current_log_likelihood, previous_log_likelihood,
+ *                                rtol=0, atol=convergence_threshold):
+ */
+    __pyx_t_5 = (__pyx_v_previous_log_likelihood != Py_None);
+    __pyx_t_4 = (__pyx_t_5 != 0);
+    if (__pyx_t_4) {
+    } else {
+      __pyx_t_3 = __pyx_t_4;
+      goto __pyx_L9_bool_binop_done;
+    }
+
+    /* "bernoullimix/_bernoulli.pyx":141
+ *         current_log_likelihood = _log_likelihood_from_support(unique_support, counts)
+ *         if previous_log_likelihood is not None \
+ *                 and np.isclose(current_log_likelihood, previous_log_likelihood,             # <<<<<<<<<<<<<<
+ *                                rtol=0, atol=convergence_threshold):
+ *             converged = True
+ */
+    __pyx_t_2 = __Pyx_GetModuleGlobalName(__pyx_n_s_np); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 141; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_2);
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_isclose); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 141; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_1);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __pyx_t_2 = PyTuple_New(2); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 141; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_INCREF(__pyx_v_current_log_likelihood);
+    PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_v_current_log_likelihood);
+    __Pyx_GIVEREF(__pyx_v_current_log_likelihood);
+    __Pyx_INCREF(__pyx_v_previous_log_likelihood);
+    PyTuple_SET_ITEM(__pyx_t_2, 1, __pyx_v_previous_log_likelihood);
+    __Pyx_GIVEREF(__pyx_v_previous_log_likelihood);
+    __pyx_t_8 = PyDict_New(); if (unlikely(!__pyx_t_8)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 141; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_8);
+    if (PyDict_SetItem(__pyx_t_8, __pyx_n_s_rtol, __pyx_int_0) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 141; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+
+    /* "bernoullimix/_bernoulli.pyx":142
+ *         if previous_log_likelihood is not None \
+ *                 and np.isclose(current_log_likelihood, previous_log_likelihood,
+ *                                rtol=0, atol=convergence_threshold):             # <<<<<<<<<<<<<<
+ *             converged = True
+ *             break
+ */
+    if (PyDict_SetItem(__pyx_t_8, __pyx_n_s_atol, __pyx_v_convergence_threshold) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 141; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+
+    /* "bernoullimix/_bernoulli.pyx":141
+ *         current_log_likelihood = _log_likelihood_from_support(unique_support, counts)
+ *         if previous_log_likelihood is not None \
+ *                 and np.isclose(current_log_likelihood, previous_log_likelihood,             # <<<<<<<<<<<<<<
+ *                                rtol=0, atol=convergence_threshold):
+ *             converged = True
+ */
+    __pyx_t_6 = __Pyx_PyObject_Call(__pyx_t_1, __pyx_t_2, __pyx_t_8); if (unlikely(!__pyx_t_6)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 141; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_6);
+    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_t_6); if (unlikely(__pyx_t_4 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 141; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+    __pyx_t_3 = __pyx_t_4;
+    __pyx_L9_bool_binop_done:;
+    if (__pyx_t_3) {
+
+      /* "bernoullimix/_bernoulli.pyx":143
+ *                 and np.isclose(current_log_likelihood, previous_log_likelihood,
+ *                                rtol=0, atol=convergence_threshold):
+ *             converged = True             # <<<<<<<<<<<<<<
+ *             break
+ * 
+ */
+      __pyx_v_converged = 1;
+
+      /* "bernoullimix/_bernoulli.pyx":144
+ *                                rtol=0, atol=convergence_threshold):
+ *             converged = True
+ *             break             # <<<<<<<<<<<<<<
+ * 
+ *         unique_z_star = _posterior_probability_of_class_given_support(unique_support)
+ */
+      goto __pyx_L5_break;
+    }
+
+    /* "bernoullimix/_bernoulli.pyx":146
+ *             break
+ * 
+ *         unique_z_star = _posterior_probability_of_class_given_support(unique_support)             # <<<<<<<<<<<<<<
+ * 
+ *         pi, e = _m_step(unique_z_star, unique_dataset, counts)
+ */
+    __pyx_t_6 = __pyx_f_12bernoullimix_10_bernoulli__posterior_probability_of_class_given_support(__pyx_v_unique_support, 0); if (unlikely(!__pyx_t_6)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 146; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_6);
+    __Pyx_XDECREF_SET(__pyx_v_unique_z_star, __pyx_t_6);
+    __pyx_t_6 = 0;
+
+    /* "bernoullimix/_bernoulli.pyx":148
+ *         unique_z_star = _posterior_probability_of_class_given_support(unique_support)
+ * 
+ *         pi, e = _m_step(unique_z_star, unique_dataset, counts)             # <<<<<<<<<<<<<<
+ * 
+ *         mixing_coefficients = pi
+ */
+    __pyx_t_6 = __pyx_f_12bernoullimix_10_bernoulli__m_step(__pyx_v_unique_z_star, __pyx_v_unique_dataset, __pyx_v_counts, 0); if (unlikely(!__pyx_t_6)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 148; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_6);
+    if ((likely(PyTuple_CheckExact(__pyx_t_6))) || (PyList_CheckExact(__pyx_t_6))) {
+      PyObject* sequence = __pyx_t_6;
+      #if CYTHON_COMPILING_IN_CPYTHON
+      Py_ssize_t size = Py_SIZE(sequence);
+      #else
+      Py_ssize_t size = PySequence_Size(sequence);
+      #endif
+      if (unlikely(size != 2)) {
+        if (size > 2) __Pyx_RaiseTooManyValuesError(2);
+        else if (size >= 0) __Pyx_RaiseNeedMoreValuesError(size);
+        {__pyx_filename = __pyx_f[0]; __pyx_lineno = 148; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      }
+      #if CYTHON_COMPILING_IN_CPYTHON
+      if (likely(PyTuple_CheckExact(sequence))) {
+        __pyx_t_8 = PyTuple_GET_ITEM(sequence, 0); 
+        __pyx_t_2 = PyTuple_GET_ITEM(sequence, 1); 
+      } else {
+        __pyx_t_8 = PyList_GET_ITEM(sequence, 0); 
+        __pyx_t_2 = PyList_GET_ITEM(sequence, 1); 
+      }
+      __Pyx_INCREF(__pyx_t_8);
+      __Pyx_INCREF(__pyx_t_2);
+      #else
+      __pyx_t_8 = PySequence_ITEM(sequence, 0); if (unlikely(!__pyx_t_8)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 148; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __pyx_t_2 = PySequence_ITEM(sequence, 1); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 148; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      #endif
+      __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+    } else {
+      Py_ssize_t index = -1;
+      __pyx_t_1 = PyObject_GetIter(__pyx_t_6); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 148; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __Pyx_GOTREF(__pyx_t_1);
+      __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+      __pyx_t_9 = Py_TYPE(__pyx_t_1)->tp_iternext;
+      index = 0; __pyx_t_8 = __pyx_t_9(__pyx_t_1); if (unlikely(!__pyx_t_8)) goto __pyx_L11_unpacking_failed;
+      __Pyx_GOTREF(__pyx_t_8);
+      index = 1; __pyx_t_2 = __pyx_t_9(__pyx_t_1); if (unlikely(!__pyx_t_2)) goto __pyx_L11_unpacking_failed;
+      __Pyx_GOTREF(__pyx_t_2);
+      if (__Pyx_IternextUnpackEndCheck(__pyx_t_9(__pyx_t_1), 2) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 148; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_9 = NULL;
+      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+      goto __pyx_L12_unpacking_done;
+      __pyx_L11_unpacking_failed:;
+      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+      __pyx_t_9 = NULL;
+      if (__Pyx_IterFinish() == 0) __Pyx_RaiseNeedMoreValuesError(index);
+      {__pyx_filename = __pyx_f[0]; __pyx_lineno = 148; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_L12_unpacking_done:;
+    }
+    __Pyx_XDECREF_SET(__pyx_v_pi, __pyx_t_8);
+    __pyx_t_8 = 0;
+    __Pyx_XDECREF_SET(__pyx_v_e, __pyx_t_2);
+    __pyx_t_2 = 0;
+
+    /* "bernoullimix/_bernoulli.pyx":150
+ *         pi, e = _m_step(unique_z_star, unique_dataset, counts)
+ * 
+ *         mixing_coefficients = pi             # <<<<<<<<<<<<<<
+ *         emission_probabilities = e
+ * 
+ */
+    __Pyx_INCREF(__pyx_v_pi);
+    __Pyx_DECREF_SET(__pyx_v_mixing_coefficients, __pyx_v_pi);
+
+    /* "bernoullimix/_bernoulli.pyx":151
+ * 
+ *         mixing_coefficients = pi
+ *         emission_probabilities = e             # <<<<<<<<<<<<<<
+ * 
+ *         if trace_likelihood:
+ */
+    __Pyx_INCREF(__pyx_v_e);
+    __Pyx_DECREF_SET(__pyx_v_emission_probabilities, __pyx_v_e);
+
+    /* "bernoullimix/_bernoulli.pyx":153
+ *         emission_probabilities = e
+ * 
+ *         if trace_likelihood:             # <<<<<<<<<<<<<<
+ *             likelihood_trace.append(current_log_likelihood)
+ * 
+ */
+    __pyx_t_3 = __Pyx_PyObject_IsTrue(__pyx_v_trace_likelihood); if (unlikely(__pyx_t_3 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 153; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (__pyx_t_3) {
+
+      /* "bernoullimix/_bernoulli.pyx":154
+ * 
+ *         if trace_likelihood:
+ *             likelihood_trace.append(current_log_likelihood)             # <<<<<<<<<<<<<<
+ * 
+ *         previous_log_likelihood = current_log_likelihood
+ */
+      __pyx_t_10 = __Pyx_PyObject_Append(__pyx_v_likelihood_trace, __pyx_v_current_log_likelihood); if (unlikely(__pyx_t_10 == -1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 154; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      goto __pyx_L13;
+    }
+    __pyx_L13:;
+
+    /* "bernoullimix/_bernoulli.pyx":156
+ *             likelihood_trace.append(current_log_likelihood)
+ * 
+ *         previous_log_likelihood = current_log_likelihood             # <<<<<<<<<<<<<<
+ * 
+ *         iterations_done += 1
+ */
+    __Pyx_INCREF(__pyx_v_current_log_likelihood);
+    __Pyx_DECREF_SET(__pyx_v_previous_log_likelihood, __pyx_v_current_log_likelihood);
+
+    /* "bernoullimix/_bernoulli.pyx":158
+ *         previous_log_likelihood = current_log_likelihood
+ * 
+ *         iterations_done += 1             # <<<<<<<<<<<<<<
+ * 
+ *     if trace_likelihood:
+ */
+    __pyx_t_6 = PyNumber_InPlaceAdd(__pyx_v_iterations_done, __pyx_int_1); if (unlikely(!__pyx_t_6)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 158; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_6);
+    __Pyx_DECREF_SET(__pyx_v_iterations_done, __pyx_t_6);
+    __pyx_t_6 = 0;
+  }
+  __pyx_L5_break:;
+
+  /* "bernoullimix/_bernoulli.pyx":160
+ *         iterations_done += 1
+ * 
+ *     if trace_likelihood:             # <<<<<<<<<<<<<<
+ *         likelihood_trace = np.array(likelihood_trace)
+ * 
+ */
+  __pyx_t_3 = __Pyx_PyObject_IsTrue(__pyx_v_trace_likelihood); if (unlikely(__pyx_t_3 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 160; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (__pyx_t_3) {
+
+    /* "bernoullimix/_bernoulli.pyx":161
+ * 
+ *     if trace_likelihood:
+ *         likelihood_trace = np.array(likelihood_trace)             # <<<<<<<<<<<<<<
+ * 
+ *     return converged, current_log_likelihood, iterations_done, likelihood_trace
+ */
+    __pyx_t_2 = __Pyx_GetModuleGlobalName(__pyx_n_s_np); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 161; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_2);
+    __pyx_t_8 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_array); if (unlikely(!__pyx_t_8)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 161; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_8);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __pyx_t_2 = NULL;
+    if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_8))) {
+      __pyx_t_2 = PyMethod_GET_SELF(__pyx_t_8);
+      if (likely(__pyx_t_2)) {
+        PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_8);
+        __Pyx_INCREF(__pyx_t_2);
+        __Pyx_INCREF(function);
+        __Pyx_DECREF_SET(__pyx_t_8, function);
+      }
+    }
+    if (!__pyx_t_2) {
+      __pyx_t_6 = __Pyx_PyObject_CallOneArg(__pyx_t_8, __pyx_v_likelihood_trace); if (unlikely(!__pyx_t_6)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 161; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __Pyx_GOTREF(__pyx_t_6);
+    } else {
+      __pyx_t_1 = PyTuple_New(1+1); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 161; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __Pyx_GOTREF(__pyx_t_1);
+      PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_t_2); __Pyx_GIVEREF(__pyx_t_2); __pyx_t_2 = NULL;
+      __Pyx_INCREF(__pyx_v_likelihood_trace);
+      PyTuple_SET_ITEM(__pyx_t_1, 0+1, __pyx_v_likelihood_trace);
+      __Pyx_GIVEREF(__pyx_v_likelihood_trace);
+      __pyx_t_6 = __Pyx_PyObject_Call(__pyx_t_8, __pyx_t_1, NULL); if (unlikely(!__pyx_t_6)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 161; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __Pyx_GOTREF(__pyx_t_6);
+      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+    }
+    __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_DECREF_SET(__pyx_v_likelihood_trace, __pyx_t_6);
+    __pyx_t_6 = 0;
+    goto __pyx_L14;
+  }
+  __pyx_L14:;
+
+  /* "bernoullimix/_bernoulli.pyx":163
+ *         likelihood_trace = np.array(likelihood_trace)
+ * 
+ *     return converged, current_log_likelihood, iterations_done, likelihood_trace             # <<<<<<<<<<<<<<
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_6 = __Pyx_PyBool_FromLong(__pyx_v_converged); if (unlikely(!__pyx_t_6)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 163; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_6);
+  __pyx_t_8 = PyTuple_New(4); if (unlikely(!__pyx_t_8)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 163; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_8);
+  PyTuple_SET_ITEM(__pyx_t_8, 0, __pyx_t_6);
+  __Pyx_GIVEREF(__pyx_t_6);
+  __Pyx_INCREF(__pyx_v_current_log_likelihood);
+  PyTuple_SET_ITEM(__pyx_t_8, 1, __pyx_v_current_log_likelihood);
+  __Pyx_GIVEREF(__pyx_v_current_log_likelihood);
+  __Pyx_INCREF(__pyx_v_iterations_done);
+  PyTuple_SET_ITEM(__pyx_t_8, 2, __pyx_v_iterations_done);
+  __Pyx_GIVEREF(__pyx_v_iterations_done);
+  __Pyx_INCREF(__pyx_v_likelihood_trace);
+  PyTuple_SET_ITEM(__pyx_t_8, 3, __pyx_v_likelihood_trace);
+  __Pyx_GIVEREF(__pyx_v_likelihood_trace);
+  __pyx_t_6 = 0;
+  __pyx_r = __pyx_t_8;
+  __pyx_t_8 = 0;
+  goto __pyx_L0;
+
+  /* "bernoullimix/_bernoulli.pyx":121
+ *     return u / sum_of_weights, vs
+ * 
+ * def _em(unique_dataset, counts,             # <<<<<<<<<<<<<<
+ *         mixing_coefficients, emission_probabilities,
+ *         iteration_limit, convergence_threshold, trace_likelihood):
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_6);
+  __Pyx_XDECREF(__pyx_t_8);
+  __Pyx_AddTraceback("bernoullimix._bernoulli._em", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XDECREF(__pyx_v_iterations_done);
+  __Pyx_XDECREF(__pyx_v_previous_log_likelihood);
+  __Pyx_XDECREF(__pyx_v_current_log_likelihood);
+  __Pyx_XDECREF(__pyx_v_likelihood_trace);
+  __Pyx_XDECREF(__pyx_v_unique_support);
+  __Pyx_XDECREF(__pyx_v_unique_z_star);
+  __Pyx_XDECREF(__pyx_v_pi);
+  __Pyx_XDECREF(__pyx_v_e);
+  __Pyx_XDECREF(__pyx_v_mixing_coefficients);
+  __Pyx_XDECREF(__pyx_v_emission_probabilities);
   __Pyx_XGIVEREF(__pyx_r);
   __Pyx_TraceReturn(__pyx_r);
   __Pyx_RefNannyFinishContext();
@@ -4425,6 +6047,9 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_get_array_base(PyArrayObject *__py
 
 static PyMethodDef __pyx_methods[] = {
   {"bernoulli_prob_for_observations", (PyCFunction)__pyx_pw_12bernoullimix_10_bernoulli_1bernoulli_prob_for_observations, METH_VARARGS|METH_KEYWORDS, 0},
+  {"_log_likelihood_from_support", (PyCFunction)__pyx_pw_12bernoullimix_10_bernoulli_7_log_likelihood_from_support, METH_VARARGS|METH_KEYWORDS, 0},
+  {"_posterior_probability_of_class_given_support", (PyCFunction)__pyx_pw_12bernoullimix_10_bernoulli_9_posterior_probability_of_class_given_support, METH_O, 0},
+  {"_m_step", (PyCFunction)__pyx_pw_12bernoullimix_10_bernoulli_11_m_step, METH_VARARGS|METH_KEYWORDS, 0},
   {0, 0, 0, 0}
 };
 
@@ -4455,19 +6080,35 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_N, __pyx_k_N, sizeof(__pyx_k_N), 0, 0, 1, 1},
   {&__pyx_kp_u_Non_native_byte_order_not_suppor, __pyx_k_Non_native_byte_order_not_suppor, sizeof(__pyx_k_Non_native_byte_order_not_suppor), 0, 1, 0, 0},
   {&__pyx_n_s_RuntimeError, __pyx_k_RuntimeError, sizeof(__pyx_k_RuntimeError), 0, 0, 1, 1},
+  {&__pyx_n_s_T, __pyx_k_T, sizeof(__pyx_k_T), 0, 0, 1, 1},
   {&__pyx_n_s_ValueError, __pyx_k_ValueError, sizeof(__pyx_k_ValueError), 0, 0, 1, 1},
   {&__pyx_n_s_answer, __pyx_k_answer, sizeof(__pyx_k_answer), 0, 0, 1, 1},
+  {&__pyx_n_s_append, __pyx_k_append, sizeof(__pyx_k_append), 0, 0, 1, 1},
+  {&__pyx_n_s_array, __pyx_k_array, sizeof(__pyx_k_array), 0, 0, 1, 1},
+  {&__pyx_n_s_atol, __pyx_k_atol, sizeof(__pyx_k_atol), 0, 0, 1, 1},
+  {&__pyx_n_s_axis, __pyx_k_axis, sizeof(__pyx_k_axis), 0, 0, 1, 1},
   {&__pyx_n_s_bernoullimix__bernoulli, __pyx_k_bernoullimix__bernoulli, sizeof(__pyx_k_bernoullimix__bernoulli), 0, 0, 1, 1},
   {&__pyx_n_s_component, __pyx_k_component, sizeof(__pyx_k_component), 0, 0, 1, 1},
   {&__pyx_n_s_component_emission_probs, __pyx_k_component_emission_probs, sizeof(__pyx_k_component_emission_probs), 0, 0, 1, 1},
+  {&__pyx_n_s_converged, __pyx_k_converged, sizeof(__pyx_k_converged), 0, 0, 1, 1},
+  {&__pyx_n_s_convergence_threshold, __pyx_k_convergence_threshold, sizeof(__pyx_k_convergence_threshold), 0, 0, 1, 1},
+  {&__pyx_n_s_counts, __pyx_k_counts, sizeof(__pyx_k_counts), 0, 0, 1, 1},
+  {&__pyx_n_s_current_log_likelihood, __pyx_k_current_log_likelihood, sizeof(__pyx_k_current_log_likelihood), 0, 0, 1, 1},
   {&__pyx_n_s_d, __pyx_k_d, sizeof(__pyx_k_d), 0, 0, 1, 1},
   {&__pyx_n_s_dtype, __pyx_k_dtype, sizeof(__pyx_k_dtype), 0, 0, 1, 1},
+  {&__pyx_n_s_e, __pyx_k_e, sizeof(__pyx_k_e), 0, 0, 1, 1},
+  {&__pyx_n_s_em, __pyx_k_em, sizeof(__pyx_k_em), 0, 0, 1, 1},
   {&__pyx_n_s_emission_probabilities, __pyx_k_emission_probabilities, sizeof(__pyx_k_emission_probabilities), 0, 0, 1, 1},
   {&__pyx_n_s_empty, __pyx_k_empty, sizeof(__pyx_k_empty), 0, 0, 1, 1},
   {&__pyx_n_s_float, __pyx_k_float, sizeof(__pyx_k_float), 0, 0, 1, 1},
   {&__pyx_kp_s_home_saulius_dev_bernoulli_mixt, __pyx_k_home_saulius_dev_bernoulli_mixt, sizeof(__pyx_k_home_saulius_dev_bernoulli_mixt), 0, 0, 1, 0},
   {&__pyx_n_s_import, __pyx_k_import, sizeof(__pyx_k_import), 0, 0, 1, 1},
+  {&__pyx_n_s_isclose, __pyx_k_isclose, sizeof(__pyx_k_isclose), 0, 0, 1, 1},
+  {&__pyx_n_s_iteration_limit, __pyx_k_iteration_limit, sizeof(__pyx_k_iteration_limit), 0, 0, 1, 1},
+  {&__pyx_n_s_iterations_done, __pyx_k_iterations_done, sizeof(__pyx_k_iterations_done), 0, 0, 1, 1},
   {&__pyx_n_s_k, __pyx_k_k, sizeof(__pyx_k_k), 0, 0, 1, 1},
+  {&__pyx_n_s_likelihood_trace, __pyx_k_likelihood_trace, sizeof(__pyx_k_likelihood_trace), 0, 0, 1, 1},
+  {&__pyx_n_s_log, __pyx_k_log, sizeof(__pyx_k_log), 0, 0, 1, 1},
   {&__pyx_n_s_main, __pyx_k_main, sizeof(__pyx_k_main), 0, 0, 1, 1},
   {&__pyx_n_s_maximise_emissions, __pyx_k_maximise_emissions, sizeof(__pyx_k_maximise_emissions), 0, 0, 1, 1},
   {&__pyx_n_s_mixing_coefficients, __pyx_k_mixing_coefficients, sizeof(__pyx_k_mixing_coefficients), 0, 0, 1, 1},
@@ -4480,9 +6121,18 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_observations, __pyx_k_observations, sizeof(__pyx_k_observations), 0, 0, 1, 1},
   {&__pyx_n_s_order, __pyx_k_order, sizeof(__pyx_k_order), 0, 0, 1, 1},
   {&__pyx_n_s_p, __pyx_k_p, sizeof(__pyx_k_p), 0, 0, 1, 1},
+  {&__pyx_n_s_pi, __pyx_k_pi, sizeof(__pyx_k_pi), 0, 0, 1, 1},
+  {&__pyx_n_s_previous_log_likelihood, __pyx_k_previous_log_likelihood, sizeof(__pyx_k_previous_log_likelihood), 0, 0, 1, 1},
   {&__pyx_n_s_range, __pyx_k_range, sizeof(__pyx_k_range), 0, 0, 1, 1},
+  {&__pyx_n_s_rtol, __pyx_k_rtol, sizeof(__pyx_k_rtol), 0, 0, 1, 1},
+  {&__pyx_n_s_shape, __pyx_k_shape, sizeof(__pyx_k_shape), 0, 0, 1, 1},
+  {&__pyx_n_s_sum, __pyx_k_sum, sizeof(__pyx_k_sum), 0, 0, 1, 1},
+  {&__pyx_n_s_support, __pyx_k_support, sizeof(__pyx_k_support), 0, 0, 1, 1},
   {&__pyx_n_s_test, __pyx_k_test, sizeof(__pyx_k_test), 0, 0, 1, 1},
+  {&__pyx_n_s_trace_likelihood, __pyx_k_trace_likelihood, sizeof(__pyx_k_trace_likelihood), 0, 0, 1, 1},
   {&__pyx_n_s_unique_dataset, __pyx_k_unique_dataset, sizeof(__pyx_k_unique_dataset), 0, 0, 1, 1},
+  {&__pyx_n_s_unique_support, __pyx_k_unique_support, sizeof(__pyx_k_unique_support), 0, 0, 1, 1},
+  {&__pyx_n_s_unique_z_star, __pyx_k_unique_z_star, sizeof(__pyx_k_unique_z_star), 0, 0, 1, 1},
   {&__pyx_n_s_unique_zstar, __pyx_k_unique_zstar, sizeof(__pyx_k_unique_zstar), 0, 0, 1, 1},
   {&__pyx_kp_u_unknown_dtype_code_in_numpy_pxd, __pyx_k_unknown_dtype_code_in_numpy_pxd, sizeof(__pyx_k_unknown_dtype_code_in_numpy_pxd), 0, 1, 0, 0},
   {&__pyx_n_s_v, __pyx_k_v, sizeof(__pyx_k_v), 0, 0, 1, 1},
@@ -4604,6 +6254,18 @@ static int __Pyx_InitCachedConstants(void) {
   __Pyx_GOTREF(__pyx_tuple__10);
   __Pyx_GIVEREF(__pyx_tuple__10);
   __pyx_codeobj__11 = (PyObject*)__Pyx_PyCode_New(3, 0, 11, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__10, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_home_saulius_dev_bernoulli_mixt, __pyx_n_s_maximise_emissions, 74, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__11)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 74; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+
+  /* "bernoullimix/_bernoulli.pyx":121
+ *     return u / sum_of_weights, vs
+ * 
+ * def _em(unique_dataset, counts,             # <<<<<<<<<<<<<<
+ *         mixing_coefficients, emission_probabilities,
+ *         iteration_limit, convergence_threshold, trace_likelihood):
+ */
+  __pyx_tuple__12 = PyTuple_Pack(16, __pyx_n_s_unique_dataset, __pyx_n_s_counts, __pyx_n_s_mixing_coefficients, __pyx_n_s_emission_probabilities, __pyx_n_s_iteration_limit, __pyx_n_s_convergence_threshold, __pyx_n_s_trace_likelihood, __pyx_n_s_iterations_done, __pyx_n_s_previous_log_likelihood, __pyx_n_s_current_log_likelihood, __pyx_n_s_likelihood_trace, __pyx_n_s_converged, __pyx_n_s_unique_support, __pyx_n_s_unique_z_star, __pyx_n_s_pi, __pyx_n_s_e); if (unlikely(!__pyx_tuple__12)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 121; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__12);
+  __Pyx_GIVEREF(__pyx_tuple__12);
+  __pyx_codeobj__13 = (PyObject*)__Pyx_PyCode_New(7, 0, 16, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__12, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_home_saulius_dev_bernoulli_mixt, __pyx_n_s_em, 121, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__13)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 121; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
@@ -4613,6 +6275,8 @@ static int __Pyx_InitCachedConstants(void) {
 
 static int __Pyx_InitGlobals(void) {
   if (__Pyx_InitStrings(__pyx_string_tab) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  __pyx_int_0 = PyInt_FromLong(0); if (unlikely(!__pyx_int_0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_int_1 = PyInt_FromLong(1); if (unlikely(!__pyx_int_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   return 0;
   __pyx_L1_error:;
   return -1;
@@ -4749,6 +6413,18 @@ PyMODINIT_FUNC PyInit__bernoulli(void)
   __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_12bernoullimix_10_bernoulli_5maximise_emissions, NULL, __pyx_n_s_bernoullimix__bernoulli); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 74; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_maximise_emissions, __pyx_t_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 74; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+
+  /* "bernoullimix/_bernoulli.pyx":121
+ *     return u / sum_of_weights, vs
+ * 
+ * def _em(unique_dataset, counts,             # <<<<<<<<<<<<<<
+ *         mixing_coefficients, emission_probabilities,
+ *         iteration_limit, convergence_threshold, trace_likelihood):
+ */
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_12bernoullimix_10_bernoulli_13_em, NULL, __pyx_n_s_bernoullimix__bernoulli); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 121; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_em, __pyx_t_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 121; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
   /* "bernoullimix/_bernoulli.pyx":1
@@ -5778,6 +7454,154 @@ static CYTHON_INLINE PyObject *__Pyx_GetItemInt_Fast(PyObject *o, Py_ssize_t i,
     return __Pyx_GetItemInt_Generic(o, PyInt_FromSsize_t(i));
 }
 
+#if CYTHON_COMPILING_IN_CPYTHON
+static CYTHON_INLINE PyObject* __Pyx_PyObject_CallMethO(PyObject *func, PyObject *arg) {
+    PyObject *self, *result;
+    PyCFunction cfunc;
+    cfunc = PyCFunction_GET_FUNCTION(func);
+    self = PyCFunction_GET_SELF(func);
+    if (unlikely(Py_EnterRecursiveCall((char*)" while calling a Python object")))
+        return NULL;
+    result = cfunc(self, arg);
+    Py_LeaveRecursiveCall();
+    if (unlikely(!result) && unlikely(!PyErr_Occurred())) {
+        PyErr_SetString(
+            PyExc_SystemError,
+            "NULL result without error in PyObject_Call");
+    }
+    return result;
+}
+#endif
+
+#if CYTHON_COMPILING_IN_CPYTHON
+static PyObject* __Pyx__PyObject_CallOneArg(PyObject *func, PyObject *arg) {
+    PyObject *result;
+    PyObject *args = PyTuple_New(1);
+    if (unlikely(!args)) return NULL;
+    Py_INCREF(arg);
+    PyTuple_SET_ITEM(args, 0, arg);
+    result = __Pyx_PyObject_Call(func, args, NULL);
+    Py_DECREF(args);
+    return result;
+}
+static CYTHON_INLINE PyObject* __Pyx_PyObject_CallOneArg(PyObject *func, PyObject *arg) {
+#ifdef __Pyx_CyFunction_USED
+    if (likely(PyCFunction_Check(func) || PyObject_TypeCheck(func, __pyx_CyFunctionType))) {
+#else
+    if (likely(PyCFunction_Check(func))) {
+#endif
+        if (likely(PyCFunction_GET_FLAGS(func) & METH_O)) {
+            return __Pyx_PyObject_CallMethO(func, arg);
+        }
+    }
+    return __Pyx__PyObject_CallOneArg(func, arg);
+}
+#else
+static CYTHON_INLINE PyObject* __Pyx_PyObject_CallOneArg(PyObject *func, PyObject *arg) {
+    PyObject* args = PyTuple_Pack(1, arg);
+    return (likely(args)) ? __Pyx_PyObject_Call(func, args, NULL) : NULL;
+}
+#endif
+
+static CYTHON_INLINE void __Pyx_RaiseTooManyValuesError(Py_ssize_t expected) {
+    PyErr_Format(PyExc_ValueError,
+                 "too many values to unpack (expected %" CYTHON_FORMAT_SSIZE_T "d)", expected);
+}
+
+static CYTHON_INLINE void __Pyx_RaiseNeedMoreValuesError(Py_ssize_t index) {
+    PyErr_Format(PyExc_ValueError,
+                 "need more than %" CYTHON_FORMAT_SSIZE_T "d value%.1s to unpack",
+                 index, (index == 1) ? "" : "s");
+}
+
+static CYTHON_INLINE int __Pyx_IterFinish(void) {
+#if CYTHON_COMPILING_IN_CPYTHON
+    PyThreadState *tstate = PyThreadState_GET();
+    PyObject* exc_type = tstate->curexc_type;
+    if (unlikely(exc_type)) {
+        if (likely(exc_type == PyExc_StopIteration) || PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration)) {
+            PyObject *exc_value, *exc_tb;
+            exc_value = tstate->curexc_value;
+            exc_tb = tstate->curexc_traceback;
+            tstate->curexc_type = 0;
+            tstate->curexc_value = 0;
+            tstate->curexc_traceback = 0;
+            Py_DECREF(exc_type);
+            Py_XDECREF(exc_value);
+            Py_XDECREF(exc_tb);
+            return 0;
+        } else {
+            return -1;
+        }
+    }
+    return 0;
+#else
+    if (unlikely(PyErr_Occurred())) {
+        if (likely(PyErr_ExceptionMatches(PyExc_StopIteration))) {
+            PyErr_Clear();
+            return 0;
+        } else {
+            return -1;
+        }
+    }
+    return 0;
+#endif
+}
+
+static int __Pyx_IternextUnpackEndCheck(PyObject *retval, Py_ssize_t expected) {
+    if (unlikely(retval)) {
+        Py_DECREF(retval);
+        __Pyx_RaiseTooManyValuesError(expected);
+        return -1;
+    } else {
+        return __Pyx_IterFinish();
+    }
+    return 0;
+}
+
+static PyObject* __Pyx_PyObject_CallMethod1(PyObject* obj, PyObject* method_name, PyObject* arg) {
+    PyObject *method, *result = NULL;
+    method = __Pyx_PyObject_GetAttrStr(obj, method_name);
+    if (unlikely(!method)) goto bad;
+#if CYTHON_COMPILING_IN_CPYTHON
+    if (likely(PyMethod_Check(method))) {
+        PyObject *self = PyMethod_GET_SELF(method);
+        if (likely(self)) {
+            PyObject *args;
+            PyObject *function = PyMethod_GET_FUNCTION(method);
+            args = PyTuple_New(2);
+            if (unlikely(!args)) goto bad;
+            Py_INCREF(self);
+            PyTuple_SET_ITEM(args, 0, self);
+            Py_INCREF(arg);
+            PyTuple_SET_ITEM(args, 1, arg);
+            Py_INCREF(function);
+            Py_DECREF(method); method = NULL;
+            result = __Pyx_PyObject_Call(function, args, NULL);
+            Py_DECREF(args);
+            Py_DECREF(function);
+            return result;
+        }
+    }
+#endif
+    result = __Pyx_PyObject_CallOneArg(method, arg);
+bad:
+    Py_XDECREF(method);
+    return result;
+}
+
+static CYTHON_INLINE int __Pyx_PyObject_Append(PyObject* L, PyObject* x) {
+    if (likely(PyList_CheckExact(L))) {
+        if (unlikely(__Pyx_PyList_Append(L, x) < 0)) return -1;
+    } else {
+        PyObject* retval = __Pyx_PyObject_CallMethod1(L, __pyx_n_s_append, x);
+        if (unlikely(!retval))
+            return -1;
+        Py_DECREF(retval);
+    }
+    return 0;
+}
+
 #if PY_MAJOR_VERSION < 3
 static void __Pyx_Raise(PyObject *type, PyObject *value, PyObject *tb,
                         CYTHON_UNUSED PyObject *cause) {
@@ -5934,17 +7758,6 @@ bad:
     return;
 }
 #endif
-
-static CYTHON_INLINE void __Pyx_RaiseTooManyValuesError(Py_ssize_t expected) {
-    PyErr_Format(PyExc_ValueError,
-                 "too many values to unpack (expected %" CYTHON_FORMAT_SSIZE_T "d)", expected);
-}
-
-static CYTHON_INLINE void __Pyx_RaiseNeedMoreValuesError(Py_ssize_t index) {
-    PyErr_Format(PyExc_ValueError,
-                 "need more than %" CYTHON_FORMAT_SSIZE_T "d value%.1s to unpack",
-                 index, (index == 1) ? "" : "s");
-}
 
 static CYTHON_INLINE void __Pyx_RaiseNoneNotIterableError(void) {
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not iterable");
@@ -6130,7 +7943,7 @@ static void __Pyx_ReleaseBuffer(Py_buffer *view) {
 #endif
 
 
-      static PyObject *__Pyx_Import(PyObject *name, PyObject *from_list, int level) {
+        static PyObject *__Pyx_Import(PyObject *name, PyObject *from_list, int level) {
     PyObject *empty_list = 0;
     PyObject *module = 0;
     PyObject *global_dict = 0;
