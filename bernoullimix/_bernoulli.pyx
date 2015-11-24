@@ -68,31 +68,6 @@ def observation_emission_support_c(
 
     return answer
 
-@cython.boundscheck(False)
-@cython.wraparound(False)
-def maximise_emissions(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
-                       np.ndarray[np.float_t, ndim=2] unique_zstar,
-                       np.ndarray[np.int64_t, ndim=1] weights):
-    cdef int N = unique_zstar.shape[0]
-    cdef int K = unique_zstar.shape[1]
-
-    cdef int D = unique_dataset.shape[1]
-
-    cdef int n;
-    cdef int k;
-    cdef int d;
-
-    cdef np.float_t v_kd;
-
-    cdef np.ndarray[np.float_t, ndim=2] v = np.zeros((K, D), dtype=np.float)
-
-    for k in range(K):
-        for n in range(N):
-            for d in range(D):
-                v[k, d] += unique_dataset[n, d] * unique_zstar[n, k] * weights[n]
-
-    return v
-
 @cython.inline
 cpdef _log_likelihood_from_support(np.ndarray[np.float_t, ndim=2] support,
                                    np.ndarray[np.int64_t, ndim=1] weights):
@@ -106,25 +81,42 @@ cpdef _posterior_probability_of_class_given_support(np.ndarray[np.float_t, ndim=
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef _m_step(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
-              np.ndarray[np.float_t, ndim=2] unique_zstar,
-              np.ndarray[np.int64_t, ndim=1] weights):
-
-    cdef np.ndarray[np.float_t, ndim=1] u;
-    u = np.sum(unique_zstar.T * weights, axis=1)
-
-    cdef np.float_t sum_of_weights = np.sum(u)
-
+def _m_step(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
+            np.ndarray[np.float_t, ndim=2] unique_zstar,
+            np.ndarray[np.int64_t, ndim=1] weights):
     cdef int N = unique_zstar.shape[0]
     cdef int K = unique_zstar.shape[1]
 
-    cdef np.ndarray[np.float_t, ndim=2] vs = maximise_emissions(unique_dataset,
-                                                                unique_zstar, weights)
+    cdef int D = unique_dataset.shape[1]
+
+    cdef int n;
+    cdef int k;
+    cdef int d;
+
+    cdef np.float_t zstar_times_weight;
+
+    cdef np.ndarray[np.float_t, ndim=2] v = np.zeros((K, D), dtype=np.float)
+    cdef np.ndarray[np.float_t, ndim=1] u = np.zeros(K, dtype=np.float)
 
     for k in range(K):
-        vs[k] /= u[k]
+        for n in range(N):
 
-    return u / sum_of_weights, vs
+            zstar_times_weight = unique_zstar[n, k] * weights[n]
+            u[k] += zstar_times_weight
+
+            for d in range(D):
+                v[k, d] += unique_dataset[n, d] * zstar_times_weight
+
+        v[k] = v[k] / u[k]
+
+    cdef np.float_t sum_of_u = 0
+    for k in range(K):
+        sum_of_u += u[k]
+
+    for k in range(K):
+        u[k] /= sum_of_u
+
+    return u, v
 
 @cython.boundscheck(False)
 @cython.wraparound(False)

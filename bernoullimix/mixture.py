@@ -4,7 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 import numpy as np
 
-from bernoullimix._bernoulli import observation_emission_support_c, maximise_emissions, \
+from bernoullimix._bernoulli import observation_emission_support_c, \
     _log_likelihood_from_support, _posterior_probability_of_class_given_support, _m_step, _em
 
 _EPSILON = np.finfo(np.float).eps
