@@ -320,8 +320,11 @@ class BernoulliMixture(object):
         self._mixing_coefficients = mixing_coefficients
         self._emission_probabilities = emission_probabilities
 
-        self._validate()
-        
+        try:
+            self._validate()
+        except Exception as e:
+            raise Exception('EM algorithm converged to invalid state: {!r}'.format(e))
+
         convergence_status = ConvergenceStatus(bool(converged), iterations_done, likelihood_trace)
         return current_log_likelihood, convergence_status
 
