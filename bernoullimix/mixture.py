@@ -245,7 +245,7 @@ class BernoulliMixture(object):
 
     @classmethod
     def _m_step(cls, unique_zstar, unique_dataset, weights):
-        return _m_step(unique_zstar, unique_dataset, weights)
+        return _m_step(unique_dataset, unique_zstar, weights)
 
     def fit(self, dataset, iteration_limit=1000, convergence_threshold=_EPSILON,
             trace_likelihood=False):
@@ -274,14 +274,15 @@ class BernoulliMixture(object):
         converged, current_log_likelihood, iterations_done, likelihood_trace = self._em(
             unique_dataset, counts, iteration_limit, convergence_threshold, trace_likelihood)
 
-        convergence_status = ConvergenceStatus(converged, iterations_done, likelihood_trace)
+        convergence_status = ConvergenceStatus(bool(converged), iterations_done, likelihood_trace)
 
         return current_log_likelihood, convergence_status
 
     def _em(self, unique_dataset, counts, iteration_limit, convergence_threshold, trace_likelihood):
         return _em(unique_dataset, counts,
                    self.mixing_coefficients, self.emission_probabilities,
-                   iteration_limit, convergence_threshold, trace_likelihood)
+                   -1 if iteration_limit is None else iteration_limit,
+                   convergence_threshold, 1 if trace_likelihood else 0)
 
     def soft_assignment(self, dataset):
         """
