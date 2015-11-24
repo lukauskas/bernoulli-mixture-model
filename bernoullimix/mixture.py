@@ -271,8 +271,12 @@ class BernoulliMixture(object):
         # Get only unique rows and their counts
         unique_dataset, counts = self._aggregate_dataset(dataset)
 
-        converged, current_log_likelihood, iterations_done, likelihood_trace = self._em(
-            unique_dataset, counts, iteration_limit, convergence_threshold, trace_likelihood)
+        mixing_coefficients, emission_probabilities, \
+            converged, current_log_likelihood, iterations_done, likelihood_trace = self._em(
+                unique_dataset, counts, iteration_limit, convergence_threshold, trace_likelihood)
+
+        self._mixing_coefficients = mixing_coefficients
+        self._emission_probabilities = emission_probabilities
 
         convergence_status = ConvergenceStatus(bool(converged), iterations_done, likelihood_trace)
 

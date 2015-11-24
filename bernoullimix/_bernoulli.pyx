@@ -179,4 +179,5 @@ def _em(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
     if trace_likelihood:
         likelihood_trace = np.array(likelihood_trace)
 
-    return converged, current_log_likelihood, iterations_done, likelihood_trace
+    return mixing_coefficients, emission_probabilities, \
+           converged, current_log_likelihood, iterations_done, likelihood_trace
