@@ -578,7 +578,87 @@ class TestFit(unittest.TestCase):
         sample_dataset_unique, counts = BernoulliMixture.aggregate_dataset(sample_dataset)
 
         log_likelihood_a, __ = mixture_a.fit(sample_dataset, iteration_limit=1)
-        log_likelihood_b, __ = mixture_b.fit(sample_dataset, iteration_limit=1)
+        log_likelihood_b, __ = mixture_b.fit_aggregated(sample_dataset_unique, counts,
+                                                        iteration_limit=1)
+
+        self.assertEqual(log_likelihood_a, log_likelihood_b)
+
+    def test_fit_with_aggregation_accepts_pandas_object(self):
+        try:
+            import pandas as pd
+        except ImportError:
+            raise unittest.SkipTest
+
+        sample_dataset = np.array([[True, True, False, False],
+                                   [False, True, False, False],
+                                   [True, True, False, False],
+                                   [False, True, False, False],
+                                   [False, False, False, False],
+                                   [True, True, False, False]])
+
+        number_of_components = 3
+        number_of_dimensions = 4
+
+        sample_mixing_coefficients = np.array([0.5, 0.4, 0.1])
+        sample_emission_probabilities = np.array([[0.1, 0.2, 0.3, 0.4],
+                                                  [0.1, 0.4, 0.1, 0.4],
+                                                  [0.95, 0.05, 0.05, 0.05]])
+
+        mixture_a = BernoulliMixture(number_of_components, number_of_dimensions,
+                                     sample_mixing_coefficients, sample_emission_probabilities)
+
+        mixture_b = BernoulliMixture(number_of_components, number_of_dimensions,
+                                     sample_mixing_coefficients, sample_emission_probabilities)
+
+        sample_dataset_unique, counts = BernoulliMixture.aggregate_dataset(sample_dataset)
+
+        sample_dataset_unique_pd = pd.DataFrame(sample_dataset_unique)
+        counts_pd = pd.Series(counts)
+
+        log_likelihood_a, __ = mixture_a.fit_aggregated(sample_dataset_unique,
+                                                        counts,
+                                                        iteration_limit=1)
+
+        log_likelihood_b, __ = mixture_b.fit_aggregated(sample_dataset_unique_pd,
+                                                        counts_pd,
+                                                        iteration_limit=1)
+
+        self.assertEqual(log_likelihood_a, log_likelihood_b)
+
+    def test_fit_accepts_pandas_object(self):
+        try:
+            import pandas as pd
+        except ImportError:
+            raise unittest.SkipTest
+
+        sample_dataset = np.array([[True, True, False, False],
+                                   [False, True, False, False],
+                                   [True, True, False, False],
+                                   [False, True, False, False],
+                                   [False, False, False, False],
+                                   [True, True, False, False]])
+
+        number_of_components = 3
+        number_of_dimensions = 4
+
+        sample_mixing_coefficients = np.array([0.5, 0.4, 0.1])
+        sample_emission_probabilities = np.array([[0.1, 0.2, 0.3, 0.4],
+                                                  [0.1, 0.4, 0.1, 0.4],
+                                                  [0.95, 0.05, 0.05, 0.05]])
+
+        mixture_a = BernoulliMixture(number_of_components, number_of_dimensions,
+                                     sample_mixing_coefficients, sample_emission_probabilities)
+
+        mixture_b = BernoulliMixture(number_of_components, number_of_dimensions,
+                                     sample_mixing_coefficients, sample_emission_probabilities)
+
+        sample_dataset_pd = pd.DataFrame(sample_dataset)
+
+        log_likelihood_a, __ = mixture_a.fit(sample_dataset,
+                                             iteration_limit=1)
+
+        log_likelihood_b, __ = mixture_b.fit(sample_dataset_pd,
+                                             iteration_limit=1)
 
         self.assertEqual(log_likelihood_a, log_likelihood_b)
 
