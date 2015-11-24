@@ -525,6 +525,149 @@ class TestFit(unittest.TestCase):
         assert_array_almost_equal(expected_mixing_coefficients, mixing_coefficients)
         assert_array_almost_equal(expected_emission_probabilities, emission_probabilities)
 
+    def test_fit_increases_likelihood(self):
+
+        sample_dataset = np.array([[True, True, False, False],
+                                   [False, True, False, False],
+                                   [True, True, False, False],
+                                   [False, True, False, False],
+                                   [False, False, False, False],
+                                   [True, True, False, False]])
+
+        number_of_components = 3
+        number_of_dimensions = 4
+
+        sample_mixing_coefficients = np.array([0.5, 0.4, 0.1])
+        sample_emission_probabilities = np.array([[0.1, 0.2, 0.3, 0.4],
+                                                  [0.1, 0.4, 0.1, 0.4],
+                                                  [0.95, 0.05, 0.05, 0.05]])
+
+        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
+                                   sample_mixing_coefficients, sample_emission_probabilities)
+
+        log_likelihood_prior_to_fitting = mixture.log_likelihood(sample_dataset)
+        mixture.fit(sample_dataset, iteration_limit=1)
+
+        log_likelihood_after_fitting = mixture.log_likelihood(sample_dataset)
+
+        self.assertGreater(log_likelihood_after_fitting, log_likelihood_prior_to_fitting)
+
+    def test_fit_with_or_without_aggregation_produces_same_result(self):
+
+        sample_dataset = np.array([[True, True, False, False],
+                                   [False, True, False, False],
+                                   [True, True, False, False],
+                                   [False, True, False, False],
+                                   [False, False, False, False],
+                                   [True, True, False, False]])
+
+        number_of_components = 3
+        number_of_dimensions = 4
+
+        sample_mixing_coefficients = np.array([0.5, 0.4, 0.1])
+        sample_emission_probabilities = np.array([[0.1, 0.2, 0.3, 0.4],
+                                                  [0.1, 0.4, 0.1, 0.4],
+                                                  [0.95, 0.05, 0.05, 0.05]])
+
+        mixture_a = BernoulliMixture(number_of_components, number_of_dimensions,
+                                     sample_mixing_coefficients, sample_emission_probabilities)
+
+        mixture_b = BernoulliMixture(number_of_components, number_of_dimensions,
+                                     sample_mixing_coefficients, sample_emission_probabilities)
+
+        sample_dataset_unique, counts = BernoulliMixture.aggregate_dataset(sample_dataset)
+
+        log_likelihood_a, __ = mixture_a.fit(sample_dataset, iteration_limit=1)
+        log_likelihood_b, __ = mixture_b.fit(sample_dataset, iteration_limit=1)
+
+        self.assertEqual(log_likelihood_a, log_likelihood_b)
+
+    def test_reported_log_likelihood_is_true_likelihood_post_fitting(self):
+
+        sample_dataset = np.array([[True, True, False, False],
+                                   [False, True, False, False],
+                                   [True, True, False, False],
+                                   [False, True, False, False],
+                                   [False, False, False, False],
+                                   [True, True, False, False]])
+
+        number_of_components = 3
+        number_of_dimensions = 4
+
+        sample_mixing_coefficients = np.array([0.5, 0.4, 0.1])
+        sample_emission_probabilities = np.array([[0.1, 0.2, 0.3, 0.4],
+                                                  [0.1, 0.4, 0.1, 0.4],
+                                                  [0.95, 0.05, 0.05, 0.05]])
+
+        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
+                                   sample_mixing_coefficients, sample_emission_probabilities)
+
+        log_likelihood, __ = mixture.fit(sample_dataset, iteration_limit=1)
+        log_likelihood_after_fitting = mixture.log_likelihood(sample_dataset)
+
+        self.assertEqual(log_likelihood, log_likelihood_after_fitting)
+
+
+    def test_fit_converges(self):
+
+        sample_dataset = np.array([[True, True, False, False],
+                                   [False, True, False, False],
+                                   [True, True, False, False],
+                                   [False, True, False, False],
+                                   [False, False, False, False],
+                                   [True, True, False, False]])
+
+        number_of_components = 3
+        number_of_dimensions = 4
+
+        sample_mixing_coefficients = np.array([0.5, 0.4, 0.1])
+        sample_emission_probabilities = np.array([[0.1, 0.2, 0.3, 0.4],
+                                                  [0.1, 0.4, 0.1, 0.4],
+                                                  [0.95, 0.05, 0.05, 0.05]])
+
+        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
+                                   sample_mixing_coefficients, sample_emission_probabilities)
+
+        # such a simple model should converge within 100 iter. even for eps
+        log_likelihood, convergence = mixture.fit(sample_dataset, iteration_limit=100,
+                                                  convergence_threshold=np.finfo(np.float64).eps)
+        self.assertTrue(convergence.converged)
+
+    def test_fit_converges_immediately_if_already_converged(self):
+
+        sample_dataset = np.array([[True, True, False, False],
+                                   [False, True, False, False],
+                                   [True, True, False, False],
+                                   [False, True, False, False],
+                                   [False, False, False, False],
+                                   [True, True, False, False]])
+
+        number_of_components = 3
+        number_of_dimensions = 4
+
+        sample_mixing_coefficients = np.array([0.5, 0.4, 0.1])
+        sample_emission_probabilities = np.array([[0.1, 0.2, 0.3, 0.4],
+                                                  [0.1, 0.4, 0.1, 0.4],
+                                                  [0.95, 0.05, 0.05, 0.05]])
+
+        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
+                                   sample_mixing_coefficients, sample_emission_probabilities)
+
+        # quite a large convergence threshold, to ensure fast convergence
+        log_likelihood, convergence = mixture.fit(sample_dataset, iteration_limit=1000,
+                                                  convergence_threshold=0.01)
+
+        self.assertTrue(convergence.converged)  # Sanity check
+        self.assertGreater(convergence.number_of_iterations, 1)  # Another sanity check
+
+        # The second time we call fit. Ensure it is converged:
+        log_likelihood, convergence = mixture.fit(sample_dataset, iteration_limit=1000,
+                                                  convergence_threshold=0.01)
+
+        self.assertTrue(convergence.converged)
+        # The actual test. Should only be one recorded iteration:
+        self.assertEqual(convergence.number_of_iterations, 1)
+
     def test_m_step_error_for_large_datasets(self):
         """
         This tests that the error (due to floating point, probably)

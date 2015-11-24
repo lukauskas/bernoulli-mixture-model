@@ -144,37 +144,47 @@ def _em(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
         likelihood_trace = None
 
     cdef int converged = 0
-    cdef np.ndarray[np.float_t, ndim=2] unique_support
+    cdef np.ndarray[np.float_t, ndim=2] previous_unique_support
+    cdef np.ndarray[np.float_t, ndim=2] current_unique_support
 
     cdef np.float_t previous_log_likelihood
     cdef np.float_t current_log_likelihood
 
     cdef np.ndarray[np.float_t, ndim=2] unique_zstar
 
+    previous_unique_support = observation_emission_support_c(unique_dataset,
+                                                             emission_probabilities,
+                                                             mixing_coefficients)
+
+    previous_log_likelihood = _log_likelihood_from_support(previous_unique_support, counts)
+
+    if trace_likelihood:
+        likelihood_trace.append(previous_log_likelihood)
 
     while iteration_limit < 0 or iterations_done < iteration_limit:
 
-        unique_support = observation_emission_support_c(unique_dataset,
-                                                        emission_probabilities,
-                                                        mixing_coefficients)
-
-        current_log_likelihood = _log_likelihood_from_support(unique_support, counts)
-        if iterations_done > 0 \
-                and np.isclose(current_log_likelihood, previous_log_likelihood,
-                               rtol=0, atol=convergence_threshold):
-            converged = 1
-            break
-
-        unique_zstar = _posterior_probability_of_class_given_support(unique_support)
-
+        unique_zstar = _posterior_probability_of_class_given_support(previous_unique_support)
         mixing_coefficients, emission_probabilities = _m_step(unique_dataset, unique_zstar, counts)
+
+        current_unique_support = observation_emission_support_c(unique_dataset,
+                                                                emission_probabilities,
+                                                                mixing_coefficients)
+        current_log_likelihood = _log_likelihood_from_support(current_unique_support, counts)
+
+        iterations_done += 1
 
         if trace_likelihood:
             likelihood_trace.append(current_log_likelihood)
 
-        previous_log_likelihood = current_log_likelihood
+        if current_log_likelihood - previous_log_likelihood < convergence_threshold:
+            assert current_log_likelihood - previous_log_likelihood >= 0
+            converged = 1
+            break
 
-        iterations_done += 1
+        previous_log_likelihood = current_log_likelihood
+        previous_unique_support = current_unique_support
+
+
 
     if trace_likelihood:
         likelihood_trace = np.array(likelihood_trace)
