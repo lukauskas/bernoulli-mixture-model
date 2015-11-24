@@ -115,7 +115,7 @@ class BernoulliMixture(object):
                (self.number_of_components * self.number_of_dimensions)
 
     @classmethod
-    def _aggregate_dataset(cls, dataset):
+    def aggregate_dataset(cls, dataset):
         """
         Take the dataset and return only its unique rows, along with their counts
 
@@ -228,7 +228,7 @@ class BernoulliMixture(object):
                              'Got {}, expected {}'.format(dataset.shape[1],
                                                           self.number_of_dimensions))
 
-        unique_dataset, weights = self._aggregate_dataset(dataset)
+        unique_dataset, weights = self.aggregate_dataset(dataset)
         support = self._observation_emission_support(unique_dataset)
         return self._log_likelihood_from_support(support, weights)
 
@@ -286,17 +286,32 @@ class BernoulliMixture(object):
                                                           self.number_of_dimensions))
 
         # Get only unique rows and their counts
-        unique_dataset, counts = self._aggregate_dataset(dataset)
+        unique_dataset, counts = self.aggregate_dataset(dataset)
 
+        return self.fit_aggregated(unique_dataset, counts, iteration_limit, convergence_threshold,
+                                   trace_likelihood)
+
+    def fit_aggregated(self, unique_dataset, counts, iteration_limit, convergence_threshold,
+                       trace_likelihood):
+        """
+        Fits the mixture model to the dataset using EM algorithm.
+        Same as `fit()`, but takes aggregated dataset as input.
+
+        :param unique_dataset: dataset to fit to (aggregated)
+        :param counts: counts for each of the rows (as returned by the aggregate dataset function)
+         :param iteration_limit: number of iterations to search. If none, will run till convergence
+        :param convergence_threshold: threshold (for log likelihood) that marks convergence
+        :param trace_likelihood: if set to true, the likelihood trace from optimisation
+                                 will be returned
+        :return: (float, `ConvergenceStatus`) : log likelihood of the dataset post fitting,
+            and the information about convergence of the algorithm
+        """
         mixing_coefficients, emission_probabilities, \
-            converged, current_log_likelihood, iterations_done, likelihood_trace = self._em(
-                unique_dataset, counts, iteration_limit, convergence_threshold, trace_likelihood)
-
+        converged, current_log_likelihood, iterations_done, likelihood_trace = self._em(
+            unique_dataset, counts, iteration_limit, convergence_threshold, trace_likelihood)
         self._mixing_coefficients = mixing_coefficients
         self._emission_probabilities = emission_probabilities
-
         convergence_status = ConvergenceStatus(bool(converged), iterations_done, likelihood_trace)
-
         return current_log_likelihood, convergence_status
 
     def _em(self, unique_dataset, counts, iteration_limit, convergence_threshold, trace_likelihood):

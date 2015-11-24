@@ -365,7 +365,7 @@ class TestLogLikelihood(unittest.TestCase):
                                    [False, False, False, False],
                                    [True, True, False, False]])
 
-        unique_dataset, weights = BernoulliMixture._aggregate_dataset(sample_dataset)
+        unique_dataset, weights = BernoulliMixture.aggregate_dataset(sample_dataset)
 
         # Compute support on whole dataset for the test
         # even though code would compute it for unique_dataset only
@@ -540,7 +540,7 @@ class TestFit(unittest.TestCase):
 
         def random_dataset(shape, random):
             dataset = np.asarray(random.randint(2, size=shape), dtype=bool)
-            return BernoulliMixture._aggregate_dataset(dataset)
+            return BernoulliMixture.aggregate_dataset(dataset)
 
         def random_zstar_and_dataset(N, D, K, random_state):
             random = np.random.RandomState(random_state)
@@ -627,7 +627,7 @@ class TestFit(unittest.TestCase):
 
         expected_aggregated_weights = np.array([3, 2, 1], dtype=int)
 
-        actual_aggregated_dataset, actual_weights = BernoulliMixture._aggregate_dataset(sample_dataset)
+        actual_aggregated_dataset, actual_weights = BernoulliMixture.aggregate_dataset(sample_dataset)
 
         # Check that shapes are the same
         self.assertEqual(expected_aggregated_dataset.shape, actual_aggregated_dataset.shape)
