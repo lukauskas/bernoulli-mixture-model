@@ -1,3 +1,4 @@
+# cython: profile=True
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -8,8 +9,8 @@ cimport cython
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def bernoulli_prob_for_observations(np.ndarray[np.float_t, ndim=1] p,
-                                    np.ndarray[np.uint8_t, cast=True, ndim=2] observations):
+cpdef bernoulli_prob_for_observations(np.ndarray[np.float_t, ndim=1] p,
+                                      np.ndarray[np.uint8_t, cast=True, ndim=2] observations):
     # We are doing
     # emissions = np.power(p, observations) * \
     #             np.power(1 - p, 1 - observations)
@@ -24,7 +25,9 @@ def bernoulli_prob_for_observations(np.ndarray[np.float_t, ndim=1] p,
 
     cdef np.uint8_t obs
 
-    answer = np.empty(n_max)
+    cdef np.ndarray[np.float_t, ndim=1] answer
+
+    answer = np.empty(n_max, dtype=np.float)
 
     for n in range(n_max):
 
@@ -38,6 +41,31 @@ def bernoulli_prob_for_observations(np.ndarray[np.float_t, ndim=1] p,
                 row_ans *= 1 - p[d]
 
         answer[n] = row_ans
+
+    return answer
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def observation_emission_support_c(
+        np.ndarray[np.uint8_t, cast=True, ndim=2] observations,
+        np.ndarray[np.float_t, ndim=2] emission_probabilities,
+        np.ndarray[np.float_t, ndim=1] mixing_coefficients):
+
+    cdef int N = observations.shape[0]
+    cdef int K = mixing_coefficients.shape[0]
+
+    cdef np.ndarray[np.float_t, ndim=2] answer
+
+    answer = np.empty((N, K), dtype=np.float)
+
+    cdef int component
+
+    for component in range(K):
+        component_emission_probs = emission_probabilities[component]
+
+        answer[:, component] = mixing_coefficients[component] * \
+                               bernoulli_prob_for_observations(component_emission_probs,
+                                                               observations)
 
     return answer
 

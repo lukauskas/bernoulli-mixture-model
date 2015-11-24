@@ -4,7 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 import numpy as np
 
-from bernoullimix._bernoulli import bernoulli_prob_for_observations, maximise_emissions
+from bernoullimix._bernoulli import observation_emission_support_c, maximise_emissions
 
 _EPSILON = np.finfo(np.float).eps
 
@@ -234,16 +234,8 @@ class BernoulliMixture(object):
 
         observations = np.asarray(observations, dtype=bool)
 
-        answer = np.empty((len(observations), self.number_of_components))
-
-        for component in range(self.number_of_components):
-            component_emission_probs = self.emission_probabilities[component]
-
-            answer[:, component] = self.mixing_coefficients[component] * \
-                                   bernoulli_prob_for_observations(component_emission_probs,
-                                                                   observations)
-
-        return answer
+        return observation_emission_support_c(observations,
+                                              self.emission_probabilities, self.mixing_coefficients)
 
     @classmethod
     def _posterior_probability_of_class_given_support(cls, support):

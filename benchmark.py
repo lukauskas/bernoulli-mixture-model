@@ -12,11 +12,11 @@ def main(max_iter):
 
     np.random.seed(RANDOM_STATE)
 
-    K = 10
+    K = 100
     D = 21
     N = 100000
 
-    mixture_coefficients = np.arange(K, dtype=float) + 1
+    mixture_coefficients = np.ones(K, dtype=float)
     mixture_coefficients /= mixture_coefficients.sum()
 
     emissions = np.random.rand(K, D)
