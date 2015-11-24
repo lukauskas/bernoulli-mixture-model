@@ -281,15 +281,18 @@ class BernoulliMixture(object):
         # Get only unique rows and their counts
         unique_dataset, counts = self._aggregate_dataset(dataset)
 
+        converged, current_log_likelihood, iterations_done, likelihood_trace = self._em(
+            unique_dataset, counts, iteration_limit, convergence_threshold, trace_likelihood)
+
+        convergence_status = ConvergenceStatus(converged, iterations_done, likelihood_trace)
+
+        return current_log_likelihood, convergence_status
+
+    def _em(self, unique_dataset, counts, iteration_limit, convergence_threshold, trace_likelihood):
         iterations_done = 0
-
         previous_log_likelihood, current_log_likelihood = None, None
-
         if trace_likelihood:
-            if iteration_limit:
-                likelihood_trace = np.empty(iteration_limit, dtype=float)
-            else:
-                likelihood_trace = []
+            likelihood_trace = []
         else:
             likelihood_trace = None
 
@@ -299,8 +302,8 @@ class BernoulliMixture(object):
 
             current_log_likelihood = self._log_likelihood_from_support(unique_support, counts)
             if previous_log_likelihood is not None \
-                and np.isclose(current_log_likelihood, previous_log_likelihood,
-                               rtol=0, atol=convergence_threshold):
+                    and np.isclose(current_log_likelihood, previous_log_likelihood,
+                                   rtol=0, atol=convergence_threshold):
                 converged = True
                 break
 
@@ -312,24 +315,16 @@ class BernoulliMixture(object):
             self._emission_probabilities = e
 
             if trace_likelihood:
-                if iteration_limit:
-                    likelihood_trace[iterations_done] = current_log_likelihood
-                else:
-                    likelihood_trace.append(current_log_likelihood)
+                likelihood_trace.append(current_log_likelihood)
 
             previous_log_likelihood = current_log_likelihood
 
             iterations_done += 1
 
         if trace_likelihood:
-            if not iteration_limit:
-                likelihood_trace = np.array(likelihood_trace)
-            elif iterations_done < len(likelihood_trace):
-                likelihood_trace = likelihood_trace[:iterations_done]
-
-        convergence_status = ConvergenceStatus(converged, iterations_done, likelihood_trace)
-
-        return current_log_likelihood, convergence_status
+            likelihood_trace = np.array(likelihood_trace)
+            
+        return converged, current_log_likelihood, iterations_done, likelihood_trace
 
     def soft_assignment(self, dataset):
         """
