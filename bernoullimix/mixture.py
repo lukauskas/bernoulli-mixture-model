@@ -319,6 +319,9 @@ class BernoulliMixture(object):
             unique_dataset, counts, iteration_limit, convergence_threshold, trace_likelihood)
         self._mixing_coefficients = mixing_coefficients
         self._emission_probabilities = emission_probabilities
+
+        self._validate()
+        
         convergence_status = ConvergenceStatus(bool(converged), iterations_done, likelihood_trace)
         return current_log_likelihood, convergence_status
 
