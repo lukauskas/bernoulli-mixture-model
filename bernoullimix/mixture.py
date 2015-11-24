@@ -154,23 +154,40 @@ class BernoulliMixture(object):
         """
         return -2.0 * log_likelihood + psi * self.number_of_free_parameters
 
-    def BIC(self, dataset):
+    def BIC_dataset(self, dataset):
         """
-        Computes Bayesian Information Criterion
+        Computes Bayesian Information Criterion for Dataset
         :param dataset: dataset to compute BIC for
         :return: BIC
         """
         log_likelihood = self.log_likelihood(dataset)
-        psi = np.log(len(dataset))
+        return self.BIC(log_likelihood, len(dataset))
+
+    def BIC(self, log_likelihood, number_of_observations):
+        """
+        Computes BIC given log likelihood and number of observations
+        :param log_likelihood:
+        :param number_of_observations:
+        :return:
+        """
+        psi = np.log(number_of_observations)
         return self._penalised_likelihood(log_likelihood, psi=psi)
 
-    def AIC(self, dataset):
+    def AIC_dataset(self, dataset):
         """
-        Computes Akaike Information Criterion
+        Computes Akaike Information Criterion for dataset
         :param dataset: dataset to compute AIC for
         :return: AIC
         """
         log_likelihood = self.log_likelihood(dataset)
+        return self.AIC(log_likelihood)
+
+    def AIC(self, log_likelihood):
+        """
+        Computes Akaike Information Criterion for log likelihood
+        :param log_likelihood:
+        :return:
+        """
         psi = 2
         return self._penalised_likelihood(log_likelihood, psi=psi)
 

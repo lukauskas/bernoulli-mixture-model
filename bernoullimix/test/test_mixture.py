@@ -689,7 +689,7 @@ class TestPenalisedLikelihood(unittest.TestCase):
         number_of_free_parameters = mixture.number_of_free_parameters
 
         expected_bic = -2 * log_likelihood + number_of_free_parameters * np.log(len(dataset))
-        actual_bic = mixture.BIC(dataset)
+        actual_bic = mixture.BIC_dataset(dataset)
 
         self.assertEqual(expected_bic, actual_bic)
 
@@ -717,7 +717,7 @@ class TestPenalisedLikelihood(unittest.TestCase):
         number_of_free_parameters = mixture.number_of_free_parameters
 
         expected_aic = -2 * log_likelihood + number_of_free_parameters * 2
-        actual_aic = mixture.AIC(dataset)
+        actual_aic = mixture.AIC_dataset(dataset)
 
         self.assertEqual(expected_aic, actual_aic)
 
