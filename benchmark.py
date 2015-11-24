@@ -39,6 +39,6 @@ if __name__ == '__main__':
     try:
         max_iter = int(sys.argv[1])
     except IndexError:
-        max_iter = 100
+        max_iter = 50
 
     main(max_iter)
