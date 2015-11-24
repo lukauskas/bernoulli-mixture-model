@@ -18,8 +18,8 @@ cpdef bernoulli_prob_for_observations(np.ndarray[np.float_t, ndim=1] p,
     cdef int n
     cdef int d
 
-    cdef n_max = observations.shape[0]
-    cdef d_max = observations.shape[1]
+    cdef int n_max = observations.shape[0]
+    cdef int d_max = observations.shape[1]
 
     cdef np.float_t row_ans
 
@@ -85,13 +85,11 @@ def maximise_emissions(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
 
     cdef np.float_t v_kd;
 
-    cdef np.ndarray[np.float_t, ndim=2] v = np.empty((K, D), dtype=np.float)
+    cdef np.ndarray[np.float_t, ndim=2] v = np.zeros((K, D), dtype=np.float)
 
     for k in range(K):
-        for d in range(D):
-            v_kd = 0
-            for n in range(N):
-                v_kd += unique_dataset[n, d] * unique_zstar[n, k] * weights[n]
-            v[k, d] = v_kd
+        for n in range(N):
+            for d in range(D):
+                v[k, d] += unique_dataset[n, d] * unique_zstar[n, k] * weights[n]
 
     return v
