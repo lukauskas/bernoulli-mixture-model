@@ -291,8 +291,10 @@ class BernoulliMixture(object):
         return self.fit_aggregated(unique_dataset, counts, iteration_limit, convergence_threshold,
                                    trace_likelihood)
 
-    def fit_aggregated(self, unique_dataset, counts, iteration_limit, convergence_threshold,
-                       trace_likelihood):
+    def fit_aggregated(self, unique_dataset, counts,
+                       iteration_limit=1000,
+                       convergence_threshold=_EPSILON,
+                       trace_likelihood=False):
         """
         Fits the mixture model to the dataset using EM algorithm.
         Same as `fit()`, but takes aggregated dataset as input.
