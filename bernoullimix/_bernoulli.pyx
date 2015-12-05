@@ -45,7 +45,7 @@ cpdef bernoulli_prob_for_observations(np.ndarray[np.float_t, ndim=1] p,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def observation_emission_support_c(
+def probability_z_o_given_theta_c(
         np.ndarray[np.uint8_t, cast=True, ndim=2] observations,
         np.ndarray[np.float_t, ndim=2] emission_probabilities,
         np.ndarray[np.float_t, ndim=1] mixing_coefficients):
@@ -144,9 +144,9 @@ def _em(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
 
     cdef np.ndarray[np.float_t, ndim=2] unique_zstar
 
-    previous_unique_support = observation_emission_support_c(unique_dataset,
-                                                             emission_probabilities,
-                                                             mixing_coefficients)
+    previous_unique_support = probability_z_o_given_theta_c(unique_dataset,
+                                                            emission_probabilities,
+                                                            mixing_coefficients)
 
     previous_log_likelihood = _log_likelihood_from_support(previous_unique_support, counts)
 
@@ -158,9 +158,9 @@ def _em(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
         unique_zstar = _posterior_probability_of_class_given_support(previous_unique_support)
         mixing_coefficients, emission_probabilities = _m_step(unique_dataset, unique_zstar, counts)
 
-        current_unique_support = observation_emission_support_c(unique_dataset,
-                                                                emission_probabilities,
-                                                                mixing_coefficients)
+        current_unique_support = probability_z_o_given_theta_c(unique_dataset,
+                                                               emission_probabilities,
+                                                               mixing_coefficients)
         current_log_likelihood = _log_likelihood_from_support(current_unique_support, counts)
 
         iterations_done += 1

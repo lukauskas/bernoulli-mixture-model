@@ -4,7 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 import numpy as np
 
-from bernoullimix._bernoulli import observation_emission_support_c, \
+from bernoullimix._bernoulli import probability_z_o_given_theta_c, \
     _log_likelihood_from_support, _posterior_probability_of_class_given_support, _m_step, _em
 
 _EPSILON = np.finfo(np.float).eps
@@ -229,7 +229,7 @@ class BernoulliMixture(object):
                                                           self.number_of_dimensions))
 
         unique_dataset, weights = self.aggregate_dataset(dataset)
-        support = self._observation_emission_support(unique_dataset)
+        support = self._prob_z_o_given_theta(unique_dataset)
         return self._log_likelihood_from_support(support, weights)
 
     def _log_likelihood_from_support(self, support, weights):
@@ -242,7 +242,7 @@ class BernoulliMixture(object):
         """
         return _log_likelihood_from_support(support, weights)
 
-    def _observation_emission_support(self, observations):
+    def _prob_z_o_given_theta(self, observations):
         """
         Returns point emission probabilities for a set of observations provided as array.
         Usually the code would just compute it for unique observations, and then
@@ -252,8 +252,9 @@ class BernoulliMixture(object):
 
         observations = np.asarray(observations, dtype=bool)
 
-        return observation_emission_support_c(observations,
-                                              self.emission_probabilities, self.mixing_coefficients)
+        return probability_z_o_given_theta_c(observations,
+                                             self.emission_probabilities,
+                                             self.mixing_coefficients)
 
     @classmethod
     def _posterior_probability_of_class_given_support(cls, support):
@@ -342,7 +343,7 @@ class BernoulliMixture(object):
         :return: (N, K) matrix of probabilities of the n-th observation comming from component K
         """
 
-        support = self._observation_emission_support(dataset)
+        support = self._prob_z_o_given_theta(dataset)
         probs = self._posterior_probability_of_class_given_support(support)
 
         return probs

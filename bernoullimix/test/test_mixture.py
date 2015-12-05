@@ -333,7 +333,7 @@ class TestLogLikelihood(unittest.TestCase):
                     np.product(np.power(sample_emission_probabilities[component], sample_dataset[sample]) *
                                np.power(1-sample_emission_probabilities[component], 1-sample_dataset[sample]))
 
-        actual_answer = mixture._observation_emission_support(sample_dataset)
+        actual_answer = mixture._prob_z_o_given_theta(sample_dataset)
 
         assert_array_almost_equal(expected_answer, actual_answer)
 
@@ -369,12 +369,12 @@ class TestLogLikelihood(unittest.TestCase):
 
         # Compute support on whole dataset for the test
         # even though code would compute it for unique_dataset only
-        support = mixture._observation_emission_support(sample_dataset)
+        support = mixture._prob_z_o_given_theta(sample_dataset)
         expected_answer = np.sum(np.log(np.sum(support, axis=1)))
 
         actual_answer = mixture.log_likelihood(sample_dataset)
 
-        unique_support = mixture._observation_emission_support(unique_dataset)
+        unique_support = mixture._prob_z_o_given_theta(unique_dataset)
         actual_answer_from_support = mixture._log_likelihood_from_support(unique_support, weights)
 
         self.assertAlmostEqual(expected_answer, actual_answer)
