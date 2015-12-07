@@ -134,6 +134,12 @@ class TestBernoulliJoint(unittest.TestCase):
                          [False, False],
                          [False, True]])
 
+        # Unobserved values should not impact anything, so they can be flipped
+        data2 = np.array([[True, True],
+                         [False, False],
+                         [False, True],
+                         [True, False]])
+
         expected_answer = np.array([[pis[0] * 0.5 * 0.3, pis[1] * 0.3 * 0.2, pis[2] * 0.9 * 0.1],
                                     [pis[0] * 0.7, pis[1] * 0.8, pis[2] * 0.9],
                                     [pis[0] * 0.5, pis[1] * 0.7, pis[2] * 0.1],
@@ -145,8 +151,10 @@ class TestBernoulliJoint(unittest.TestCase):
                          [False, False]])
 
         actual_answer = probability_z_o_given_theta_c(data, ps, pis, mask)
+        actual_answer2 = probability_z_o_given_theta_c(data2, ps, pis, mask)
 
         assert_array_almost_equal(expected_answer, actual_answer)
+        assert_array_almost_equal(expected_answer, actual_answer2)
 
 
 class TestMStep(unittest.TestCase):
@@ -248,6 +256,12 @@ class TestMStep(unittest.TestCase):
                                 [False, True, True, False],
                                 [False, False, False, False]])
 
+        # Flipping masked values should have no effect.
+        sample_dataset2 = sample_dataset.copy()
+        sample_dataset2[~mask] = ~sample_dataset2[~mask]
+        unique_dataset2 = unique_dataset.copy()
+        unique_dataset2[~unique_mask] = ~unique_dataset2[~unique_mask]
+
         weights = np.array([3, 2, 1], dtype=int)
 
         # -- Compute correct parameters from the full dataset
@@ -275,9 +289,16 @@ class TestMStep(unittest.TestCase):
                                                             np.ones(N, dtype=int),
                                                             mask,
                                                             old_ps)
-
         assert_array_almost_equal(expected_mixing_coefficients, mc_ones)
         assert_array_almost_equal(expected_emission_probabilities, ep_ones)
+
+        mc_ones2, ep_ones2 = _m_step_with_hidden_observations(sample_dataset2,
+                                                            sample_z_star,
+                                                            np.ones(N, dtype=int),
+                                                            mask,
+                                                            old_ps)
+        assert_array_almost_equal(expected_mixing_coefficients, mc_ones2)
+        assert_array_almost_equal(expected_emission_probabilities, ep_ones2)
 
         # Use unique dataset & weights to compute values for test.
 
@@ -289,3 +310,14 @@ class TestMStep(unittest.TestCase):
 
         assert_array_almost_equal(expected_mixing_coefficients, mcs)
         assert_array_almost_equal(expected_emission_probabilities, eps)
+
+        mcs2, eps2 = _m_step_with_hidden_observations(unique_dataset2,
+                                                      unique_z_star,
+                                                      weights,
+                                                      unique_mask,
+                                                      old_ps)
+
+        assert_array_almost_equal(expected_mixing_coefficients, mcs2)
+        assert_array_almost_equal(expected_emission_probabilities, eps2)
+
+
