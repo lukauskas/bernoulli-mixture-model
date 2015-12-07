@@ -84,10 +84,10 @@ def probability_z_o_given_theta_c(
     return answer
 
 @cython.inline
-cpdef _log_likelihood_from_support(np.ndarray[np.float_t, ndim=2] support,
-                                   np.ndarray[np.int64_t, ndim=1] weights):
+cpdef _log_likelihood_from_z_o_joint(np.ndarray[np.float_t, ndim=2] z_o_joint,
+                                     np.ndarray[np.int64_t, ndim=1] weights):
 
-    return np.sum(np.log(np.sum(support, axis=1)) * weights)
+    return np.sum(np.log(np.sum(z_o_joint, axis=1)) * weights)
 
 
 @cython.inline
@@ -163,7 +163,7 @@ def _em(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
                                                             emission_probabilities,
                                                             mixing_coefficients)
 
-    previous_log_likelihood = _log_likelihood_from_support(previous_unique_support, counts)
+    previous_log_likelihood = _log_likelihood_from_z_o_joint(previous_unique_support, counts)
 
     if trace_likelihood:
         likelihood_trace.append(previous_log_likelihood)
@@ -176,7 +176,7 @@ def _em(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
         current_unique_support = probability_z_o_given_theta_c(unique_dataset,
                                                                emission_probabilities,
                                                                mixing_coefficients)
-        current_log_likelihood = _log_likelihood_from_support(current_unique_support, counts)
+        current_log_likelihood = _log_likelihood_from_z_o_joint(current_unique_support, counts)
 
         iterations_done += 1
 

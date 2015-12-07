@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 import numpy as np
 
 from bernoullimix._bernoulli import probability_z_o_given_theta_c, \
-    _log_likelihood_from_support, _posterior_probability_of_class_given_support, _m_step, _em
+    _log_likelihood_from_z_o_joint, _posterior_probability_of_class_given_support, _m_step, _em
 
 _EPSILON = np.finfo(np.float).eps
 
@@ -240,7 +240,7 @@ class BernoulliMixture(object):
         :param weights: weights for each support row (i.e. how many rows does it represent)
         :return:
         """
-        return _log_likelihood_from_support(support, weights)
+        return _log_likelihood_from_z_o_joint(support, weights)
 
     def _prob_z_o_given_theta(self, observations):
         """
