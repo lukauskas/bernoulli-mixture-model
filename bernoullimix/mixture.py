@@ -2,7 +2,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+
+from collections import Counter
+
 import numpy as np
+import pandas as pd
 
 from bernoullimix._bernoulli import probability_z_o_given_theta_c, \
     _log_likelihood_from_z_o_joint, _posterior_probability_of_class_given_support, _m_step, _em
@@ -115,38 +119,25 @@ class BernoulliMixture(object):
                (self.number_of_components * self.number_of_dimensions)
 
     @classmethod
-    def aggregate_dataset(cls, dataset, observed_mask=None):
+    def aggregate_dataset(cls, dataset):
         """
         Take the dataset and return only its unique rows, along with their counts
 
         :param dataset: dataset to process
-        :param observed_mask: if not None, an array of dataset shape of true/false values
-                              of whether the variable is observed or not.
-        :return: tuple. First element is the unique rows in data,
+        :return: tuple. First element is the unique rows in data (pd.DataFrame),
                         second element is the number of times they occur
-                        third element is the associated observation masks in data
         """
         # based on http://stackoverflow.com/a/16971224/171400
 
         # This is required to work with pandas DataFrames sometimes
-        if observed_mask is not None:
-            assert observed_mask.shape == dataset.shape
-        else:
-            observed_mask = np.ones(dataset.shape, dtype=bool)
+        dataset = pd.DataFrame(dataset)
 
-        data_plus_mask = np.hstack((dataset, observed_mask))
-        data_plus_mask = np.ascontiguousarray(data_plus_mask)
+        counts = Counter(dataset.apply(tuple, axis=1))
 
-        rows, columns = data_plus_mask.shape
+        unique = dataset.drop_duplicates()
+        counts = unique.apply(lambda row: counts.get(tuple(row)), axis=1)
 
-        structured = data_plus_mask.view(data_plus_mask.dtype.descr * columns)
-        unique_plus_mask, counts = np.unique(structured, return_counts=True)
-        unique_plus_mask = unique_plus_mask.view(dataset.dtype).reshape(-1, columns)
-
-        unique = unique_plus_mask[:, :dataset.shape[1]]
-        mask = unique_plus_mask[:, dataset.shape[1]:]
-
-        return unique, counts, mask
+        return unique, counts
 
     def _penalised_likelihood(self, log_likelihood, psi):
         """

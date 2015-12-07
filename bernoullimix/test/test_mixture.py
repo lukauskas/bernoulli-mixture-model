@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import unittest
 import numpy as np
+import pandas as pd
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from bernoullimix._bernoulli import _m_step
@@ -529,46 +530,86 @@ class TestDatasetAggregation(unittest.TestCase):
                                    [False, False, False, False],  # row C
                                    [True, True, False, False]])  # row A
 
-        expected_aggregated_dataset = np.array([[True, True, False, False],   # A, three times
-                                                [False, True, False, False],  # B, twice
-                                                [False, False, False, False]  # C, once
-                                                ])
+        expected_aggregated_dataset = pd.DataFrame(
+            np.array([[True, True, False, False],  # A, three times
+                      [False, True, False, False],  # B, twice
+                      [False, False, False, False]  # C, once
+                      ]))
 
-        expected_aggregated_weights = np.array([3, 2, 1], dtype=int)
+        expected_aggregated_weights = pd.Series(np.array([3, 2, 1], dtype=int),
+                                                index=expected_aggregated_dataset.index)
 
-        expected_aggregated_mask = np.ones(expected_aggregated_dataset.shape, dtype=bool)
-
-        actual_aggregated_dataset, actual_weights, actual_mask = BernoulliMixture.aggregate_dataset(sample_dataset)
+        actual_aggregated_dataset, actual_weights = BernoulliMixture.aggregate_dataset(sample_dataset)
 
         # Check that shapes are the same
         self.assertEqual(expected_aggregated_dataset.shape, actual_aggregated_dataset.shape)
         self.assertEqual(expected_aggregated_weights.shape, actual_weights.shape)
-        self.assertEqual(expected_aggregated_mask.shape, actual_mask.shape)
+
+        # check that indices match
+        self.assertTrue(actual_aggregated_dataset.index.equals(actual_weights.index))
 
         # Since the order returned doesn't matter, let's turn results into dict and compare those
-
         expected_lookup = self._construct_lookup(expected_aggregated_dataset,
-                                                 expected_aggregated_weights,
-                                                 expected_aggregated_mask)
+                                                 expected_aggregated_weights)
         actual_lookup = self._construct_lookup(actual_aggregated_dataset,
-                                               actual_weights,
-                                               actual_mask)
+                                               actual_weights)
 
         self.assertDictEqual(expected_lookup, actual_lookup)
 
-
-    def _construct_lookup(self, unique, counts, mask):
+    def _construct_lookup(self, unique, counts):
 
         lookup = {}
-        for i in range(len(unique)):
-            unique_t = tuple(unique[i])
-            mask_t = tuple(mask[i])
-            count = counts[i]
-            lookup[(unique_t, mask_t)] = count
+        for ix, row in unique.iterrows():
+            count = counts.loc[ix]
+
+            row_tuple = tuple([x if x is not None and not np.isnan(x) else None for x in row])
+            lookup[row_tuple] = count
 
         return lookup
 
-    def test_dataset_aggregation_with_provided_mask(self):
+    def test_dataset_aggregation_with_masked_dataframe(self):
+        sample_dataset = pd.DataFrame(
+            np.array([[True, True, False, False],  # row A1
+                      [False, None, False, None],  # row B1
+                      [True, True, False, False],  # row A1
+                      [False, None, False, False],  # row B2
+                      [False, False, False, False],  # row C
+                      [True, True, None, False]]),  # row A2
+            columns=['a', 'b', 'c', 'd']
+        )
+
+        expected_aggregated_dataset = pd.DataFrame(
+            np.array([[True, True, False, False],  # A1, two times
+                      [False, None, False, None],  # B1, once
+                      [False, False, False, False],  # C, once
+                      [True, True, None, False],  # A2
+                      [False, None, False, False],  # B2
+                      ]),
+            columns=sample_dataset.columns)
+
+        expected_aggregated_weights = pd.Series(
+            np.array([2, 1, 1, 1, 1], dtype=int), index=expected_aggregated_dataset.index)
+
+        actual_aggregated_dataset, actual_weights = BernoulliMixture.aggregate_dataset(sample_dataset)
+
+        # Check that shapes are the same
+        self.assertEqual(expected_aggregated_dataset.shape, actual_aggregated_dataset.shape)
+        self.assertEqual(expected_aggregated_weights.shape, actual_weights.shape)
+
+        # check that indices match
+        self.assertTrue(actual_aggregated_dataset.index.equals(actual_weights.index))
+
+        # Since the order returned doesn't matter, let's turn results into dict and compare those
+        expected_lookup = self._construct_lookup(expected_aggregated_dataset,
+                                                 expected_aggregated_weights)
+        actual_lookup = self._construct_lookup(actual_aggregated_dataset,
+                                               actual_weights)
+
+        self.assertDictEqual(expected_lookup, actual_lookup)
+
+        self.assertTrue(expected_aggregated_dataset.columns.equals(actual_aggregated_dataset.columns))
+
+    def test_aggregation_from_masked_array(self):
         sample_dataset = np.array([[True, True, False, False],  # row A
                                    [False, True, False, False],  # row B
                                    [True, True, False, False],  # row A
@@ -584,45 +625,37 @@ class TestDatasetAggregation(unittest.TestCase):
                          [True, True, False, True]  # row A some obs
                          ])
 
-        expected_aggregated_dataset = np.array([[True, True, False, False],   # A, two times
-                                                [False, True, False, False],  # B, once
-                                                [False, False, False, False],  # C, once
-                                                [True, True, False, False],  # A, again (diff obs)
-                                                [False, True, False, False],  # B again (diff obs)
-                                                ])
-        expected_aggregated_mask = np.array([[True, True, True, True],  # A, all obs
-                                             [True, False, True, False],  # B, some obs
-                                             [True, True, True, True],  # C, some obs
-                                             [True, True, False, True],  # A, some obs
-                                             [True, False, True, True],  # B (diff obs)
-                                             ])
+        # Masked array takes the convention that the hidden values are masked, thus ~mask
+        sample_dataset = np.ma.array(sample_dataset, mask=~mask)
 
-        expected_aggregated_weights = np.array([2, 1, 1, 1, 1], dtype=int)
+        expected_aggregated_dataset = pd.DataFrame(
+            np.array([[True, True, False, False],  # A1, two times
+                      [False, None, False, None],  # B1, once
+                      [False, False, False, False],  # C, once
+                      [True, True, None, False],  # A2
+                      [False, None, False, False],  # B2
+                      ]))
 
-        actual_aggregated_dataset, actual_weights, actual_mask = BernoulliMixture.aggregate_dataset(sample_dataset,
-                                                                                                    observed_mask=mask)
+        expected_aggregated_weights = pd.Series(
+            np.array([2, 1, 1, 1, 1], dtype=int), index=expected_aggregated_dataset.index)
+
+        actual_aggregated_dataset, actual_weights = BernoulliMixture.aggregate_dataset(
+            sample_dataset)
 
         # Check that shapes are the same
         self.assertEqual(expected_aggregated_dataset.shape, actual_aggregated_dataset.shape)
         self.assertEqual(expected_aggregated_weights.shape, actual_weights.shape)
-        self.assertEqual(expected_aggregated_mask.shape, actual_mask.shape)
+
+        # check that indices match
+        self.assertTrue(actual_aggregated_dataset.index.equals(actual_weights.index))
 
         # Since the order returned doesn't matter, let's turn results into dict and compare those
-
         expected_lookup = self._construct_lookup(expected_aggregated_dataset,
-                                                 expected_aggregated_weights,
-                                                 expected_aggregated_mask)
+                                                 expected_aggregated_weights)
         actual_lookup = self._construct_lookup(actual_aggregated_dataset,
-                                               actual_weights,
-                                               actual_mask)
+                                               actual_weights)
 
         self.assertDictEqual(expected_lookup, actual_lookup)
-
-
-
-
-
-
 
 class TestPenalisedLikelihood(unittest.TestCase):
 
