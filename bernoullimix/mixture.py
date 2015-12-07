@@ -115,26 +115,38 @@ class BernoulliMixture(object):
                (self.number_of_components * self.number_of_dimensions)
 
     @classmethod
-    def aggregate_dataset(cls, dataset):
+    def aggregate_dataset(cls, dataset, observed_mask=None):
         """
         Take the dataset and return only its unique rows, along with their counts
 
         :param dataset: dataset to process
+        :param observed_mask: if not None, an array of dataset shape of true/false values
+                              of whether the variable is observed or not.
         :return: tuple. First element is the unique rows in data,
-                        second element is the number of times they occur.
+                        second element is the number of times they occur
+                        third element is the associated observation masks in data
         """
         # based on http://stackoverflow.com/a/16971224/171400
 
         # This is required to work with pandas DataFrames sometimes
-        dataset = np.ascontiguousarray(dataset)
+        if observed_mask is not None:
+            assert observed_mask.shape == dataset.shape
+        else:
+            observed_mask = np.ones(dataset.shape, dtype=bool)
 
-        rows, columns = dataset.shape
+        data_plus_mask = np.hstack((dataset, observed_mask))
+        data_plus_mask = np.ascontiguousarray(data_plus_mask)
 
-        structured = dataset.view(dataset.dtype.descr * columns)
-        unique, counts = np.unique(structured, return_counts=True)
+        rows, columns = data_plus_mask.shape
 
-        unique = unique.view(dataset.dtype).reshape(-1, columns)
-        return unique, counts
+        structured = data_plus_mask.view(data_plus_mask.dtype.descr * columns)
+        unique_plus_mask, counts = np.unique(structured, return_counts=True)
+        unique_plus_mask = unique_plus_mask.view(dataset.dtype).reshape(-1, columns)
+
+        unique = unique_plus_mask[:, :dataset.shape[1]]
+        mask = unique_plus_mask[:, dataset.shape[1]:]
+
+        return unique, counts, mask
 
     def _penalised_likelihood(self, log_likelihood, psi):
         """

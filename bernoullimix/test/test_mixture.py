@@ -511,7 +511,10 @@ class TestFit(unittest.TestCase):
                         'Some values returned are <0: {!r}'.format(actual_v[actual_v < 0])
                         )
 
-    def test_dataset_aggregation(self):
+
+class TestDatasetAggregation(unittest.TestCase):
+
+    def test_dataset_aggregation_all_observed(self):
         """
         Given a dataset with repeating rows `_aggregate_dataset()` function should return
         a reduced dataset with all unique rows, as well as a vector of weights for each row.
@@ -533,18 +536,89 @@ class TestFit(unittest.TestCase):
 
         expected_aggregated_weights = np.array([3, 2, 1], dtype=int)
 
-        actual_aggregated_dataset, actual_weights = BernoulliMixture.aggregate_dataset(sample_dataset)
+        expected_aggregated_mask = np.ones(expected_aggregated_dataset.shape, dtype=bool)
+
+        actual_aggregated_dataset, actual_weights, actual_mask = BernoulliMixture.aggregate_dataset(sample_dataset)
 
         # Check that shapes are the same
         self.assertEqual(expected_aggregated_dataset.shape, actual_aggregated_dataset.shape)
         self.assertEqual(expected_aggregated_weights.shape, actual_weights.shape)
+        self.assertEqual(expected_aggregated_mask.shape, actual_mask.shape)
 
         # Since the order returned doesn't matter, let's turn results into dict and compare those
-        expected_lookup = dict(zip(map(tuple, expected_aggregated_dataset),
-                                   expected_aggregated_weights))
-        actual_lookup = dict(zip(map(tuple, actual_aggregated_dataset),
-                                 actual_weights))
+
+        expected_lookup = self._construct_lookup(expected_aggregated_dataset,
+                                                 expected_aggregated_weights,
+                                                 expected_aggregated_mask)
+        actual_lookup = self._construct_lookup(actual_aggregated_dataset,
+                                               actual_weights,
+                                               actual_mask)
+
         self.assertDictEqual(expected_lookup, actual_lookup)
+
+
+    def _construct_lookup(self, unique, counts, mask):
+
+        lookup = {}
+        for i in range(len(unique)):
+            unique_t = tuple(unique[i])
+            mask_t = tuple(mask[i])
+            count = counts[i]
+            lookup[(unique_t, mask_t)] = count
+
+        return lookup
+
+    def test_dataset_aggregation_with_provided_mask(self):
+        sample_dataset = np.array([[True, True, False, False],  # row A
+                                   [False, True, False, False],  # row B
+                                   [True, True, False, False],  # row A
+                                   [False, True, False, False],  # row B
+                                   [False, False, False, False],  # row C
+                                   [True, True, False, False]])  # row A
+
+        mask = np.array([[True, True, True, True],  # Row A, all obs
+                         [True, False, True, False],  # Row B, some obs
+                         [True, True, True, True],  # Row A, all obs
+                         [True, False, True, True],  # Row B, some obs
+                         [True, True, True, True],  # row C, all obs
+                         [True, True, False, True]  # row A some obs
+                         ])
+
+        expected_aggregated_dataset = np.array([[True, True, False, False],   # A, two times
+                                                [False, True, False, False],  # B, once
+                                                [False, False, False, False],  # C, once
+                                                [True, True, False, False],  # A, again (diff obs)
+                                                [False, True, False, False],  # B again (diff obs)
+                                                ])
+        expected_aggregated_mask = np.array([[True, True, True, True],  # A, all obs
+                                             [True, False, True, False],  # B, some obs
+                                             [True, True, True, True],  # C, some obs
+                                             [True, True, False, True],  # A, some obs
+                                             [True, False, True, True],  # B (diff obs)
+                                             ])
+
+        expected_aggregated_weights = np.array([2, 1, 1, 1, 1], dtype=int)
+
+        actual_aggregated_dataset, actual_weights, actual_mask = BernoulliMixture.aggregate_dataset(sample_dataset,
+                                                                                                    observed_mask=mask)
+
+        # Check that shapes are the same
+        self.assertEqual(expected_aggregated_dataset.shape, actual_aggregated_dataset.shape)
+        self.assertEqual(expected_aggregated_weights.shape, actual_weights.shape)
+        self.assertEqual(expected_aggregated_mask.shape, actual_mask.shape)
+
+        # Since the order returned doesn't matter, let's turn results into dict and compare those
+
+        expected_lookup = self._construct_lookup(expected_aggregated_dataset,
+                                                 expected_aggregated_weights,
+                                                 expected_aggregated_mask)
+        actual_lookup = self._construct_lookup(actual_aggregated_dataset,
+                                               actual_weights,
+                                               actual_mask)
+
+        self.assertDictEqual(expected_lookup, actual_lookup)
+
+
 
 
 
