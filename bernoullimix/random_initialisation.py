@@ -98,6 +98,7 @@ def _random_rows_from_dataset(dataset, n_rows, random):
         if n_nulls == 0:
             return x
         else:
+            x = x.copy()
             random_bools = np.array(random.randint(2, size=n_nulls), dtype=bool)
             x.loc[nulls] = random_bools
 
