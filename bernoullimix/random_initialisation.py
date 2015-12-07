@@ -4,6 +4,9 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
+import pandas as pd
+
+
 from bernoullimix.mixture import BernoulliMixture
 
 
@@ -83,6 +86,26 @@ def _random_numbers_within_domain(random, domain, shape):
 
     return random_numbers
 
+
+def _random_rows_from_dataset(dataset, n_rows, random):
+    random_rows = random.randint(len(dataset), size=n_rows)
+    random_row_emissions = dataset.iloc[random_rows, :]
+
+    def _replace_nones_with_guesses(x):
+        nulls = x.isnull()
+        n_nulls = nulls.sum()
+
+        if n_nulls == 0:
+            return x
+        else:
+            random_bools = np.array(random.randint(2, size=n_nulls), dtype=bool)
+            x.loc[nulls] = random_bools
+
+            return x
+
+    return random_row_emissions.apply(_replace_nones_with_guesses).astype(bool)
+
+
 def random_mixture_generator(number_of_components,
                              dataset,
                              random_state=None,
@@ -108,7 +131,7 @@ def random_mixture_generator(number_of_components,
     :return:
     """
 
-    dataset = np.asarray(dataset, dtype=bool)
+    dataset = pd.DataFrame(dataset)
 
     random = np.random.RandomState(random_state)
 
@@ -127,9 +150,10 @@ def random_mixture_generator(number_of_components,
         random_emissions = _random_numbers_within_domain(random, random_domain,
                                                          (number_of_components, D))
 
-        random_rows = random.randint(N, size=number_of_components)
+        random_row_emissions = _random_rows_from_dataset(dataset, n_rows=number_of_components,
+                                                         random=random)
 
-        random_row_emissions = dataset[random_rows, :]
+        random_row_emissions = np.asarray(random_row_emissions, dtype=bool)
 
         emissions = alpha * random_emissions + (1-alpha) * random_row_emissions
         emissions = _adjust_probabilities(emissions, epsilon, domain=expected_domain)

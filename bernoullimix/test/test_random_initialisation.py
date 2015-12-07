@@ -9,8 +9,8 @@ import numpy as np
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from bernoullimix.random_initialisation import _adjust_probabilities, _expected_domain, \
-    _random_numbers_within_domain
-
+    _random_numbers_within_domain, _random_rows_from_dataset
+import pandas as pd
 
 class TestProbabilityAdjustment(unittest.TestCase):
 
@@ -174,4 +174,26 @@ class TestRandomNumberGeneration(unittest.TestCase):
                             'none in domain {}'.format(numbers_to_generate,
                                                        complete_domain,
                                                        subdomain))
+
+
+    def test_random_rows_returned_replace_missing_data_with_a_random_guess(self):
+
+        dataset = pd.DataFrame([[True, None, True]])
+
+        random = np.random.RandomState(1207)
+
+        expected_answers = {(True, True, True), (True, False, True)}
+
+        answers = set()
+        for __ in range(100):
+            random_rows = _random_rows_from_dataset(dataset, n_rows=1, random=random)
+
+            random_rows = tuple(random_rows.iloc[0, :])
+
+            answers.add(random_rows)
+
+        self.assertSetEqual(expected_answers, answers)
+
+
+
 
