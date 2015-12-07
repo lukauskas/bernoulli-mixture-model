@@ -6,6 +6,8 @@ from __future__ import unicode_literals
 import unittest
 import numpy as np
 from numpy.testing import assert_array_equal, assert_array_almost_equal
+
+from bernoullimix._bernoulli import _m_step
 from bernoullimix.mixture import BernoulliMixture
 
 class TestLogLikelihood(unittest.TestCase):
@@ -247,18 +249,18 @@ class TestFit(unittest.TestCase):
                                                                sample_dataset[:, d]) / u[k]
 
         # First, perform the test with the same dataset, and weights set to one
-        mc_ones, ep_ones = BernoulliMixture._m_step(sample_z_star,
-                                                    sample_dataset,
-                                                    np.ones(N, dtype=int))
+        mc_ones, ep_ones = _m_step(sample_dataset,
+                                   sample_z_star,
+                                   np.ones(N, dtype=int))
 
         assert_array_almost_equal(expected_mixing_coefficients, mc_ones)
         assert_array_almost_equal(expected_emission_probabilities, ep_ones)
 
         # Use unique dataset & weights to compute values for test.
 
-        mixing_coefficients, emission_probabilities = BernoulliMixture._m_step(unique_z_star,
-                                                                               unique_dataset,
-                                                                               weights)
+        mixing_coefficients, emission_probabilities = _m_step(unique_dataset,
+                                                              unique_z_star,
+                                                              weights)
 
         assert_array_almost_equal(expected_mixing_coefficients, mixing_coefficients)
         assert_array_almost_equal(expected_emission_probabilities, emission_probabilities)
@@ -524,7 +526,7 @@ class TestFit(unittest.TestCase):
         expected_u = u / np.sum(u)
         expected_v = vs
 
-        actual_u, actual_v = BernoulliMixture._m_step(unique_zstar, unique_dataset, unique_counts)
+        actual_u, actual_v = _m_step(unique_dataset, unique_zstar, unique_counts)
 
         assert_array_almost_equal(expected_u, actual_u)
         assert_array_almost_equal(expected_v, actual_v)
@@ -554,7 +556,7 @@ class TestFit(unittest.TestCase):
         expected_u = u / np.sum(u)
         expected_v = vs
 
-        actual_u, actual_v = BernoulliMixture._m_step(unique_zstar, unique_dataset, unique_counts)
+        actual_u, actual_v = _m_step(unique_dataset, unique_zstar, unique_counts)
 
         assert np.all((expected_v <= 1) & (expected_v >= 0))  # for the sake of sanity...
 

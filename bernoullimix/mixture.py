@@ -261,10 +261,6 @@ class BernoulliMixture(object):
         return _posterior_probability_of_class_given_support(support)
 
 
-    @classmethod
-    def _m_step(cls, unique_zstar, unique_dataset, weights):
-        return _m_step(unique_dataset, unique_zstar, weights)
-
     def fit(self, dataset, iteration_limit=1000, convergence_threshold=_EPSILON,
             trace_likelihood=False):
         """

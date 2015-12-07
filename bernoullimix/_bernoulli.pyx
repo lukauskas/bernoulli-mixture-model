@@ -96,13 +96,24 @@ cpdef _posterior_probability_of_class_given_support(np.ndarray[np.float_t, ndim=
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def _m_step(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
-            np.ndarray[np.float_t, ndim=2] unique_zstar,
-            np.ndarray[np.int64_t, ndim=1] weights):
+def _m_step_with_hidden_observations(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
+                                     np.ndarray[np.float_t, ndim=2] unique_zstar,
+                                     np.ndarray[np.int64_t, ndim=1] weights,
+                                     np.ndarray[np.uint8_t, cast=True, ndim=2] unique_mask,
+                                     np.ndarray[np.float_t, ndim=2] old_ps
+                                     ):
+
+
     cdef int N = unique_zstar.shape[0]
     cdef int K = unique_zstar.shape[1]
 
     cdef int D = unique_dataset.shape[1]
+
+    assert unique_mask.shape[0] == N
+    assert unique_mask.shape[1] == D
+
+    assert old_ps.shape[0] == K
+    assert old_ps.shape[1] == D
 
     cdef int n;
     cdef int k;
@@ -110,28 +121,47 @@ def _m_step(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
 
     cdef np.float_t zstar_times_weight;
 
-    cdef np.ndarray[np.float_t, ndim=2] v = np.zeros((K, D), dtype=np.float)
-    cdef np.ndarray[np.float_t, ndim=1] u = np.zeros(K, dtype=np.float)
+    cdef np.ndarray[np.float_t, ndim=2] e = np.zeros((K, D), dtype=np.float)
+    cdef np.ndarray[np.float_t, ndim=1] c = np.zeros(K, dtype=np.float)
 
     for k in range(K):
         for n in range(N):
 
             zstar_times_weight = unique_zstar[n, k] * weights[n]
-            u[k] += zstar_times_weight
+            c[k] += zstar_times_weight
 
             for d in range(D):
-                v[k, d] += unique_dataset[n, d] * zstar_times_weight
+                e[k, d] += unique_dataset[n, d] * zstar_times_weight
 
-        v[k] = v[k] / u[k]
+        e[k] = e[k] / c[k]
 
     cdef np.float_t sum_of_u = 0
     for k in range(K):
-        sum_of_u += u[k]
+        sum_of_u += c[k]
 
     for k in range(K):
-        u[k] /= sum_of_u
+        c[k] /= sum_of_u
 
-    return u, v
+    return c, e
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def _m_step(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
+            np.ndarray[np.float_t, ndim=2] unique_zstar,
+            np.ndarray[np.int64_t, ndim=1] weights,
+            ):
+    cdef np.ndarray[np.uint8_t, cast=True, ndim=2] unique_mask = np.ones((unique_dataset.shape[0],
+                                                                          unique_dataset.shape[1]),
+                                                                         dtype=np.uint8)
+    cdef np.ndarray[np.float_t, cast=True, ndim=2] old_ps = np.empty((unique_zstar.shape[1],
+                                                                      unique_dataset.shape[1]),
+                                                                     dtype=np.float)
+
+    return _m_step_with_hidden_observations(unique_dataset,
+                                            unique_zstar,
+                                            weights,
+                                            unique_mask,
+                                            old_ps)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -167,6 +197,7 @@ def _em(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
 
     if trace_likelihood:
         likelihood_trace.append(previous_log_likelihood)
+
 
     while iteration_limit < 0 or iterations_done < iteration_limit:
 
