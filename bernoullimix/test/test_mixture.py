@@ -519,9 +519,14 @@ class TestFit(unittest.TestCase):
         expected_u = u / np.sum(u)
         expected_v = vs
 
-        actual_u, actual_v = _m_step(np.asarray(unique_dataset, dtype=bool),
+        unique_dataset_as_array, mask = BernoulliMixture._convert_to_numpy_array(unique_dataset)
+        old_ps = np.empty((K, D))  # shouldn't matter
+
+        actual_u, actual_v = _m_step(unique_dataset_as_array,
+                                     mask,
                                      unique_zstar,
-                                     np.asarray(unique_counts))
+                                     np.asarray(unique_counts),
+                                     old_ps)
 
         assert_array_almost_equal(expected_u, actual_u)
         assert_array_almost_equal(expected_v, actual_v)
@@ -539,7 +544,8 @@ class TestFit(unittest.TestCase):
                                  [0.00290769, 0.07490904, 0.41330538, 0.5088779],
                                  [0.07543165, 0.31732369, 0.49181159, 0.11543307],
                                  [0.12421243, 0.07263738, 0.14724773, 0.65590246]])
-        K=4
+        K = unique_zstar.shape[1]
+        D = unique_dataset.shape[1]
 
         u = np.sum((unique_zstar.T * unique_counts), axis=1)
         vs = np.empty((K, unique_dataset.shape[1]))
@@ -551,7 +557,11 @@ class TestFit(unittest.TestCase):
         expected_u = u / np.sum(u)
         expected_v = vs
 
-        actual_u, actual_v = _m_step(unique_dataset, unique_zstar, unique_counts)
+        actual_u, actual_v = _m_step(unique_dataset,
+                                     np.ones(unique_dataset.shape, dtype=bool),
+                                     unique_zstar, unique_counts,
+                                     np.empty((K, D))
+                                     )
 
         assert np.all((expected_v <= 1) & (expected_v >= 0))  # for the sake of sanity...
 

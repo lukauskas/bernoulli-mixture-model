@@ -96,13 +96,12 @@ cpdef _posterior_probability_of_class_given_support(np.ndarray[np.float_t, ndim=
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def _m_step_with_hidden_observations(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
-                                     np.ndarray[np.float_t, ndim=2] unique_zstar,
-                                     np.ndarray[np.int64_t, ndim=1] weights,
-                                     np.ndarray[np.uint8_t, cast=True, ndim=2] unique_mask,
-                                     np.ndarray[np.float_t, ndim=2] old_ps
-                                     ):
-
+def _m_step(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
+            np.ndarray[np.uint8_t, cast=True, ndim=2] unique_mask,
+            np.ndarray[np.float_t, ndim=2] unique_zstar,
+            np.ndarray[np.int64_t, ndim=1] weights,
+            np.ndarray[np.float_t, ndim=2] old_emission_probabilities
+            ):
 
     cdef int N = unique_zstar.shape[0]
     cdef int K = unique_zstar.shape[1]
@@ -112,8 +111,8 @@ def _m_step_with_hidden_observations(np.ndarray[np.uint8_t, cast=True, ndim=2] u
     assert unique_mask.shape[0] == N
     assert unique_mask.shape[1] == D
 
-    assert old_ps.shape[0] == K
-    assert old_ps.shape[1] == D
+    assert old_emission_probabilities.shape[0] == K
+    assert old_emission_probabilities.shape[1] == D
 
     cdef int n;
     cdef int k;
@@ -134,7 +133,7 @@ def _m_step_with_hidden_observations(np.ndarray[np.uint8_t, cast=True, ndim=2] u
                 if unique_mask[n, d]:
                     e[k, d] += unique_dataset[n, d] * zstar_times_weight
                 else:
-                    e[k, d] += old_ps[k, d] * zstar_times_weight
+                    e[k, d] += old_emission_probabilities[k, d] * zstar_times_weight
 
         e[k] = e[k] / c[k]
 
@@ -149,27 +148,9 @@ def _m_step_with_hidden_observations(np.ndarray[np.uint8_t, cast=True, ndim=2] u
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def _m_step(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
-            np.ndarray[np.float_t, ndim=2] unique_zstar,
-            np.ndarray[np.int64_t, ndim=1] weights,
-            ):
-    cdef np.ndarray[np.uint8_t, cast=True, ndim=2] unique_mask = np.ones((unique_dataset.shape[0],
-                                                                          unique_dataset.shape[1]),
-                                                                         dtype=np.uint8)
-    cdef np.ndarray[np.float_t, cast=True, ndim=2] old_ps = np.empty((unique_zstar.shape[1],
-                                                                      unique_dataset.shape[1]),
-                                                                     dtype=np.float)
-
-    return _m_step_with_hidden_observations(unique_dataset,
-                                            unique_zstar,
-                                            weights,
-                                            unique_mask,
-                                            old_ps)
-
-@cython.boundscheck(False)
-@cython.wraparound(False)
 def _em(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
         np.ndarray[np.int64_t, ndim=1] counts,
+        np.ndarray[np.uint8_t, cast=True, ndim=2] observed_mask,
         np.ndarray[np.float_t, ndim=1] mixing_coefficients,
         np.ndarray[np.float_t, ndim=2] emission_probabilities,
         int iteration_limit,
@@ -205,7 +186,11 @@ def _em(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
     while iteration_limit < 0 or iterations_done < iteration_limit:
 
         unique_zstar = _posterior_probability_of_class_given_support(previous_unique_support)
-        mixing_coefficients, emission_probabilities = _m_step(unique_dataset, unique_zstar, counts)
+        mixing_coefficients, emission_probabilities = _m_step(unique_dataset,
+                                                              observed_mask,
+                                                              unique_zstar, counts,
+                                                              emission_probabilities
+                                                              )
 
         current_unique_support = probability_z_o_given_theta_c(unique_dataset,
                                                                emission_probabilities,

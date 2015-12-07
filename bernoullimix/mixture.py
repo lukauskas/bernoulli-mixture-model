@@ -329,11 +329,11 @@ class BernoulliMixture(object):
         return current_log_likelihood, convergence_status
 
     def _em(self, unique_dataset, counts, iteration_limit, convergence_threshold, trace_likelihood):
-        unique_dataset_as_array = np.asarray(unique_dataset, dtype=bool)
-        mask = np.asarray(~unique_dataset.isnull())
+        unique_dataset_as_array, mask = self._convert_to_numpy_array(unique_dataset)
         counts_as_array = np.asarray(counts)
 
         return _em(unique_dataset_as_array, counts_as_array,
+                   mask,
                    self.mixing_coefficients, self.emission_probabilities,
                    -1 if iteration_limit is None else iteration_limit,
                    convergence_threshold, 1 if trace_likelihood else 0)

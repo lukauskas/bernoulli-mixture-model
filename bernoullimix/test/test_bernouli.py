@@ -4,7 +4,7 @@ import numpy as np
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from bernoullimix._bernoulli import probability_z_o_given_theta_c, bernoulli_prob_for_observations, bernoulli_prob_for_observations_with_mask, \
-    _m_step, _m_step_with_hidden_observations
+    _m_step
 
 
 class TestBernoulliEmissionProbabilities(unittest.TestCase):
@@ -202,8 +202,10 @@ class TestMStep(unittest.TestCase):
 
         # First, perform the test with the same dataset, and weights set to one
         mc_ones, ep_ones = _m_step(sample_dataset,
+                                   np.ones(sample_dataset.shape, dtype=bool),
                                    sample_z_star,
-                                   np.ones(N, dtype=int))
+                                   np.ones(N, dtype=int),
+                                   np.empty(expected_emission_probabilities.shape))
 
         assert_array_almost_equal(expected_mixing_coefficients, mc_ones)
         assert_array_almost_equal(expected_emission_probabilities, ep_ones)
@@ -211,8 +213,10 @@ class TestMStep(unittest.TestCase):
         # Use unique dataset & weights to compute values for test.
 
         mixing_coefficients, emission_probabilities = _m_step(unique_dataset,
+                                                              np.ones(unique_dataset.shape, dtype=bool),
                                                               unique_z_star,
-                                                              weights)
+                                                              weights,
+                                                              np.empty(expected_emission_probabilities.shape))
 
         assert_array_almost_equal(expected_mixing_coefficients, mixing_coefficients)
         assert_array_almost_equal(expected_emission_probabilities, emission_probabilities)
@@ -284,40 +288,38 @@ class TestMStep(unittest.TestCase):
                 expected_emission_probabilities[k, d] = np.sum(sample_z_star[:, k] * data) / u[k]
 
         # First, perform the test with the same dataset, and weights set to one
-        mc_ones, ep_ones = _m_step_with_hidden_observations(sample_dataset,
-                                                            sample_z_star,
-                                                            np.ones(N, dtype=int),
-                                                            mask,
-                                                            old_ps)
+        mc_ones, ep_ones = _m_step(sample_dataset,
+                                   mask,
+                                   sample_z_star,
+                                   np.ones(N, dtype=int),
+                                   old_ps)
         assert_array_almost_equal(expected_mixing_coefficients, mc_ones)
         assert_array_almost_equal(expected_emission_probabilities, ep_ones)
 
-        mc_ones2, ep_ones2 = _m_step_with_hidden_observations(sample_dataset2,
-                                                            sample_z_star,
-                                                            np.ones(N, dtype=int),
-                                                            mask,
-                                                            old_ps)
+        mc_ones2, ep_ones2 = _m_step(sample_dataset2,
+                                     mask,
+                                     sample_z_star,
+                                     np.ones(N, dtype=int),
+                                     old_ps)
         assert_array_almost_equal(expected_mixing_coefficients, mc_ones2)
         assert_array_almost_equal(expected_emission_probabilities, ep_ones2)
 
         # Use unique dataset & weights to compute values for test.
 
-        mcs, eps = _m_step_with_hidden_observations(unique_dataset,
-                                                    unique_z_star,
-                                                    weights,
-                                                    unique_mask,
-                                                    old_ps)
+        mcs, eps = _m_step(unique_dataset,
+                           unique_mask,
+                           unique_z_star,
+                           weights,
+                           old_ps)
 
         assert_array_almost_equal(expected_mixing_coefficients, mcs)
         assert_array_almost_equal(expected_emission_probabilities, eps)
 
-        mcs2, eps2 = _m_step_with_hidden_observations(unique_dataset2,
-                                                      unique_z_star,
-                                                      weights,
-                                                      unique_mask,
-                                                      old_ps)
+        mcs2, eps2 = _m_step(unique_dataset2,
+                             unique_mask,
+                             unique_z_star,
+                             weights,
+                             old_ps)
 
         assert_array_almost_equal(expected_mixing_coefficients, mcs2)
         assert_array_almost_equal(expected_emission_probabilities, eps2)
-
-
