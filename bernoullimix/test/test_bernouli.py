@@ -76,12 +76,9 @@ class TestBernoulliEmissionProbabilities(unittest.TestCase):
 
         assert_array_almost_equal(actual_answer, expected_answer)
 
-
-
-
 class TestBernoulliJoint(unittest.TestCase):
 
-    def test_observed_joint_computation_all_observed(self):
+    def test_observed_joint_computation_all_observed_no_mask(self):
 
         pis = np.array([0.5, 0.25, 0.25])
         ps = np.array([[0.5, 0.3],
@@ -93,8 +90,6 @@ class TestBernoulliJoint(unittest.TestCase):
                          [False, False],
                          [False, True]])
 
-        observed_mask = np.ones((4, 2), dtype=bool)
-
         expected_answer = np.array([[pis[0] * 0.5 * 0.3, pis[1] * 0.3 * 0.2, pis[2] * 0.9 * 0.1],
                                     [pis[0] * 0.5 * 0.7, pis[1] * 0.3 * 0.8, pis[2] * 0.9 * 0.9],
                                     [pis[0] * 0.5 * 0.7, pis[1] * 0.7 * 0.8, pis[2] * 0.1 * 0.9],
@@ -103,4 +98,53 @@ class TestBernoulliJoint(unittest.TestCase):
         actual_answer = probability_z_o_given_theta_c(data, ps, pis)
 
         assert_array_almost_equal(expected_answer, actual_answer)
+
+    def test_observed_joint_computation_all_observed_mask(self):
+
+        pis = np.array([0.5, 0.25, 0.25])
+        ps = np.array([[0.5, 0.3],
+                       [0.3, 0.2],
+                       [0.9, 0.1]])
+
+        data = np.array([[True, True],
+                         [True, False],
+                         [False, False],
+                         [False, True]])
+
+        expected_answer = np.array([[pis[0] * 0.5 * 0.3, pis[1] * 0.3 * 0.2, pis[2] * 0.9 * 0.1],
+                                    [pis[0] * 0.5 * 0.7, pis[1] * 0.3 * 0.8, pis[2] * 0.9 * 0.9],
+                                    [pis[0] * 0.5 * 0.7, pis[1] * 0.7 * 0.8, pis[2] * 0.1 * 0.9],
+                                    [pis[0] * 0.5 * 0.3, pis[1] * 0.7 * 0.2, pis[2] * 0.1 * 0.1]])
+
+        mask = np.ones(data.shape, dtype=bool)
+        actual_answer = probability_z_o_given_theta_c(data, ps, pis, mask)
+
+        assert_array_almost_equal(expected_answer, actual_answer)
+
+    def test_observed_joint_computation_some_observed_mask(self):
+
+        pis = np.array([0.5, 0.25, 0.25])
+        ps = np.array([[0.5, 0.3],
+                       [0.3, 0.2],
+                       [0.9, 0.1]])
+
+        data = np.array([[True, True],
+                         [True, False],
+                         [False, False],
+                         [False, True]])
+
+        expected_answer = np.array([[pis[0] * 0.5 * 0.3, pis[1] * 0.3 * 0.2, pis[2] * 0.9 * 0.1],
+                                    [pis[0] * 0.7, pis[1] * 0.8, pis[2] * 0.9],
+                                    [pis[0] * 0.5, pis[1] * 0.7, pis[2] * 0.1],
+                                    [pis[0], pis[1], pis[2]]])
+
+        mask = np.array([[True, True],
+                         [False, True],
+                         [True, False],
+                         [False, False]])
+
+        actual_answer = probability_z_o_given_theta_c(data, ps, pis, mask)
+
+        assert_array_almost_equal(expected_answer, actual_answer)
+
 

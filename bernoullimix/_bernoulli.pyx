@@ -71,22 +71,15 @@ def probability_z_o_given_theta_c(
 
     answer = np.empty((N, K), dtype=np.float, order='F')
 
-    cdef int all_observed = 0
-
-    if observed_mask is None:
-        all_observed = 1
-    else:
-        assert observed_mask.shape == observations.shape
-
-
     cdef int component
 
     for component in range(K):
         component_emission_probs = emission_probabilities[component]
 
         answer[:, component] = mixing_coefficients[component] * \
-                               bernoulli_prob_for_observations(component_emission_probs,
-                                                               observations)
+                               bernoulli_prob_for_observations_with_mask(component_emission_probs,
+                                                                         observations,
+                                                                         observed_mask)
 
     return answer
 
