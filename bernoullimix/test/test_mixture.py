@@ -460,7 +460,7 @@ class TestFit(unittest.TestCase):
         unique_dataset, unique_counts, unique_zstar = random_zstar_and_dataset(N, D, K,
                                                                                random_state=100)
 
-        u = np.sum((unique_zstar.T * unique_counts), axis=1)
+        u = np.sum((unique_zstar.T * np.asarray(unique_counts)), axis=1)
         vs = np.empty((K, unique_dataset.shape[1]))
 
         for k in range(K):
@@ -470,7 +470,9 @@ class TestFit(unittest.TestCase):
         expected_u = u / np.sum(u)
         expected_v = vs
 
-        actual_u, actual_v = _m_step(unique_dataset, unique_zstar, unique_counts)
+        actual_u, actual_v = _m_step(np.asarray(unique_dataset, dtype=bool),
+                                     unique_zstar,
+                                     np.asarray(unique_counts))
 
         assert_array_almost_equal(expected_u, actual_u)
         assert_array_almost_equal(expected_v, actual_v)

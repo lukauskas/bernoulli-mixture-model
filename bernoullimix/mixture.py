@@ -243,6 +243,9 @@ class BernoulliMixture(object):
         :param weights: weights for each support row (i.e. how many rows does it represent)
         :return:
         """
+        support = np.asarray(support)
+        weights = np.asarray(weights)
+
         return _log_likelihood_from_z_o_joint(support, weights)
 
     def _prob_z_o_given_theta(self, observations):
@@ -278,7 +281,7 @@ class BernoulliMixture(object):
             and the information about convergence of the algorithm
         """
 
-        dataset = np.asarray(dataset, dtype=bool)
+        dataset = pd.DataFrame(dataset)
 
         if dataset.shape[1] != self.number_of_dimensions:
             raise ValueError('The dataset shape does not match number of dimensions.'
@@ -309,10 +312,7 @@ class BernoulliMixture(object):
             and the information about convergence of the algorithm
         """
 
-        unique_dataset = np.asarray(unique_dataset)
-        counts = np.asarray(counts)
-
-        assert unique_dataset.shape[0] == counts.shape[0]
+        assert unique_dataset.index.equals(counts.index)
 
         mixing_coefficients, emission_probabilities, \
         converged, current_log_likelihood, iterations_done, likelihood_trace = self._em(
@@ -329,7 +329,11 @@ class BernoulliMixture(object):
         return current_log_likelihood, convergence_status
 
     def _em(self, unique_dataset, counts, iteration_limit, convergence_threshold, trace_likelihood):
-        return _em(unique_dataset, counts,
+        unique_dataset_as_array = np.asarray(unique_dataset, dtype=bool)
+        mask = np.asarray(~unique_dataset.isnull())
+        counts_as_array = np.asarray(counts)
+
+        return _em(unique_dataset_as_array, counts_as_array,
                    self.mixing_coefficients, self.emission_probabilities,
                    -1 if iteration_limit is None else iteration_limit,
                    convergence_threshold, 1 if trace_likelihood else 0)
