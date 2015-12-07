@@ -131,7 +131,10 @@ def _m_step_with_hidden_observations(np.ndarray[np.uint8_t, cast=True, ndim=2] u
             c[k] += zstar_times_weight
 
             for d in range(D):
-                e[k, d] += unique_dataset[n, d] * zstar_times_weight
+                if unique_mask[n, d]:
+                    e[k, d] += unique_dataset[n, d] * zstar_times_weight
+                else:
+                    e[k, d] += old_ps[k, d] * zstar_times_weight
 
         e[k] = e[k] / c[k]
 

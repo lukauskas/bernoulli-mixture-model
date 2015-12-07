@@ -3,7 +3,8 @@ import numpy as np
 
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-from bernoullimix._bernoulli import probability_z_o_given_theta_c, bernoulli_prob_for_observations, bernoulli_prob_for_observations_with_mask
+from bernoullimix._bernoulli import probability_z_o_given_theta_c, bernoulli_prob_for_observations, bernoulli_prob_for_observations_with_mask, \
+    _m_step, _m_step_with_hidden_observations
 
 
 class TestBernoulliEmissionProbabilities(unittest.TestCase):
@@ -148,3 +149,143 @@ class TestBernoulliJoint(unittest.TestCase):
         assert_array_almost_equal(expected_answer, actual_answer)
 
 
+class TestMStep(unittest.TestCase):
+    def test_m_step_computes_correct_parameters_no_mask(self):
+        sample_z_star = np.array([[0.24522862, 0.50447031, 0.25030106],
+                                  [0.3264654, 0.67158596, 0.00194864],
+                                  [0.24522862, 0.50447031, 0.25030106],
+                                  [0.3264654, 0.67158596, 0.00194864],
+                                  [0.55562318, 0.4286236, 0.01575322],
+                                  [0.24522862, 0.50447031, 0.25030106]])
+
+        unique_z_star = np.array([[0.24522862, 0.50447031, 0.25030106],
+                                  [0.3264654, 0.67158596, 0.00194864],
+                                  [0.55562318, 0.4286236, 0.01575322]])
+
+        sample_dataset = np.array([[True, True, False, False],
+                                   [False, True, False, False],
+                                   [True, True, False, False],
+                                   [False, True, False, False],
+                                   [False, False, False, False],
+                                   [True, True, False, False]])
+
+        unique_dataset = np.array([[True, True, False, False],
+                                   [False, True, False, False],
+                                   [False, False, False, False],
+                                   ])
+
+        weights = np.array([3, 2, 1], dtype=int)
+
+        # -- Compute correct parameters from the full dataset
+
+        N, D = sample_dataset.shape
+        __, K = sample_z_star.shape
+
+        u = np.sum(sample_z_star, axis=0)
+
+        expected_mixing_coefficients = u / N
+
+        expected_emission_probabilities = np.empty((K, D))
+
+        for k in range(K):
+            for d in range(D):
+                expected_emission_probabilities[k, d] = np.sum(sample_z_star[:, k] *
+                                                               sample_dataset[:, d]) / u[k]
+
+        # First, perform the test with the same dataset, and weights set to one
+        mc_ones, ep_ones = _m_step(sample_dataset,
+                                   sample_z_star,
+                                   np.ones(N, dtype=int))
+
+        assert_array_almost_equal(expected_mixing_coefficients, mc_ones)
+        assert_array_almost_equal(expected_emission_probabilities, ep_ones)
+
+        # Use unique dataset & weights to compute values for test.
+
+        mixing_coefficients, emission_probabilities = _m_step(unique_dataset,
+                                                              unique_z_star,
+                                                              weights)
+
+        assert_array_almost_equal(expected_mixing_coefficients, mixing_coefficients)
+        assert_array_almost_equal(expected_emission_probabilities, emission_probabilities)
+
+    def test_m_step_computes_correct_parameters_with_mask(self):
+        sample_z_star = np.array([[0.24522862, 0.50447031, 0.25030106],
+                                  [0.3264654, 0.67158596, 0.00194864],
+                                  [0.24522862, 0.50447031, 0.25030106],
+                                  [0.3264654, 0.67158596, 0.00194864],
+                                  [0.55562318, 0.4286236, 0.01575322],
+                                  [0.24522862, 0.50447031, 0.25030106]])
+
+        unique_z_star = np.array([[0.24522862, 0.50447031, 0.25030106],
+                                  [0.3264654, 0.67158596, 0.00194864],
+                                  [0.55562318, 0.4286236, 0.01575322]])
+
+        old_ps = np.array([[0.5, 0.5, 0.5, 0.5],
+                           [0.1, 0.2, 0.3, 0.4],
+                           [0.5, 0.6, 0.7, 0.8]])
+
+        sample_dataset = np.array([[True, True, False, False],  # 1
+                                   [False, True, False, False],  # 2
+                                   [True, True, False, False],  # 1
+                                   [False, True, False, False],  # 2
+                                   [False, False, False, False],  # 3
+                                   [True, True, False, False]])  # 1
+
+        unique_dataset = np.array([[True, True, False, False],
+                                   [False, True, False, False],
+                                   [False, False, False, False],
+                                   ])
+
+        mask = np.array([[True, True, True, True],
+                         [False, True, True, False],
+                         [True, True, True, True],
+                         [False, True, True, False],
+                         [False, False, False, False],
+                         [True, True, True, True]])
+
+        unique_mask = np.array([[True, True, True, True],
+                                [False, True, True, False],
+                                [False, False, False, False]])
+
+        weights = np.array([3, 2, 1], dtype=int)
+
+        # -- Compute correct parameters from the full dataset
+
+        N, D = sample_dataset.shape
+        __, K = sample_z_star.shape
+
+        u = np.sum(sample_z_star, axis=0)
+
+        expected_mixing_coefficients = u / N
+
+        expected_emission_probabilities = np.empty((K, D))
+
+        for k in range(K):
+            for d in range(D):
+                data = np.array(sample_dataset[:, d], dtype=float)
+
+                data[~mask[:, d]] = old_ps[k, d]
+
+                expected_emission_probabilities[k, d] = np.sum(sample_z_star[:, k] * data) / u[k]
+
+        # First, perform the test with the same dataset, and weights set to one
+        mc_ones, ep_ones = _m_step_with_hidden_observations(sample_dataset,
+                                                            sample_z_star,
+                                                            np.ones(N, dtype=int),
+                                                            mask,
+                                                            old_ps)
+
+        assert_array_almost_equal(expected_mixing_coefficients, mc_ones)
+        assert_array_almost_equal(expected_emission_probabilities, ep_ones)
+
+        # Use unique dataset & weights to compute values for test.
+
+        mcs, eps = _m_step_with_hidden_observations(unique_dataset,
+                                                    unique_z_star,
+                                                    weights,
+                                                    unique_mask,
+                                                    old_ps)
+
+        assert_array_almost_equal(expected_mixing_coefficients, mcs)
+        assert_array_almost_equal(expected_emission_probabilities, eps)
