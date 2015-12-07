@@ -62,7 +62,7 @@ def probability_z_o_given_theta_c(
         np.ndarray[np.uint8_t, cast=True, ndim=2] observations,
         np.ndarray[np.float_t, ndim=2] emission_probabilities,
         np.ndarray[np.float_t, ndim=1] mixing_coefficients,
-        np.ndarray[np.uint8_t, cast=True, ndim=2] observed_mask=None):
+        np.ndarray[np.uint8_t, cast=True, ndim=2] observed_mask):
 
     cdef int N = observations.shape[0]
     cdef int K = mixing_coefficients.shape[0]
@@ -203,7 +203,8 @@ def _em(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
             likelihood_trace.append(current_log_likelihood)
 
         if current_log_likelihood - previous_log_likelihood < convergence_threshold:
-            assert current_log_likelihood - previous_log_likelihood >= 0
+            assert current_log_likelihood - previous_log_likelihood >= 0, \
+                'Likelihood Increased in iteration {}'.format(iterations_done)
             converged = 1
             break
 
