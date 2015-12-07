@@ -8,8 +8,9 @@ cimport cython
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef bernoulli_prob_for_observations(np.ndarray[np.float_t, ndim=1] p,
-                                      np.ndarray[np.uint8_t, cast=True, ndim=2] observations):
+cpdef bernoulli_prob_for_observations_with_mask(np.ndarray[np.float_t, ndim=1] p,
+                                                np.ndarray[np.uint8_t, cast=True, ndim=2] observations,
+                                                np.ndarray[np.uint8_t, cast=True, ndim=2] observed_mask):
     # We are doing
     # emissions = np.power(p, observations) * \
     #             np.power(1 - p, 1 - observations)
@@ -19,6 +20,13 @@ cpdef bernoulli_prob_for_observations(np.ndarray[np.float_t, ndim=1] p,
 
     cdef int n_max = observations.shape[0]
     cdef int d_max = observations.shape[1]
+
+    cdef int all_observed = 0
+    if observed_mask is None:
+        all_observed = 1
+    else:
+        assert observed_mask.shape[0] == observations.shape[0]
+        assert observed_mask.shape[1] == observations.shape[1]
 
     cdef np.float_t row_ans
 
@@ -34,21 +42,27 @@ cpdef bernoulli_prob_for_observations(np.ndarray[np.float_t, ndim=1] p,
 
         for d in range(d_max):
             obs = observations[n, d]
-            if obs == 1:
-                row_ans *= p[d]
-            else:
-                row_ans *= 1 - p[d]
+            if all_observed == 1 or observed_mask[n, d] == 1:
+                if obs == 1:
+                    row_ans *= p[d]
+                else:
+                    row_ans *= 1 - p[d]
 
         answer[n] = row_ans
 
     return answer
+
+cpdef bernoulli_prob_for_observations(np.ndarray[np.float_t, ndim=1] p,
+                                      np.ndarray[np.uint8_t, cast=True, ndim=2] observations):
+    return bernoulli_prob_for_observations_with_mask(p, observations, None)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def probability_z_o_given_theta_c(
         np.ndarray[np.uint8_t, cast=True, ndim=2] observations,
         np.ndarray[np.float_t, ndim=2] emission_probabilities,
-        np.ndarray[np.float_t, ndim=1] mixing_coefficients):
+        np.ndarray[np.float_t, ndim=1] mixing_coefficients,
+        np.ndarray[np.uint8_t, cast=True, ndim=2] observed_mask=None):
 
     cdef int N = observations.shape[0]
     cdef int K = mixing_coefficients.shape[0]
@@ -56,6 +70,14 @@ def probability_z_o_given_theta_c(
     cdef np.ndarray[np.float_t, ndim=2] answer
 
     answer = np.empty((N, K), dtype=np.float, order='F')
+
+    cdef int all_observed = 0
+
+    if observed_mask is None:
+        all_observed = 1
+    else:
+        assert observed_mask.shape == observations.shape
+
 
     cdef int component
 
