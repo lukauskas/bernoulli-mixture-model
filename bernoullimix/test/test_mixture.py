@@ -649,6 +649,30 @@ class TestDatasetAggregation(unittest.TestCase):
 
         self.assertDictEqual(expected_lookup, actual_lookup)
 
+    def test_mask_splitting(self):
+
+        sample_dataset = pd.DataFrame([[True, False, None],
+                                       [False, False, None],
+                                       [True, True, True]])
+
+        expected_dataset = np.array([[True, False, False],
+                                     [False, False, False],
+                                     [True, True, True]], dtype=bool)
+
+        expected_mask = np.array([[True, True, False],
+                                  [True, True, False],
+                                  [True, True, True]], dtype=bool)
+
+        actual_dataset, actual_mask = BernoulliMixture._convert_to_numpy_array(sample_dataset)
+
+        self.assertIsInstance(actual_dataset, np.ndarray)
+        self.assertIsInstance(actual_mask, np.ndarray)
+        self.assertEqual(expected_dataset.dtype, actual_dataset.dtype)
+        self.assertEqual(expected_mask.dtype, expected_mask.dtype)
+
+        assert_array_equal(expected_mask, actual_mask)
+        assert_array_equal(expected_dataset[expected_mask], actual_dataset[actual_mask])
+
 class TestPenalisedLikelihood(unittest.TestCase):
 
     def test_number_of_free_parameters_computed_correctly(self):

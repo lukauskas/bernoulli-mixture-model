@@ -361,3 +361,11 @@ class BernoulliMixture(object):
 
         probs = self.soft_assignment(dataset)
         return np.argmax(probs, axis=1)
+
+    @classmethod
+    def _convert_to_numpy_array(cls, dataset):
+
+        mask = np.asarray(~dataset.isnull(), dtype=bool)
+        dataset = np.asarray(dataset, dtype=bool)
+
+        return dataset, mask
