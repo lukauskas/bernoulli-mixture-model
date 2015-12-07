@@ -175,7 +175,8 @@ def _em(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
 
     previous_unique_support = probability_z_o_given_theta_c(unique_dataset,
                                                             emission_probabilities,
-                                                            mixing_coefficients)
+                                                            mixing_coefficients,
+                                                            observed_mask)
 
     previous_log_likelihood = _log_likelihood_from_z_o_joint(previous_unique_support, counts)
 
@@ -194,7 +195,8 @@ def _em(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
 
         current_unique_support = probability_z_o_given_theta_c(unique_dataset,
                                                                emission_probabilities,
-                                                               mixing_coefficients)
+                                                               mixing_coefficients,
+                                                               observed_mask)
         current_log_likelihood = _log_likelihood_from_z_o_joint(current_unique_support, counts)
 
         iterations_done += 1

@@ -96,7 +96,8 @@ class TestBernoulliJoint(unittest.TestCase):
                                     [pis[0] * 0.5 * 0.7, pis[1] * 0.7 * 0.8, pis[2] * 0.1 * 0.9],
                                     [pis[0] * 0.5 * 0.3, pis[1] * 0.7 * 0.2, pis[2] * 0.1 * 0.1]])
 
-        actual_answer = probability_z_o_given_theta_c(data, ps, pis)
+        actual_answer = probability_z_o_given_theta_c(data, ps, pis,
+                                                      np.ones(data.shape, dtype=bool))
 
         assert_array_almost_equal(expected_answer, actual_answer)
 

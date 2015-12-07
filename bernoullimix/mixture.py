@@ -256,11 +256,12 @@ class BernoulliMixture(object):
         :param observations: array of observations
         """
 
-        observations = np.asarray(observations, dtype=bool)
+        observations, mask = self._as_decoupled_array(observations)
 
         return probability_z_o_given_theta_c(observations,
                                              self.emission_probabilities,
-                                             self.mixing_coefficients)
+                                             self.mixing_coefficients,
+                                             mask)
 
     @classmethod
     def _posterior_probability_of_class_given_support(cls, support):
@@ -329,7 +330,7 @@ class BernoulliMixture(object):
         return current_log_likelihood, convergence_status
 
     def _em(self, unique_dataset, counts, iteration_limit, convergence_threshold, trace_likelihood):
-        unique_dataset_as_array, mask = self._convert_to_numpy_array(unique_dataset)
+        unique_dataset_as_array, mask = self._as_decoupled_array(unique_dataset)
         counts_as_array = np.asarray(counts)
 
         return _em(unique_dataset_as_array, counts_as_array,
@@ -363,7 +364,9 @@ class BernoulliMixture(object):
         return np.argmax(probs, axis=1)
 
     @classmethod
-    def _convert_to_numpy_array(cls, dataset):
+    def _as_decoupled_array(cls, dataset):
+
+        dataset = pd.DataFrame(dataset)
 
         mask = np.asarray(~dataset.isnull(), dtype=bool)
         dataset = np.asarray(dataset, dtype=bool)
