@@ -268,11 +268,6 @@ class TestFit(unittest.TestCase):
         self.assertEqual(log_likelihood_a, log_likelihood_b)
 
     def test_fit_with_aggregation_accepts_pandas_object(self):
-        try:
-            import pandas as pd
-        except ImportError:
-            raise unittest.SkipTest
-
         sample_dataset = np.array([[True, True, False, False],
                                    [False, True, False, False],
                                    [True, True, False, False],
@@ -310,11 +305,6 @@ class TestFit(unittest.TestCase):
         self.assertEqual(log_likelihood_a, log_likelihood_b)
 
     def test_fit_accepts_pandas_object(self):
-        try:
-            import pandas as pd
-        except ImportError:
-            raise unittest.SkipTest
-
         sample_dataset = np.array([[True, True, False, False],
                                    [False, True, False, False],
                                    [True, True, False, False],
