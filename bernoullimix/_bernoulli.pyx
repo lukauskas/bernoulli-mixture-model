@@ -58,11 +58,8 @@ cpdef bernoulli_prob_for_observations(np.ndarray[np.float_t, ndim=1] p,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def probability_z_o_given_theta_c(
-        np.ndarray[np.uint8_t, cast=True, ndim=2] observations,
-        np.ndarray[np.float_t, ndim=2] emission_probabilities,
-        np.ndarray[np.float_t, ndim=1] mixing_coefficients,
-        np.ndarray[np.uint8_t, cast=True, ndim=2] observed_mask):
+def probability_z_o_given_theta_c(observations, observed_mask, emission_probabilities,
+                                  mixing_coefficients):
 
     cdef int N = observations.shape[0]
     cdef int K = mixing_coefficients.shape[0]
@@ -100,9 +97,9 @@ def impute_missing_data_c(
     answer = np.empty((N, D), dtype=np.float)
 
     cdef np.ndarray[np.float_t, ndim=2] S = probability_z_o_given_theta_c(observations,
+                                                                          observed_mask,
                                                                           emission_probabilities,
-                                                                          mixing_coefficients,
-                                                                          observed_mask)
+                                                                          mixing_coefficients)
 
     cdef int k
     cdef np.float_t p;
@@ -214,10 +211,9 @@ def _em(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
 
     cdef np.ndarray[np.float_t, ndim=2] unique_zstar
 
-    previous_unique_support = probability_z_o_given_theta_c(unique_dataset,
+    previous_unique_support = probability_z_o_given_theta_c(unique_dataset, observed_mask,
                                                             emission_probabilities,
-                                                            mixing_coefficients,
-                                                            observed_mask)
+                                                            mixing_coefficients)
 
     previous_log_likelihood = _log_likelihood_from_z_o_joint(previous_unique_support, counts)
 
@@ -234,10 +230,9 @@ def _em(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
                                                               emission_probabilities
                                                               )
 
-        current_unique_support = probability_z_o_given_theta_c(unique_dataset,
+        current_unique_support = probability_z_o_given_theta_c(unique_dataset, observed_mask,
                                                                emission_probabilities,
-                                                               mixing_coefficients,
-                                                               observed_mask)
+                                                               mixing_coefficients)
         current_log_likelihood = _log_likelihood_from_z_o_joint(current_unique_support, counts)
 
         iterations_done += 1

@@ -98,8 +98,8 @@ class TestBernoulliJoint(unittest.TestCase):
                                     [pis[0] * 0.5 * 0.7, pis[1] * 0.7 * 0.8, pis[2] * 0.1 * 0.9],
                                     [pis[0] * 0.5 * 0.3, pis[1] * 0.7 * 0.2, pis[2] * 0.1 * 0.1]])
 
-        actual_answer = probability_z_o_given_theta_c(data, ps, pis,
-                                                      np.ones(data.shape, dtype=bool))
+        actual_answer = probability_z_o_given_theta_c(data, np.ones(data.shape, dtype=bool), ps,
+                                                      pis)
 
         assert_array_almost_equal(expected_answer, actual_answer)
 
@@ -121,7 +121,7 @@ class TestBernoulliJoint(unittest.TestCase):
                                     [pis[0] * 0.5 * 0.3, pis[1] * 0.7 * 0.2, pis[2] * 0.1 * 0.1]])
 
         mask = np.ones(data.shape, dtype=bool)
-        actual_answer = probability_z_o_given_theta_c(data, ps, pis, mask)
+        actual_answer = probability_z_o_given_theta_c(data, mask, ps, pis)
 
         assert_array_almost_equal(expected_answer, actual_answer)
 
@@ -153,8 +153,8 @@ class TestBernoulliJoint(unittest.TestCase):
                          [True, False],
                          [False, False]])
 
-        actual_answer = probability_z_o_given_theta_c(data, ps, pis, mask)
-        actual_answer2 = probability_z_o_given_theta_c(data2, ps, pis, mask)
+        actual_answer = probability_z_o_given_theta_c(data, mask, ps, pis)
+        actual_answer2 = probability_z_o_given_theta_c(data2, mask, ps, pis)
 
         assert_array_almost_equal(expected_answer, actual_answer)
         assert_array_almost_equal(expected_answer, actual_answer2)
@@ -353,7 +353,7 @@ class TestImputation(unittest.TestCase):
                          [True, False],
                          [False, False]])
 
-        S = probability_z_o_given_theta_c(data, ps, pis, mask)
+        S = probability_z_o_given_theta_c(data, mask, ps, pis)
         expected_answer = np.array([[True, True],
                                    [np.sum(ps[:, 0] * S[1, :]) / np.sum(S[1, :]), False],
                                    [False, np.sum(ps[:, 1] * S[2, :]) / np.sum(S[2, :])],
@@ -382,7 +382,7 @@ class TestImputation(unittest.TestCase):
 
         arr, mask = BernoulliMixture._as_decoupled_array(data)
 
-        S = probability_z_o_given_theta_c(arr, ps, pis, mask)
+        S = probability_z_o_given_theta_c(arr, mask, ps, pis)
 
         expected_answer = pd.DataFrame(np.array([[True, True],
                                                  [np.sum(ps[:, 0] * S[1, :]) / np.sum(S[1, :]),

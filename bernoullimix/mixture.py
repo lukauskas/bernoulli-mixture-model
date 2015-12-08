@@ -256,10 +256,8 @@ class BernoulliMixture(object):
 
         observations, mask = self._as_decoupled_array(observations)
 
-        return probability_z_o_given_theta_c(observations,
-                                             self.emission_probabilities,
-                                             self.mixing_coefficients,
-                                             mask)
+        return probability_z_o_given_theta_c(observations, mask, self.emission_probabilities,
+                                             self.mixing_coefficients)
 
     @classmethod
     def _posterior_probability_of_class_given_support(cls, support):
