@@ -587,9 +587,6 @@ class TestDatasetAggregation(unittest.TestCase):
 
         actual_aggregated_dataset, actual_weights = BernoulliMixture.aggregate_dataset(sample_dataset)
 
-        print(actual_aggregated_dataset)
-        print(actual_weights)
-
         # Check that shapes are the same
         self.assertEqual(expected_aggregated_dataset.shape, actual_aggregated_dataset.shape)
         self.assertEqual(expected_aggregated_weights.shape, actual_weights.shape)
