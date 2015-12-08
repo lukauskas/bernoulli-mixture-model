@@ -4,7 +4,7 @@ import numpy as np
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from bernoullimix import BernoulliMixture
-from bernoullimix._bernoulli import probability_z_o_given_theta_c, bernoulli_prob_for_observations, bernoulli_prob_for_observations_with_mask, \
+from bernoullimix._bernoulli import probability_z_o_given_theta_c, bernoulli_prob_for_observations_with_mask, \
     _m_step, impute_missing_data_c
 
 import pandas as pd
@@ -21,7 +21,8 @@ class TestBernoulliEmissionProbabilities(unittest.TestCase):
 
         expected_answer = np.array([0.3 * 0.45, 0.3 * 0.55, 0.7 * 0.55, 0.7 * 0.45])
 
-        actual_answer = bernoulli_prob_for_observations(ps, data)
+        actual_answer = bernoulli_prob_for_observations_with_mask(ps, data,
+                                                                  np.ones(data.shape, dtype=bool))
 
         assert_array_almost_equal(actual_answer, expected_answer)
 

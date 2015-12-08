@@ -21,28 +21,22 @@ cpdef bernoulli_prob_for_observations_with_mask(np.ndarray[np.float_t, ndim=1] p
     cdef int n_max = observations.shape[0]
     cdef int d_max = observations.shape[1]
 
-    cdef int all_observed = 0
-    if observed_mask is None:
-        all_observed = 1
-    else:
-        assert observed_mask.shape[0] == observations.shape[0]
-        assert observed_mask.shape[1] == observations.shape[1]
+    assert observed_mask.shape[0] == observations.shape[0]
+    assert observed_mask.shape[1] == observations.shape[1]
 
     cdef np.float_t row_ans
 
     cdef np.uint8_t obs
 
-    cdef np.ndarray[np.float_t, ndim=1] answer
-
-    answer = np.empty(n_max, dtype=np.float)
+    cdef np.ndarray[np.float_t, ndim=1] answer = np.empty(n_max, dtype=np.float)
 
     for n in range(n_max):
 
         row_ans = 1.0
 
         for d in range(d_max):
-            obs = observations[n, d]
-            if all_observed == 1 or observed_mask[n, d] == 1:
+            if observed_mask[n, d] == 1:
+                obs = observations[n, d]
                 if obs == 1:
                     row_ans *= p[d]
                 else:
@@ -51,10 +45,6 @@ cpdef bernoulli_prob_for_observations_with_mask(np.ndarray[np.float_t, ndim=1] p
         answer[n] = row_ans
 
     return answer
-
-cpdef bernoulli_prob_for_observations(np.ndarray[np.float_t, ndim=1] p,
-                                      np.ndarray[np.uint8_t, cast=True, ndim=2] observations):
-    return bernoulli_prob_for_observations_with_mask(p, observations, None)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -66,9 +56,7 @@ cpdef probability_z_o_given_theta_c(np.ndarray[np.uint8_t, cast=True, ndim=2]  o
     cdef int N = observations.shape[0]
     cdef int K = mixing_coefficients.shape[0]
 
-    cdef np.ndarray[np.float_t, ndim=2] answer
-
-    answer = np.empty((N, K), dtype=np.float, order='F')
+    cdef np.ndarray[np.float_t, ndim=2] answer = np.empty((N, K), dtype=np.float, order='F')
 
     cdef int component
 
@@ -132,7 +120,24 @@ cpdef _log_likelihood_from_z_o_joint(np.ndarray[np.float_t, ndim=2] z_o_joint,
 
 @cython.inline
 cpdef _posterior_probability_of_class_given_support(np.ndarray[np.float_t, ndim=2] support):
-    return (support.T / np.sum(support, axis=1)).T
+
+    cdef int N = support.shape[0]
+    cdef int K = support.shape[1]
+
+    cdef np.ndarray[np.float_t, ndim=2] ans = support.copy()
+    cdef np.ndarray[np.float_t, ndim=1] support_sums = np.zeros(N, dtype=np.float)
+
+    cdef int n;
+
+    for k in range(K):
+        for n in range(N):
+            support_sums[n] += support[n, k]
+
+    for k in range(K):
+        for n in range(N):
+            ans[n, k] /= support_sums[n]
+
+    return ans
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -177,12 +182,12 @@ def _m_step(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
 
         e[k] = e[k] / c[k]
 
-    cdef np.float_t sum_of_u = 0
+    cdef np.float_t sum_of_c = 0
     for k in range(K):
-        sum_of_u += c[k]
+        sum_of_c += c[k]
 
     for k in range(K):
-        c[k] /= sum_of_u
+        c[k] /= sum_of_c
 
     return c, e
 
