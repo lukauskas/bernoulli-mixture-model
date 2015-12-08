@@ -561,6 +561,52 @@ class TestDatasetAggregation(unittest.TestCase):
 
         self.assertTrue(expected_aggregated_dataset.columns.equals(actual_aggregated_dataset.columns))
 
+    def test_dataset_aggregation_with_masked_dataframe_float64(self):
+        sample_dataset = pd.DataFrame(
+            np.array([[True, True, False, False],  # row A1
+                      [False, None, False, None],  # row B1
+                      [True, True, False, False],  # row A1
+                      [False, None, False, False],  # row B2
+                      [False, False, False, False],  # row C
+                      [True, True, None, False]]),  # row A2
+            columns=['a', 'b', 'c', 'd'],
+            dtype=np.float64
+        )
+
+        expected_aggregated_dataset = pd.DataFrame(
+            np.array([[True, True, False, False],  # A1, two times
+                      [False, None, False, None],  # B1, once
+                      [False, False, False, False],  # C, once
+                      [True, True, None, False],  # A2
+                      [False, None, False, False],  # B2
+                      ]),
+            columns=sample_dataset.columns)
+
+        expected_aggregated_weights = pd.Series(
+            np.array([2, 1, 1, 1, 1], dtype=int), index=expected_aggregated_dataset.index)
+
+        actual_aggregated_dataset, actual_weights = BernoulliMixture.aggregate_dataset(sample_dataset)
+
+        print(actual_aggregated_dataset)
+        print(actual_weights)
+
+        # Check that shapes are the same
+        self.assertEqual(expected_aggregated_dataset.shape, actual_aggregated_dataset.shape)
+        self.assertEqual(expected_aggregated_weights.shape, actual_weights.shape)
+
+        # check that indices match
+        self.assertTrue(actual_aggregated_dataset.index.equals(actual_weights.index))
+
+        # Since the order returned doesn't matter, let's turn results into dict and compare those
+        expected_lookup = self._construct_lookup(expected_aggregated_dataset,
+                                                 expected_aggregated_weights)
+        actual_lookup = self._construct_lookup(actual_aggregated_dataset,
+                                               actual_weights)
+
+        self.assertDictEqual(expected_lookup, actual_lookup)
+
+        self.assertTrue(expected_aggregated_dataset.columns.equals(actual_aggregated_dataset.columns))
+
     def test_aggregation_from_masked_array(self):
         sample_dataset = np.array([[True, True, False, False],  # row A
                                    [False, True, False, False],  # row B

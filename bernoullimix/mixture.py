@@ -132,10 +132,13 @@ class BernoulliMixture(object):
         # This is required to work with pandas DataFrames sometimes
         dataset = pd.DataFrame(dataset)
 
-        counts = Counter(dataset.apply(tuple, axis=1))
+        def _hash(row):
+            return tuple([int(x) if x is not None and not np.isnan(x) else None for x in row])
+
+        counts = Counter(dataset.apply(_hash, axis=1))
 
         unique = dataset.drop_duplicates()
-        counts = unique.apply(lambda row: counts.get(tuple(row)), axis=1)
+        counts = unique.apply(lambda row: counts.get(_hash(row)), axis=1)
 
         return unique, counts
 
