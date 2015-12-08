@@ -159,7 +159,6 @@ def random_mixture_generator(number_of_components,
         emissions = alpha * random_emissions + (1-alpha) * random_row_emissions
         emissions = _adjust_probabilities(emissions, epsilon, domain=expected_domain)
 
-        yield BernoulliMixture(number_of_components, D,
-                               mixing_coefficients, emissions)
+        yield BernoulliMixture(mixing_coefficients, emissions)
 
 

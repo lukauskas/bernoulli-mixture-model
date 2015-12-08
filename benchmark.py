@@ -22,7 +22,7 @@ def main(max_iter):
 
     emissions = np.random.rand(K, D)
 
-    generator = bernoullimix.BernoulliMixture(K, D, mixture_coefficients, emissions)
+    generator = bernoullimix.BernoulliMixture(mixture_coefficients, emissions)
     sample, __ = generator.sample(N, random_state=RANDOM_STATE)
 
     random_bernoulli = next(bernoullimix.random_mixture_generator(K, sample,

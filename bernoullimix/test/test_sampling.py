@@ -26,8 +26,7 @@ class TestSampling(unittest.TestCase):
                                                   [0.1, 0.4, 0.1, 0.4],
                                                   [1.0, 0.0, 0.0, 0.0]])
 
-        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
-                                   sample_mixing_coefficients, sample_emission_probabilities)
+        mixture = BernoulliMixture(sample_mixing_coefficients, sample_emission_probabilities)
 
         size = 100
         observations, true_components = mixture.sample(size=size)
@@ -50,8 +49,7 @@ class TestSampling(unittest.TestCase):
                                                   [0.1, 0.4, 0.1, 0.4],
                                                   [1.0, 0.0, 0.0, 0.0]])
 
-        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
-                                   sample_mixing_coefficients, sample_emission_probabilities)
+        mixture = BernoulliMixture(sample_mixing_coefficients, sample_emission_probabilities)
 
         size = 100
 
@@ -82,8 +80,7 @@ class TestSampling(unittest.TestCase):
                                                   [0.0, 1.0, 0.0, 1.0],
                                                   [0.3, 0.3, 0.3, 0.3]])
 
-        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
-                                   sample_mixing_coefficients, sample_emission_probabilities)
+        mixture = BernoulliMixture(sample_mixing_coefficients, sample_emission_probabilities)
 
         size = 100000
 

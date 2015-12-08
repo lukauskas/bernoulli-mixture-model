@@ -44,25 +44,19 @@ class BernoulliMixture(object):
     _mixing_coefficients = None
     _emission_probabilities = None
 
-    def __init__(self, number_of_components,
-                 number_of_dimensions,
-                 mixing_coefficients,
-                 emission_probabilities):
+    def __init__(self, mixing_coefficients, emission_probabilities):
         """
         Initialises a Bernoulli Mixture Model
 
-        :param number_of_components: number of components in the model (i.e. K)
-        :param number_of_dimensions: number of independent Bernoullis in the model (i.e. D)
         :param mixing_coefficients: K-dimensional array of the mixture components for the data
         :param emission_probabilities: (K, D)-dimensional matrix of the probabilities of emitting
                                        `True` in each bernoulli, given the k.
         """
-
-        self._number_of_components = int(number_of_components)
-        self._number_of_dimensions = int(number_of_dimensions)
-
         self._mixing_coefficients = np.asarray(mixing_coefficients, dtype=float)
         self._emission_probabilities = np.asarray(emission_probabilities, dtype=float)
+
+        self._number_of_components = self._mixing_coefficients.shape[0]
+        self._number_of_dimensions = self._emission_probabilities.shape[1]
 
         self._validate()
 

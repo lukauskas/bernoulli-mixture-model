@@ -29,8 +29,7 @@ class TestFit(unittest.TestCase):
                                                   [0.1, 0.4, 0.1, 0.4],
                                                   [0.95, 0.05, 0.05, 0.05]])
 
-        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
-                                   sample_mixing_coefficients, sample_emission_probabilities)
+        mixture = BernoulliMixture(sample_mixing_coefficients, sample_emission_probabilities)
 
         dataset_too_many_dims = np.ones((10, 5))
         dataset_too_few_dims = np.ones((10, 3))
@@ -117,8 +116,7 @@ class TestFit(unittest.TestCase):
                                                   [0.1, 0.4, 0.1, 0.4],
                                                   [0.95, 0.05, 0.05, 0.05]])
 
-        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
-                                   sample_mixing_coefficients, sample_emission_probabilities)
+        mixture = BernoulliMixture(sample_mixing_coefficients, sample_emission_probabilities)
 
         log_likelihood_prior_to_fitting = mixture.log_likelihood(sample_dataset)
         mixture.fit(sample_dataset, iteration_limit=1)
@@ -144,11 +142,9 @@ class TestFit(unittest.TestCase):
                                                   [0.1, 0.4, 0.1, 0.4],
                                                   [0.95, 0.05, 0.05, 0.05]])
 
-        mixture_a = BernoulliMixture(number_of_components, number_of_dimensions,
-                                     sample_mixing_coefficients, sample_emission_probabilities)
+        mixture_a = BernoulliMixture(sample_mixing_coefficients, sample_emission_probabilities)
 
-        mixture_b = BernoulliMixture(number_of_components, number_of_dimensions,
-                                     sample_mixing_coefficients, sample_emission_probabilities)
+        mixture_b = BernoulliMixture(sample_mixing_coefficients, sample_emission_probabilities)
 
         sample_dataset_unique, counts = BernoulliMixture.aggregate_dataset(sample_dataset)
 
@@ -174,11 +170,9 @@ class TestFit(unittest.TestCase):
                                                   [0.1, 0.4, 0.1, 0.4],
                                                   [0.95, 0.05, 0.05, 0.05]])
 
-        mixture_a = BernoulliMixture(number_of_components, number_of_dimensions,
-                                     sample_mixing_coefficients, sample_emission_probabilities)
+        mixture_a = BernoulliMixture(sample_mixing_coefficients, sample_emission_probabilities)
 
-        mixture_b = BernoulliMixture(number_of_components, number_of_dimensions,
-                                     sample_mixing_coefficients, sample_emission_probabilities)
+        mixture_b = BernoulliMixture(sample_mixing_coefficients, sample_emission_probabilities)
 
         sample_dataset_unique, counts = BernoulliMixture.aggregate_dataset(sample_dataset)
 
@@ -211,11 +205,9 @@ class TestFit(unittest.TestCase):
                                                   [0.1, 0.4, 0.1, 0.4],
                                                   [0.95, 0.05, 0.05, 0.05]])
 
-        mixture_a = BernoulliMixture(number_of_components, number_of_dimensions,
-                                     sample_mixing_coefficients, sample_emission_probabilities)
+        mixture_a = BernoulliMixture(sample_mixing_coefficients, sample_emission_probabilities)
 
-        mixture_b = BernoulliMixture(number_of_components, number_of_dimensions,
-                                     sample_mixing_coefficients, sample_emission_probabilities)
+        mixture_b = BernoulliMixture(sample_mixing_coefficients, sample_emission_probabilities)
 
         sample_dataset_pd = pd.DataFrame(sample_dataset)
 
@@ -244,8 +236,7 @@ class TestFit(unittest.TestCase):
                                                   [0.1, 0.4, 0.1, 0.4],
                                                   [0.95, 0.05, 0.05, 0.05]])
 
-        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
-                                   sample_mixing_coefficients, sample_emission_probabilities)
+        mixture = BernoulliMixture(sample_mixing_coefficients, sample_emission_probabilities)
 
         log_likelihood, __ = mixture.fit(sample_dataset, iteration_limit=1)
         log_likelihood_after_fitting = mixture.log_likelihood(sample_dataset)
@@ -269,8 +260,7 @@ class TestFit(unittest.TestCase):
                                                   [0.1, 0.4, 0.1, 0.4],
                                                   [0.95, 0.05, 0.05, 0.05]])
 
-        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
-                                   sample_mixing_coefficients, sample_emission_probabilities)
+        mixture = BernoulliMixture(sample_mixing_coefficients, sample_emission_probabilities)
 
         # such a simple model should converge within 100 iter. even for eps
         log_likelihood, convergence = mixture.fit(sample_dataset, iteration_limit=100,
@@ -294,8 +284,7 @@ class TestFit(unittest.TestCase):
                                                   [0.1, 0.4, 0.1, 0.4],
                                                   [0.95, 0.05, 0.05, 0.05]])
 
-        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
-                                   sample_mixing_coefficients, sample_emission_probabilities)
+        mixture = BernoulliMixture(sample_mixing_coefficients, sample_emission_probabilities)
 
         # such a simple model should converge within 100 iter. even for eps
         log_likelihood, convergence = mixture.fit(sample_dataset, iteration_limit=100,
@@ -319,8 +308,7 @@ class TestFit(unittest.TestCase):
                                                   [0.1, 0.4, 0.1, 0.4],
                                                   [0.95, 0.05, 0.05, 0.05]])
 
-        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
-                                   sample_mixing_coefficients, sample_emission_probabilities)
+        mixture = BernoulliMixture(sample_mixing_coefficients, sample_emission_probabilities)
 
         # quite a large convergence threshold, to ensure fast convergence
         log_likelihood, convergence = mixture.fit(sample_dataset, iteration_limit=1000,
@@ -354,8 +342,7 @@ class TestFit(unittest.TestCase):
                                                   [0.1, 0.4, 0.1, 0.4],
                                                   [0.95, 0.05, 0.05, 0.05]])
 
-        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
-                                   sample_mixing_coefficients, sample_emission_probabilities)
+        mixture = BernoulliMixture(sample_mixing_coefficients, sample_emission_probabilities)
 
         # quite a large convergence threshold, to ensure fast convergence
         log_likelihood, convergence = mixture.fit(sample_dataset, iteration_limit=1000,
@@ -713,8 +700,7 @@ class TestAssignment(unittest.TestCase):
                                                   [0.1, 0.4, 0.1, 0.4],
                                                   [0.5, 0.5, 0.5, 0.5]])
 
-        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
-                                   sample_mixing_coefficients, sample_emission_probabilities)
+        mixture = BernoulliMixture(sample_mixing_coefficients, sample_emission_probabilities)
 
         dataset = np.array([[True, True, False, False],
                             [False, True, False, False],
@@ -754,8 +740,7 @@ class TestAssignment(unittest.TestCase):
                                                   [0.1, 0.4, 0.1, 0.4],
                                                   [0.5, 0.5, 0.5, 0.5]])
 
-        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
-                                   sample_mixing_coefficients, sample_emission_probabilities)
+        mixture = BernoulliMixture(sample_mixing_coefficients, sample_emission_probabilities)
 
         dataset = np.array([[True, True, False, False],
                             [False, True, False, False],

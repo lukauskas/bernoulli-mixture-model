@@ -25,8 +25,7 @@ class TestInitialisation(unittest.TestCase):
                                                   [0.1, 0.4, 0.1, 0.4],
                                                   [1.0, 0.0, 0.0, 0.0]])
 
-        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
-                                   sample_mixing_coefficients, sample_emission_probabilities)
+        mixture = BernoulliMixture(sample_mixing_coefficients, sample_emission_probabilities)
 
         self.assertEqual(number_of_components, mixture.number_of_components)
         self.assertEqual(number_of_dimensions, mixture.number_of_dimensions)
@@ -50,8 +49,7 @@ class TestInitialisation(unittest.TestCase):
                                          [0.1, 0.4, 0.1, 0.4],
                                          [1.0, 0.0, 0.0, 0.0]]
 
-        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
-                                   sample_mixing_coefficients, sample_emission_probabilities)
+        mixture = BernoulliMixture(sample_mixing_coefficients, sample_emission_probabilities)
 
         self.assertEqual(number_of_components, mixture.number_of_components)
         self.assertEqual(number_of_dimensions, mixture.number_of_dimensions)
@@ -66,18 +64,15 @@ class TestInitialisation(unittest.TestCase):
         Given wrong number of mixing components, initialiser should raise an error.
         """
 
-        number_of_components = 3
-        number_of_dimensions = 4
-
         too_few_components = np.array([0.5, 0.5])
         too_many_components = np.array([0.25, 0.25, 0.25, 0.25])
         sample_emission_probabilities = np.array([[0.1, 0.2, 0.3, 0.4],
                                                   [0.1, 0.4, 0.1, 0.4],
                                                   [1.0, 0.0, 0.0, 0.0]])
 
-        self.assertRaises(ValueError, BernoulliMixture, number_of_components, number_of_dimensions,
+        self.assertRaises(ValueError, BernoulliMixture,
                           too_few_components, sample_emission_probabilities)
-        self.assertRaises(ValueError, BernoulliMixture, number_of_components, number_of_dimensions,
+        self.assertRaises(ValueError, BernoulliMixture,
                           too_many_components, sample_emission_probabilities)
 
     def test_constant_initialisation_when_mixing_coeffiecients_do_not_sum_to_one(self):
@@ -85,18 +80,15 @@ class TestInitialisation(unittest.TestCase):
         Given wrong number of mixing components, initialiser should raise an error.
         """
 
-        number_of_components = 3
-        number_of_dimensions = 4
-
         less_than_one = np.array([0.5, 0.4, 0.05])
         more_than_one = np.array([0.25, 0.25, 0.7])
         sample_emission_probabilities = np.array([[0.1, 0.2, 0.3, 0.4],
                                                   [0.1, 0.4, 0.1, 0.4],
                                                   [1.0, 0.0, 0.0, 0.0]])
 
-        self.assertRaises(ValueError, BernoulliMixture, number_of_components, number_of_dimensions,
+        self.assertRaises(ValueError, BernoulliMixture,
                           less_than_one, sample_emission_probabilities)
-        self.assertRaises(ValueError, BernoulliMixture, number_of_components, number_of_dimensions,
+        self.assertRaises(ValueError, BernoulliMixture,
                           more_than_one, sample_emission_probabilities)
 
     def test_constant_initialisation_when_mixing_coeffiecients_not_between_0_and_1(self):
@@ -104,27 +96,21 @@ class TestInitialisation(unittest.TestCase):
         Given wrong number of mixing components, initialiser should raise an error.
         """
 
-        number_of_components = 3
-        number_of_dimensions = 4
-
         less_than_zero = np.array([-0.5, 1, 0.5])
         more_than_one = np.array([1.5, -1.2, 0.7])
         sample_emission_probabilities = np.array([[0.1, 0.2, 0.3, 0.4],
                                                   [0.1, 0.4, 0.1, 0.4],
                                                   [1.0, 0.0, 0.0, 0.0]])
 
-        self.assertRaises(ValueError, BernoulliMixture, number_of_components, number_of_dimensions,
+        self.assertRaises(ValueError, BernoulliMixture,
                           less_than_zero, sample_emission_probabilities)
-        self.assertRaises(ValueError, BernoulliMixture, number_of_components, number_of_dimensions,
+        self.assertRaises(ValueError, BernoulliMixture,
                           more_than_one, sample_emission_probabilities)
 
     def test_constant_initialisation_when_emission_probabilities_are_bounded_appropriately(self):
         """
         Given that emission probabilities are greater than one or lower than one, raise error.
         """
-
-        number_of_components = 3
-        number_of_dimensions = 4
 
         sample_mixing_coefficients = np.array([0.5, 0.4, 0.1])
         more_than_one = np.array([[0.1, 0.2, 0.3, 0.4],
@@ -135,41 +121,5 @@ class TestInitialisation(unittest.TestCase):
                                   [0.1, 0.4, 0.1, 0.4],
                                   [1.0, 0.0, -5, 0.0]])
 
-        self.assertRaises(ValueError, BernoulliMixture, number_of_components, number_of_dimensions,
-                          sample_mixing_coefficients, more_than_one)
-        self.assertRaises(ValueError, BernoulliMixture, number_of_components, number_of_dimensions,
-                          sample_mixing_coefficients, less_than_zero)
-
-    def test_constant_initialisation_wrong_emission_probabilities_dimension(self):
-        """
-        Given a wrong dimension of sample emission probabilities, the initialiser should fail
-        with a value error.
-        """
-
-        number_of_components = 3
-        number_of_dimensions = 4
-
-        sample_mixing_coefficients = np.array([0.5, 0.4, 0.1])
-        emission_probabilities_too_few_components = np.array([[0.1, 0.2, 0.3, 0.4],
-                                                              [1.0, 0.0, 0.0, 0.0]])
-        emission_probabilities_too_many_components = np.array([[0.1, 0.2, 0.3, 0.4],
-                                                               [1.0, 0.0, 0.0, 0.0],
-                                                               [1.0, 0.0, 0.0, 0.0],
-                                                               [1.0, 0.0, 0.0, 0.0]])
-
-        emission_probabilities_too_many_dimensions = np.array([[0.1, 0.2, 0.3, 0.4, 0.0],
-                                                               [1.0, 0.0, 0.0, 0.0, 0.0],
-                                                               [1.0, 0.0, 0.0, 0.0, 0.0]])
-
-        emission_probabilities_too_few_dimensions = np.array([[0.1, 0.2, 0.7],
-                                                              [1.0, 0.0, 0.0],
-                                                              [1.0, 0.0, 0.0]])
-
-        self.assertRaises(ValueError, BernoulliMixture, number_of_components, number_of_dimensions,
-                          sample_mixing_coefficients, emission_probabilities_too_few_components)
-        self.assertRaises(ValueError, BernoulliMixture, number_of_components, number_of_dimensions,
-                          sample_mixing_coefficients, emission_probabilities_too_many_components)
-        self.assertRaises(ValueError, BernoulliMixture, number_of_components, number_of_dimensions,
-                          sample_mixing_coefficients, emission_probabilities_too_few_dimensions)
-        self.assertRaises(ValueError, BernoulliMixture, number_of_components, number_of_dimensions,
-                          sample_mixing_coefficients, emission_probabilities_too_many_dimensions)
+        self.assertRaises(ValueError, BernoulliMixture, sample_mixing_coefficients, more_than_one)
+        self.assertRaises(ValueError, BernoulliMixture, sample_mixing_coefficients, less_than_zero)

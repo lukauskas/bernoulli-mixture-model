@@ -393,7 +393,7 @@ class TestImputation(unittest.TestCase):
                                                   np.sum((ps[:, 1] * S[3, :])) / np.sum(S[3, :])]]),
                                        index=data.index, columns=data.columns)
 
-        mixture = BernoulliMixture(pis.shape[0], ps.shape[1], pis, ps)
+        mixture = BernoulliMixture(pis, ps)
         actual_answer = mixture.impute_missing_values(data)
 
         self.assertIsInstance(actual_answer, pd.DataFrame)

@@ -24,8 +24,7 @@ class TestLogLikelihood(unittest.TestCase):
                                                   [0.1, 0.4, 0.1, 0.4],
                                                   [0.95, 0.05, 0.05, 0.05]])
 
-        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
-                                   sample_mixing_coefficients, sample_emission_probabilities)
+        mixture = BernoulliMixture(sample_mixing_coefficients, sample_emission_probabilities)
 
         dataset_too_many_dims = np.ones((10, 5))
         dataset_too_few_dims = np.ones((10, 3))
@@ -43,8 +42,7 @@ class TestLogLikelihood(unittest.TestCase):
                                                   [0.1, 0.4, 0.1, 0.4],
                                                   [0.95, 0.05, 0.05, 0.05]])
 
-        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
-                                   sample_mixing_coefficients, sample_emission_probabilities)
+        mixture = BernoulliMixture(sample_mixing_coefficients, sample_emission_probabilities)
 
         sample_dataset = np.array([[True, True, False, False],
                                    [False, True, False, False],
@@ -74,8 +72,7 @@ class TestLogLikelihood(unittest.TestCase):
                                                   [0.1, 0.4, 0.1, 0.4],
                                                   [0.95, 0.05, 0.05, 0.05]])
 
-        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
-                                   sample_mixing_coefficients, sample_eps)
+        mixture = BernoulliMixture(sample_mixing_coefficients, sample_eps)
 
         sample_dataset = pd.DataFrame(np.array([[None, True, False, False],
                                                 [False, None, False, False],
@@ -120,8 +117,7 @@ class TestLogLikelihood(unittest.TestCase):
                                                   [0.1, 0.4, 0.1, 0.4],
                                                   [0.95, 0.05, 0.05, 0.05]])
 
-        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
-                                   sample_mixing_coefficients, sample_emission_probabilities)
+        mixture = BernoulliMixture(sample_mixing_coefficients, sample_emission_probabilities)
 
         sample_dataset = pd.DataFrame(np.array([[None, True, False, False],
                                                 [False, None, False, False],
@@ -163,8 +159,7 @@ class TestLogLikelihood(unittest.TestCase):
                                                   [0.1, 0.4, 0.1, 0.4],
                                                   [0.95, 0.05, 0.05, 0.05]])
 
-        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
-                                   sample_mixing_coefficients, sample_emission_probabilities)
+        mixture = BernoulliMixture(sample_mixing_coefficients, sample_emission_probabilities)
 
         sample_dataset = np.array([[True, True, False, False],
                                    [False, True, False, False],
@@ -200,8 +195,7 @@ class TestPenalisedLikelihood(unittest.TestCase):
                                                   [0.1, 0.4, 0.1, 0.4],
                                                   [0.5, 0.5, 0.5, 0.5]])
 
-        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
-                                   sample_mixing_coefficients, sample_emission_probabilities)
+        mixture = BernoulliMixture(sample_mixing_coefficients, sample_emission_probabilities)
 
         expected_number_of_free_parameters = (number_of_components - 1) + \
                                              (number_of_dimensions * number_of_components)
@@ -219,8 +213,7 @@ class TestPenalisedLikelihood(unittest.TestCase):
                                                   [0.1, 0.4, 0.1, 0.4],
                                                   [0.5, 0.5, 0.5, 0.5]])
 
-        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
-                                   sample_mixing_coefficients, sample_emission_probabilities)
+        mixture = BernoulliMixture(sample_mixing_coefficients, sample_emission_probabilities)
 
         dataset = np.array([[True, True, False, False],
                             [False, True, False, False],
@@ -247,8 +240,7 @@ class TestPenalisedLikelihood(unittest.TestCase):
                                                   [0.1, 0.4, 0.1, 0.4],
                                                   [0.5, 0.5, 0.5, 0.5]])
 
-        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
-                                   sample_mixing_coefficients, sample_emission_probabilities)
+        mixture = BernoulliMixture(sample_mixing_coefficients, sample_emission_probabilities)
 
         dataset = pd.DataFrame(np.array([[None, True, False, False],
                                          [False, None, False, False],
@@ -275,8 +267,7 @@ class TestPenalisedLikelihood(unittest.TestCase):
                                                   [0.1, 0.4, 0.1, 0.4],
                                                   [0.5, 0.5, 0.5, 0.5]])
 
-        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
-                                   sample_mixing_coefficients, sample_emission_probabilities)
+        mixture = BernoulliMixture(sample_mixing_coefficients, sample_emission_probabilities)
 
         dataset = np.array([[True, True, False, False],
                             [False, True, False, False],
@@ -303,8 +294,7 @@ class TestPenalisedLikelihood(unittest.TestCase):
                                                   [0.1, 0.4, 0.1, 0.4],
                                                   [0.5, 0.5, 0.5, 0.5]])
 
-        mixture = BernoulliMixture(number_of_components, number_of_dimensions,
-                                   sample_mixing_coefficients, sample_emission_probabilities)
+        mixture = BernoulliMixture(sample_mixing_coefficients, sample_emission_probabilities)
 
         dataset = pd.DataFrame(np.array([[None, True, False, False],
                                          [False, None, False, False],
