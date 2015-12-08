@@ -58,8 +58,10 @@ cpdef bernoulli_prob_for_observations(np.ndarray[np.float_t, ndim=1] p,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def probability_z_o_given_theta_c(observations, observed_mask, emission_probabilities,
-                                  mixing_coefficients):
+cpdef probability_z_o_given_theta_c(np.ndarray[np.uint8_t, cast=True, ndim=2]  observations,
+                                    np.ndarray[np.uint8_t, cast=True, ndim=2] observed_mask,
+                                    np.ndarray[np.float_t, ndim=2] emission_probabilities,
+                                    np.ndarray[np.float_t, ndim=1] mixing_coefficients):
 
     cdef int N = observations.shape[0]
     cdef int K = mixing_coefficients.shape[0]
