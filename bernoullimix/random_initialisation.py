@@ -45,8 +45,8 @@ def _expected_domain(range_a, range_b, alpha):
         `alpha * A + (1-alpha) B`
     where  `range_a` and `range_b` are the possible ranges for components A and B
 
-    :param range_a: range for component A
-    :param range_b: range for component B
+    :param range_a: range for k A
+    :param range_b: range for k B
     :param alpha: mixing parameter
     :return: a tuple of min and max values for the sum domain.
     """

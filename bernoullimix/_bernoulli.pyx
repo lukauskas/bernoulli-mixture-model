@@ -83,6 +83,47 @@ def probability_z_o_given_theta_c(
 
     return answer
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def impute_missing_data_c(
+        np.ndarray[np.uint8_t, cast=True, ndim=2] observations,
+        np.ndarray[np.uint8_t, cast=True, ndim=2] observed_mask,
+        np.ndarray[np.float_t, ndim=2] emission_probabilities,
+        np.ndarray[np.float_t, ndim=1] mixing_coefficients):
+
+    cdef int N = observations.shape[0]
+    cdef int D = observations.shape[1]
+    cdef int K = mixing_coefficients.shape[0]
+
+    cdef np.ndarray[np.float_t, ndim=2] answer
+
+    answer = np.empty((N, D), dtype=np.float)
+
+    cdef np.ndarray[np.float_t, ndim=2] S = probability_z_o_given_theta_c(observations,
+                                                                          emission_probabilities,
+                                                                          mixing_coefficients,
+                                                                          observed_mask)
+
+    cdef int k
+    cdef np.float_t p;
+    cdef np.float_t num;
+    cdef np.float_t denom;
+
+    for n in range(N):
+        for d in range(D):
+            if observed_mask[n,d]:
+                answer[n, d] = observations[n, d]
+            else:
+                num = 0
+                denom = 0
+                for k in range(K):
+                    p = emission_probabilities[k, d]
+                    num += p * S[n, k]
+                    denom += S[n, k]
+                answer[n, d] = num/denom
+
+    return answer
+
 @cython.inline
 cpdef _log_likelihood_from_z_o_joint(np.ndarray[np.float_t, ndim=2] z_o_joint,
                                      np.ndarray[np.int64_t, ndim=1] weights):

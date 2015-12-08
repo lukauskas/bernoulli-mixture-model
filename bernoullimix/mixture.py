@@ -9,7 +9,8 @@ import numpy as np
 import pandas as pd
 
 from bernoullimix._bernoulli import probability_z_o_given_theta_c, \
-    _log_likelihood_from_z_o_joint, _posterior_probability_of_class_given_support, _m_step, _em
+    _log_likelihood_from_z_o_joint, _posterior_probability_of_class_given_support, _m_step, _em, \
+    impute_missing_data_c
 
 _EPSILON = np.finfo(np.float).eps
 
@@ -54,7 +55,7 @@ class BernoulliMixture(object):
         :param number_of_dimensions: number of independent Bernoullis in the model (i.e. D)
         :param mixing_coefficients: K-dimensional array of the mixture components for the data
         :param emission_probabilities: (K, D)-dimensional matrix of the probabilities of emitting
-                                       `True` in each bernoulli, given the component.
+                                       `True` in each bernoulli, given the k.
         """
 
         self._number_of_components = int(number_of_components)
@@ -347,7 +348,7 @@ class BernoulliMixture(object):
         Returns soft assignment of dataset to classes given the model.
 
         :param dataset: Dataset to assign
-        :return: (N, K) matrix of probabilities of the n-th observation comming from component K
+        :return: (N, K) matrix of probabilities of the n-th observation comming from k K
         """
 
         support = self._prob_z_o_given_theta(dataset)
@@ -360,7 +361,7 @@ class BernoulliMixture(object):
         Returns hard assignment of dataset to classes given the model
 
         :param dataset: Dataset to assign
-        :return: N-vector of the most-likely component to generate that vector
+        :return: N-vector of the most-likely k to generate that vector
         """
 
         probs = self.soft_assignment(dataset)
@@ -375,3 +376,19 @@ class BernoulliMixture(object):
         dataset = np.asarray(dataset, dtype=bool)
 
         return dataset, mask
+
+    def impute_missing_values(self, dataset):
+        """
+        Imputes missing values for the dataset
+        :param dataset:
+        :return:
+        """
+        dataset = pd.DataFrame(dataset)
+
+        array, mask = self._as_decoupled_array(dataset)
+        imputed = impute_missing_data_c(array, mask, self.emission_probabilities,
+                                        self.mixing_coefficients)
+        imputed = pd.DataFrame(imputed, index=dataset.index, columns=dataset.columns)
+
+        return imputed
+

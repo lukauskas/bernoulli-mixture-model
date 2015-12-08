@@ -3,9 +3,11 @@ import numpy as np
 
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
+from bernoullimix import BernoulliMixture
 from bernoullimix._bernoulli import probability_z_o_given_theta_c, bernoulli_prob_for_observations, bernoulli_prob_for_observations_with_mask, \
-    _m_step
+    _m_step, impute_missing_data_c
 
+import pandas as pd
 
 class TestBernoulliEmissionProbabilities(unittest.TestCase):
 
@@ -324,3 +326,78 @@ class TestMStep(unittest.TestCase):
 
         assert_array_almost_equal(expected_mixing_coefficients, mcs2)
         assert_array_almost_equal(expected_emission_probabilities, eps2)
+
+
+class TestImputation(unittest.TestCase):
+
+    def test_missing_values_imputed_correctly(self):
+
+        pis = np.array([0.5, 0.25, 0.25])
+        ps = np.array([[0.5, 0.3],
+                       [0.3, 0.2],
+                       [0.9, 0.1]])
+
+        data = np.array([[True, True],
+                         [True, False],
+                         [False, False],
+                         [False, True]])
+
+        # Unobserved values should not impact anything, so they can be flipped
+        data2 = np.array([[True, True],
+                         [False, False],
+                         [False, True],
+                         [True, False]])
+
+        mask = np.array([[True, True],
+                         [False, True],
+                         [True, False],
+                         [False, False]])
+
+        S = probability_z_o_given_theta_c(data, ps, pis, mask)
+        expected_answer = np.array([[True, True],
+                                   [np.sum(ps[:, 0] * S[1, :]) / np.sum(S[1, :]), False],
+                                   [False, np.sum(ps[:, 1] * S[2, :]) / np.sum(S[2, :])],
+                                   [np.sum((ps[:, 0] * S[3, :])) / np.sum(S[3, :]),
+                                    np.sum((ps[:, 1] * S[3, :])) / np.sum(S[3, :])]])
+
+        actual_answer = impute_missing_data_c(data, mask, ps, pis)
+        actual_answer2 = impute_missing_data_c(data2, mask, ps, pis)
+
+        assert_array_almost_equal(expected_answer, actual_answer)
+        assert_array_almost_equal(expected_answer, actual_answer2)
+
+    def test_imputation_from_pandas(self):
+
+        pis = np.array([0.5, 0.25, 0.25])
+        ps = np.array([[0.5, 0.3],
+                       [0.3, 0.2],
+                       [0.9, 0.1]])
+
+        data = pd.DataFrame(np.array([[True, True],
+                                      [None, False],
+                                      [False, None],
+                                      [None, None]]),
+                            index=['a', 'b', 'c', 'd'], columns=['aa', 'bb'])
+
+
+        arr, mask = BernoulliMixture._as_decoupled_array(data)
+
+        S = probability_z_o_given_theta_c(arr, ps, pis, mask)
+
+        expected_answer = pd.DataFrame(np.array([[True, True],
+                                                 [np.sum(ps[:, 0] * S[1, :]) / np.sum(S[1, :]),
+                                                  False],
+                                                 [False,
+                                                  np.sum(ps[:, 1] * S[2, :]) / np.sum(S[2, :])],
+                                                 [np.sum((ps[:, 0] * S[3, :])) / np.sum(S[3, :]),
+                                                  np.sum((ps[:, 1] * S[3, :])) / np.sum(S[3, :])]]),
+                                       index=data.index, columns=data.columns)
+
+        mixture = BernoulliMixture(pis.shape[0], ps.shape[1], pis, ps)
+        actual_answer = mixture.impute_missing_values(data)
+
+        self.assertIsInstance(actual_answer, pd.DataFrame)
+        assert_array_almost_equal(actual_answer.values, expected_answer.values)
+        self.assertTrue(expected_answer.index.equals(actual_answer.index))
+        self.assertTrue(expected_answer.columns.equals(actual_answer.columns))
+
