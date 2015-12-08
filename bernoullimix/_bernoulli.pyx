@@ -248,8 +248,8 @@ def _em(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
         if current_log_likelihood - previous_log_likelihood < convergence_threshold:
             assert current_log_likelihood - previous_log_likelihood >= 0, \
                 'Likelihood decreased by {} ' \
-                'in iteration {}'.format(iterations_done,
-                                         previous_log_likelihood-current_log_likelihood)
+                'in iteration {}'.format(previous_log_likelihood-current_log_likelihood,
+                                         iterations_done)
             converged = 1
             break
 

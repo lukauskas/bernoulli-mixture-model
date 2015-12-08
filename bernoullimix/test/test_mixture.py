@@ -2,19 +2,16 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
-
 import unittest
-
 import numpy as np
 import pandas as pd
 from numpy.testing import assert_array_equal, assert_array_almost_equal
-
+from bernoullimix import random_mixture_generator
 from bernoullimix._bernoulli import _m_step
 from bernoullimix.mixture import BernoulliMixture
-
+import itertools
 
 class TestFit(unittest.TestCase):
-
     def test_fit_validates_dataset_shape(self):
         """
         Given a dataset that has either too few or too many dimensions,
@@ -50,7 +47,8 @@ class TestFit(unittest.TestCase):
         for i in range(len(sample_support)):
             expected_z_star[i] = sample_support[i] / np.sum(sample_support[i])
 
-        actual_z_star = BernoulliMixture._posterior_probability_of_class_given_support(sample_support)
+        actual_z_star = BernoulliMixture._posterior_probability_of_class_given_support(
+            sample_support)
 
         assert_array_almost_equal(expected_z_star, actual_z_star)
 
@@ -63,41 +61,39 @@ class TestFit(unittest.TestCase):
                                 'as the differences are within the eps tolerance')
         # These come from actual datasets where z_star generated did not have sum to one
         suspicious_support = np.array([
-                                       # Rows below used to sum to >1
-                                       [1.53612947e-04, 9.88770995e-09, 7.31954865e-08,
-                                        3.68751524e-12],
-                                       [1.87860595e-08, 7.52234428e-10, 5.20148206e-08,
-                                        6.21544388e-15],
-                                       [3.19482931e-06, 8.96332090e-11, 6.21308954e-09,
-                                        8.57877361e-15],
-                                       [5.58900957e-24, 7.89065644e-09, 5.01641557e-20,
-                                        0.00000000e+00],
-                                       [1.20063058e-18, 2.99752427e-08, 4.05523428e-15,
-                                        0.00000000e+00],
-                                       [3.22436625e-22, 1.70696284e-08, 2.83703853e-21,
-                                        0.00000000e+00],
-                                       # Rows below used to sum to <1:
-                                       [4.48894642e-07, 1.25938281e-09, 4.89169020e-11,
-                                        1.33770571e-14],
-                                       [3.26362569e-06, 1.31062689e-09, 5.37580436e-07,
-                                        9.38841678e-14],
-                                       [3.58296743e-06, 2.24325747e-11, 6.55336297e-09,
-                                        1.59294917e-14],
-                                       [5.28134593e-24, 7.78303030e-11, 6.02972119e-29,
-                                        0.00000000e+00],
-                                       [2.24817618e-23, 7.34013933e-12, 2.76654735e-32,
-                                        0.00000000e+00],
-                                       [2.55102334e-31, 7.17632935e-16, 1.30407144e-42,
-                                        0.00000000e+00]
-                                    ])
+            # Rows below used to sum to >1
+            [1.53612947e-04, 9.88770995e-09, 7.31954865e-08,
+             3.68751524e-12],
+            [1.87860595e-08, 7.52234428e-10, 5.20148206e-08,
+             6.21544388e-15],
+            [3.19482931e-06, 8.96332090e-11, 6.21308954e-09,
+             8.57877361e-15],
+            [5.58900957e-24, 7.89065644e-09, 5.01641557e-20,
+             0.00000000e+00],
+            [1.20063058e-18, 2.99752427e-08, 4.05523428e-15,
+             0.00000000e+00],
+            [3.22436625e-22, 1.70696284e-08, 2.83703853e-21,
+             0.00000000e+00],
+            # Rows below used to sum to <1:
+            [4.48894642e-07, 1.25938281e-09, 4.89169020e-11,
+             1.33770571e-14],
+            [3.26362569e-06, 1.31062689e-09, 5.37580436e-07,
+             9.38841678e-14],
+            [3.58296743e-06, 2.24325747e-11, 6.55336297e-09,
+             1.59294917e-14],
+            [5.28134593e-24, 7.78303030e-11, 6.02972119e-29,
+             0.00000000e+00],
+            [2.24817618e-23, 7.34013933e-12, 2.76654735e-32,
+             0.00000000e+00],
+            [2.55102334e-31, 7.17632935e-16, 1.30407144e-42,
+             0.00000000e+00]
+        ])
 
         z_star = BernoulliMixture._posterior_probability_of_class_given_support(suspicious_support)
         z_star_sums = np.sum(z_star, axis=1)
 
         for sum_ in z_star_sums:
             self.assertEqual(sum_, 1.0)
-
-
 
     def test_fit_increases_likelihood(self):
 
@@ -409,11 +405,38 @@ class TestFit(unittest.TestCase):
         assert_array_almost_equal(expected_u, actual_u)
         assert_array_almost_equal(expected_v, actual_v)
 
+    def test_fit_converges_for_digits_dataset(self):
+
+        try:
+            import sklearn.datasets
+        except ImportError as e:
+            raise unittest.SkipTest(e)
+
+        digits_dataset = sklearn.datasets.load_digits()
+
+        binary_digits = pd.DataFrame(digits_dataset.data > 0)
+
+        K = len(digits_dataset.target_names)
+        D = len(binary_digits.columns)
+
+        random_state = 1208
+        generator = random_mixture_generator(K, binary_digits, random_state=1208)
+
+        # Only 25th mixture fails to converge when the test was written, for some reason.
+        mixture = list(itertools.islice(generator, 26))[-1]
+
+        convergence_threshold = np.finfo(np.float).eps
+        ll, convergence = mixture.fit(binary_digits, iteration_limit=None,
+                                      convergence_threshold=convergence_threshold)
+
+        self.assertTrue(convergence.converged)
+        self.assertGreater(convergence.number_of_iterations, 1)
+
     def test_m_step_produces_probabilities_in_correct_range_for_repeating_datasets(self):
         unique_dataset = np.array([[True, False, True, True],
-                            [True, False, False, True],
-                            [True, False, True, False],
-                            [True, False, False, False]])
+                                   [True, False, False, True],
+                                   [True, False, True, False],
+                                   [True, False, False, False]])
 
         unique_counts = np.array([4, 3, 2, 1])
 
@@ -453,7 +476,6 @@ class TestFit(unittest.TestCase):
 
 
 class TestDatasetAggregation(unittest.TestCase):
-
     def test_dataset_aggregation_all_observed(self):
         """
         Given a dataset with repeating rows `_aggregate_dataset()` function should return
@@ -478,7 +500,8 @@ class TestDatasetAggregation(unittest.TestCase):
         expected_aggregated_weights = pd.Series(np.array([3, 2, 1], dtype=int),
                                                 index=expected_aggregated_dataset.index)
 
-        actual_aggregated_dataset, actual_weights = BernoulliMixture.aggregate_dataset(sample_dataset)
+        actual_aggregated_dataset, actual_weights = BernoulliMixture.aggregate_dataset(
+            sample_dataset)
 
         # Check that shapes are the same
         self.assertEqual(expected_aggregated_dataset.shape, actual_aggregated_dataset.shape)
@@ -496,7 +519,6 @@ class TestDatasetAggregation(unittest.TestCase):
         self.assertDictEqual(expected_lookup, actual_lookup)
 
     def _construct_lookup(self, unique, counts):
-
         lookup = {}
         for ix, row in unique.iterrows():
             count = counts.loc[ix]
@@ -529,7 +551,8 @@ class TestDatasetAggregation(unittest.TestCase):
         expected_aggregated_weights = pd.Series(
             np.array([2, 1, 1, 1, 1], dtype=int), index=expected_aggregated_dataset.index)
 
-        actual_aggregated_dataset, actual_weights = BernoulliMixture.aggregate_dataset(sample_dataset)
+        actual_aggregated_dataset, actual_weights = BernoulliMixture.aggregate_dataset(
+            sample_dataset)
 
         # Check that shapes are the same
         self.assertEqual(expected_aggregated_dataset.shape, actual_aggregated_dataset.shape)
@@ -546,7 +569,8 @@ class TestDatasetAggregation(unittest.TestCase):
 
         self.assertDictEqual(expected_lookup, actual_lookup)
 
-        self.assertTrue(expected_aggregated_dataset.columns.equals(actual_aggregated_dataset.columns))
+        self.assertTrue(
+            expected_aggregated_dataset.columns.equals(actual_aggregated_dataset.columns))
 
     def test_dataset_aggregation_with_masked_dataframe_float64(self):
         sample_dataset = pd.DataFrame(
@@ -572,7 +596,8 @@ class TestDatasetAggregation(unittest.TestCase):
         expected_aggregated_weights = pd.Series(
             np.array([2, 1, 1, 1, 1], dtype=int), index=expected_aggregated_dataset.index)
 
-        actual_aggregated_dataset, actual_weights = BernoulliMixture.aggregate_dataset(sample_dataset)
+        actual_aggregated_dataset, actual_weights = BernoulliMixture.aggregate_dataset(
+            sample_dataset)
 
         # Check that shapes are the same
         self.assertEqual(expected_aggregated_dataset.shape, actual_aggregated_dataset.shape)
@@ -589,7 +614,8 @@ class TestDatasetAggregation(unittest.TestCase):
 
         self.assertDictEqual(expected_lookup, actual_lookup)
 
-        self.assertTrue(expected_aggregated_dataset.columns.equals(actual_aggregated_dataset.columns))
+        self.assertTrue(
+            expected_aggregated_dataset.columns.equals(actual_aggregated_dataset.columns))
 
     def test_aggregation_from_masked_array(self):
         sample_dataset = np.array([[True, True, False, False],  # row A
@@ -640,7 +666,6 @@ class TestDatasetAggregation(unittest.TestCase):
         self.assertDictEqual(expected_lookup, actual_lookup)
 
     def test_mask_splitting(self):
-
         sample_dataset = pd.DataFrame([[True, False, None],
                                        [False, False, None],
                                        [True, True, True]])
@@ -664,7 +689,6 @@ class TestDatasetAggregation(unittest.TestCase):
         assert_array_equal(expected_dataset[expected_mask], actual_dataset[actual_mask])
 
     def test_mask_splitting_from_array(self):
-
         sample_dataset = np.array([[True, False, False],
                                    [False, False, True],
                                    [True, True, True]], dtype=bool)
@@ -689,7 +713,6 @@ class TestDatasetAggregation(unittest.TestCase):
 
 
 class TestAssignment(unittest.TestCase):
-
     def test_soft_assignment_computed_correctly(self):
         number_of_components = 3
 
@@ -715,7 +738,6 @@ class TestAssignment(unittest.TestCase):
 
         for n in range(N):
             for k in range(number_of_components):
-
                 prob = sample_mixing_coefficients[k]
                 prob *= np.product(np.power(sample_emission_probabilities[k], dataset[n]) *
                                    np.power(1 - sample_emission_probabilities[k], 1 - dataset[n]))
