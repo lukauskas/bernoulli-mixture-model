@@ -6,9 +6,13 @@ import numpy as np
 cimport numpy as np
 cimport cython
 
+
+
+from libc.math cimport log
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef bernoulli_prob_for_observations_with_mask(np.ndarray[np.float_t, ndim=1] p,
+cpdef bernoulli_prob_for_observations_with_mask(np.float_t[:] p,
                                                 np.ndarray[np.uint8_t, cast=True, ndim=2] observations,
                                                 np.ndarray[np.uint8_t, cast=True, ndim=2] observed_mask):
     # We are doing
@@ -40,7 +44,7 @@ cpdef bernoulli_prob_for_observations_with_mask(np.ndarray[np.float_t, ndim=1] p
                 if obs == 1:
                     row_ans *= p[d]
                 else:
-                    row_ans *= 1 - p[d]
+                    row_ans *= 1.0 - p[d]
 
         answer[n] = row_ans
 
@@ -48,7 +52,7 @@ cpdef bernoulli_prob_for_observations_with_mask(np.ndarray[np.float_t, ndim=1] p
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef probability_z_o_given_theta_c(np.ndarray[np.uint8_t, cast=True, ndim=2]  observations,
+cpdef probability_z_o_given_theta_c(np.ndarray[np.uint8_t, cast=True, ndim=2] observations,
                                     np.ndarray[np.uint8_t, cast=True, ndim=2] observed_mask,
                                     np.ndarray[np.float_t, ndim=2] emission_probabilities,
                                     np.ndarray[np.float_t, ndim=1] mixing_coefficients):
@@ -59,6 +63,7 @@ cpdef probability_z_o_given_theta_c(np.ndarray[np.uint8_t, cast=True, ndim=2]  o
     cdef np.ndarray[np.float_t, ndim=2] answer = np.empty((N, K), dtype=np.float, order='F')
 
     cdef int component
+    cdef np.float_t[:] component_emission_probs
 
     for component in range(K):
         component_emission_probs = emission_probabilities[component]
@@ -72,6 +77,7 @@ cpdef probability_z_o_given_theta_c(np.ndarray[np.uint8_t, cast=True, ndim=2]  o
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
+@cython.cdivision(True)
 def impute_missing_data_c(
         np.ndarray[np.uint8_t, cast=True, ndim=2] observations,
         np.ndarray[np.uint8_t, cast=True, ndim=2] observed_mask,
@@ -86,10 +92,10 @@ def impute_missing_data_c(
 
     answer = np.empty((N, D), dtype=np.float)
 
-    cdef np.ndarray[np.float_t, ndim=2] S = probability_z_o_given_theta_c(observations,
-                                                                          observed_mask,
-                                                                          emission_probabilities,
-                                                                          mixing_coefficients)
+    cdef np.float_t[:, :] S = probability_z_o_given_theta_c(observations,
+                                                            observed_mask,
+                                                            emission_probabilities,
+                                                            mixing_coefficients)
 
     cdef int k
     cdef np.float_t p;
@@ -111,20 +117,42 @@ def impute_missing_data_c(
 
     return answer
 
-@cython.inline
-cpdef _log_likelihood_from_z_o_joint(np.ndarray[np.float_t, ndim=2] z_o_joint,
-                                     np.ndarray[np.int64_t, ndim=1] weights):
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cpdef np.float_t _log_likelihood_from_z_o_joint(np.float_t[:,:] z_o_joint,
+                                                np.int_t[:] weights):
 
-    return np.sum(np.log(np.sum(z_o_joint, axis=1)) * weights)
 
+    cdef int N = z_o_joint.shape[0]
+    cdef int K = z_o_joint.shape[1]
 
-@cython.inline
-cpdef _posterior_probability_of_class_given_support(np.ndarray[np.float_t, ndim=2] support):
+    cdef np.float_t row_log_likelihood
+    cdef np.float_t ans = 0
+
+    cdef int n;
+    cdef int k;
+
+    for n in range(N):
+        row_log_likelihood = 0
+        for k in range(K):
+            row_log_likelihood += z_o_joint[n, k]
+
+        row_log_likelihood = log(row_log_likelihood)
+        row_log_likelihood *= weights[n]
+
+        ans += row_log_likelihood
+
+    return ans
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+cpdef np.ndarray[np.float_t, ndim=2] _posterior_probability_of_class_given_support(np.float_t[:,:] support):
 
     cdef int N = support.shape[0]
     cdef int K = support.shape[1]
 
-    cdef np.ndarray[np.float_t, ndim=2] ans = support.copy()
+    cdef np.ndarray[np.float_t, ndim=2] ans = np.empty((N,K), dtype=np.float)
     cdef np.ndarray[np.float_t, ndim=1] support_sums = np.zeros(N, dtype=np.float)
 
     cdef int n;
@@ -135,7 +163,7 @@ cpdef _posterior_probability_of_class_given_support(np.ndarray[np.float_t, ndim=
 
     for k in range(K):
         for n in range(N):
-            ans[n, k] /= support_sums[n]
+            ans[n, k] = support[n, k] /  support_sums[n]
 
     return ans
 
@@ -143,8 +171,8 @@ cpdef _posterior_probability_of_class_given_support(np.ndarray[np.float_t, ndim=
 @cython.wraparound(False)
 def _m_step(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
             np.ndarray[np.uint8_t, cast=True, ndim=2] unique_mask,
-            np.ndarray[np.float_t, ndim=2] unique_zstar,
-            np.ndarray[np.int64_t, ndim=1] weights,
+            np.float_t[:,:] unique_zstar,
+            np.int_t[:] weights,
             np.ndarray[np.float_t, ndim=2] old_emission_probabilities
             ):
 
@@ -180,7 +208,8 @@ def _m_step(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
                 else:
                     e[k, d] += old_emission_probabilities[k, d] * zstar_times_weight
 
-        e[k] = e[k] / c[k]
+        for d in range(D):
+            e[k, d] /= c[k]
 
     cdef np.float_t sum_of_c = 0
     for k in range(K):
@@ -194,7 +223,7 @@ def _m_step(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def _em(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
-        np.ndarray[np.int64_t, ndim=1] counts,
+        np.ndarray[np.int_t, ndim=1] counts,
         np.ndarray[np.uint8_t, cast=True, ndim=2] observed_mask,
         np.ndarray[np.float_t, ndim=1] mixing_coefficients,
         np.ndarray[np.float_t, ndim=2] emission_probabilities,
@@ -210,13 +239,13 @@ def _em(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
         likelihood_trace = None
 
     cdef int converged = 0
-    cdef np.ndarray[np.float_t, ndim=2] previous_unique_support
-    cdef np.ndarray[np.float_t, ndim=2] current_unique_support
+    cdef np.float_t[:,:] previous_unique_support
+    cdef np.float_t[:,:] current_unique_support
 
     cdef np.float_t previous_log_likelihood
     cdef np.float_t current_log_likelihood
 
-    cdef np.ndarray[np.float_t, ndim=2] unique_zstar
+    cdef np.float_t[:,:] unique_zstar
 
     previous_unique_support = probability_z_o_given_theta_c(unique_dataset, observed_mask,
                                                             emission_probabilities,
@@ -248,10 +277,13 @@ def _em(np.ndarray[np.uint8_t, cast=True, ndim=2] unique_dataset,
             likelihood_trace.append(current_log_likelihood)
 
         if current_log_likelihood - previous_log_likelihood < convergence_threshold:
-            assert current_log_likelihood - previous_log_likelihood >= 0, \
-                'Likelihood decreased by {} ' \
-                'in iteration {}'.format(previous_log_likelihood-current_log_likelihood,
-                                         iterations_done)
+            try:
+                assert current_log_likelihood - previous_log_likelihood >= 0, \
+                    'Likelihood decreased by {} ' \
+                    'in iteration {}'.format(previous_log_likelihood-current_log_likelihood,
+                                             iterations_done)
+            except AssertionError:
+                raise
             converged = 1
             break
 

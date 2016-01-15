@@ -122,8 +122,6 @@ class BernoulliMixture(object):
         :return: tuple. First element is the unique rows in data (pd.DataFrame),
                         second element is the number of times they occur
         """
-        # based on http://stackoverflow.com/a/16971224/171400
-
         # This is required to work with pandas DataFrames sometimes
         dataset = pd.DataFrame(dataset)
 
