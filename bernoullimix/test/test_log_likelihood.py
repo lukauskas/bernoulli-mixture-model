@@ -63,6 +63,53 @@ class TestLogLikelihoodNew(unittest.TestCase):
         self.assertRaises(ValueError, mixture_two_datasets.log_likelihood,
                           [dataset, dataset_wrong_columns])
 
+    def test_log_likelihood_with_weights_validates_weights(self):
+
+        dataset = pd.DataFrame([[False, True, False],
+                                [False, False, False]],
+                               columns=['a', 'b', 'c'])
+
+        es = pd.DataFrame([[0.1, 0.2, 0.6],
+                           [0.3, 0.2, 0.1],
+                           [0.2, 0.1, 0.4]],
+                          columns=dataset.columns)
+
+        ms_one = pd.Series([0.1, 0.5, 0.4], index=es.index)
+        ms_two = pd.DataFrame([[0.1, 0.5, 0.4],
+                               [0.2, 0.2, 0.6]], columns=es.index)
+
+        mixture_one_dataset = MixtureModel(ms_one, es)
+        mixture_two_datasets = MixtureModel(ms_two, es)
+
+        weights = pd.Series([1, 2], index=dataset.index)
+        weights_wrong_index = pd.Series([1, 2], index=['a', 'b'])
+        weights_wrong_dim = pd.Series([1, 2, 3])
+
+        self.assertRaises(ValueError, mixture_one_dataset.log_likelihood,
+                          [dataset],
+                          [weights_wrong_index])
+        self.assertRaises(ValueError, mixture_one_dataset.log_likelihood,
+                          [dataset],
+                          [weights_wrong_dim])
+
+        self.assertRaises(ValueError, mixture_one_dataset.log_likelihood,
+                          [dataset],
+                          [weights, weights])
+
+        self.assertRaises(ValueError, mixture_two_datasets.log_likelihood,
+                          [dataset, dataset],
+                          [weights, weights_wrong_index])
+
+        self.assertRaises(ValueError, mixture_two_datasets.log_likelihood,
+                          [dataset, dataset],
+                          [weights, weights_wrong_dim])
+
+        self.assertRaises(ValueError, mixture_two_datasets.log_likelihood,
+                          [dataset],
+                          [weights])
+
+
+
 class TestLogLikelihood(unittest.TestCase):
 
     def test_log_likelihood_validates_dataset_shape(self):

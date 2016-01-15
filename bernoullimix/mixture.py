@@ -48,21 +48,37 @@ class MixtureModel(object):
 
         self._validate()
 
-    def log_likelihood(self, datasets):
+    def log_likelihood(self, datasets, weights=None):
 
         if not isinstance(datasets, list):
             datasets = [datasets]
 
         datasets = [pd.DataFrame(d) for d in datasets]
 
+        if len(datasets) != self.n_datasets:
+            raise ValueError('{} datasets provided, but expected {}'.format(len(datasets),
+                                                                            self.n_datasets))
+
         for i, dataset in enumerate(datasets):
-            if dataset.columns != self.emission_probabilities.columns:
+            if not dataset.columns.equals(self.emission_probabilities.columns):
                 raise ValueError('Dataset #{} columns do not '
                                  'match the emission probability columns:\n'
                                  '{!r} != {!r}'.format(i, dataset.columns,
                                                        self.emission_probabilities.columns))
 
-        pass
+        if weights is None:
+            weights = []
+
+            for d in datasets:
+                w = pd.Series(np.ones(len(d)), index=d.index)
+                weights.append(w)
+
+        if len(weights) != self.n_datasets:
+            raise ValueError('{} weights provided, but expected {}'.format(len(weights),
+                                                                           self.n_datasets))
+        for i, (w, d) in enumerate(zip(weights, datasets)):
+            if not d.index.equals(w.index):
+                raise ValueError('Dataset #{} index does not match the corresponding weights index')
 
     @property
     def n_components(self):
