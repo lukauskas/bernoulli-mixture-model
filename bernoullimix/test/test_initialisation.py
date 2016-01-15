@@ -193,3 +193,4 @@ class TestMixtureModelInitialisation(unittest.TestCase):
                           sample_mixing_coefficients_series,
                           sample_emission_probabilities_b)
 
+

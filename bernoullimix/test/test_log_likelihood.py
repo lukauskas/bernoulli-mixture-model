@@ -6,6 +6,63 @@ from numpy.testing import assert_array_almost_equal
 from bernoullimix import BernoulliMixture
 import pandas as pd
 
+from bernoullimix.mixture import MixtureModel
+
+
+class TestLogLikelihoodNew(unittest.TestCase):
+
+    def test_log_likelihood_validates_dataset_counts(self):
+        """
+        Given datasets, log likelihood should validate that appropriate amount of datasets is
+        given (to match the number of priors)
+        """
+
+        dataset = pd.DataFrame([[False, True, False],
+                                [False, False, False]],
+                               columns=['a', 'b', 'c'])
+
+        es = pd.DataFrame([[0.1, 0.2, 0.6],
+                           [0.3, 0.2, 0.1],
+                           [0.2, 0.1, 0.4]],
+                          columns=dataset.columns)
+
+        ms_one = pd.Series([0.1, 0.5, 0.4], index=es.index)
+        ms_two = pd.DataFrame([[0.1, 0.5, 0.4],
+                               [0.2, 0.2, 0.6]], columns=es.index)
+
+        mixture_one_dataset = MixtureModel(ms_one, es)
+        mixture_two_datasets = MixtureModel(ms_two, es)
+
+        self.assertRaises(ValueError, mixture_one_dataset.log_likelihood, [dataset, dataset])
+        self.assertRaises(ValueError, mixture_two_datasets.log_likelihood, [dataset])
+
+    def test_log_likelihood_validates_dataset_dimensions(self):
+        """
+        Given datasets, mixture model should verify that their columns are the same as the
+        emission probability columns.
+        """
+
+        dataset = pd.DataFrame([[False, True, False],
+                                [False, False, False]],
+                               columns=['a', 'b', 'c'])
+
+        dataset_wrong_columns = pd.DataFrame([[False, True, False],
+                                              [False, False, False]],
+                                             columns=['a', 'b', 'e'])
+
+        es = pd.DataFrame([[0.1, 0.2, 0.6],
+                           [0.3, 0.2, 0.1],
+                           [0.2, 0.1, 0.4]],
+                          columns=dataset.columns)
+
+        ms_two = pd.DataFrame([[0.1, 0.5, 0.4],
+                               [0.2, 0.2, 0.6]], columns=es.index)
+
+        mixture_two_datasets = MixtureModel(ms_two, es)
+
+        self.assertRaises(ValueError, mixture_two_datasets.log_likelihood,
+                          [dataset, dataset_wrong_columns])
+
 class TestLogLikelihood(unittest.TestCase):
 
     def test_log_likelihood_validates_dataset_shape(self):

@@ -48,6 +48,22 @@ class MixtureModel(object):
 
         self._validate()
 
+    def log_likelihood(self, datasets):
+
+        if not isinstance(datasets, list):
+            datasets = [datasets]
+
+        datasets = [pd.DataFrame(d) for d in datasets]
+
+        for i, dataset in enumerate(datasets):
+            if dataset.columns != self.emission_probabilities.columns:
+                raise ValueError('Dataset #{} columns do not '
+                                 'match the emission probability columns:\n'
+                                 '{!r} != {!r}'.format(i, dataset.columns,
+                                                       self.emission_probabilities.columns))
+
+        pass
+
     @property
     def n_components(self):
         return self._mixing_coefficients.shape[1]
