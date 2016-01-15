@@ -15,6 +15,61 @@ from bernoullimix._bernoulli import probability_z_o_given_theta_c, \
 _EPSILON = np.finfo(np.float).eps
 
 
+class MixtureModel(object):
+    _mixing_coefficients = None
+    _emission_probabilities = None
+
+    def _validate(self):
+        if not self.mixing_coefficients.columns.equals(self.emission_probabilities.index):
+            raise ValueError('The mixing coefficients index does not match emission probabilities '
+                             'index {!r} != {!r}'.format(self.mixing_coefficients.columns,
+                                                         self.emission_probabilities.index))
+
+        mc_sums = self.mixing_coefficients.sum(axis='columns')
+
+        if not np.all(mc_sums == 1):
+            raise ValueError('Mixing coefficients must sum to one')
+
+        if np.any(self.emission_probabilities < 0) or \
+                np.any(self.emission_probabilities > 1):
+            raise ValueError('Emission probabilities have to be between 0 and 1')
+
+    def __init__(self, mixing_coefficients, emission_probabilities):
+        if isinstance(mixing_coefficients, pd.Series):
+            mixing_coefficients = pd.DataFrame(mixing_coefficients).T
+        elif isinstance(mixing_coefficients, pd.DataFrame):
+            pass
+        else:
+            mixing_coefficients = np.atleast_2d(mixing_coefficients)
+            mixing_coefficients = pd.DataFrame(mixing_coefficients)
+
+        self._mixing_coefficients = mixing_coefficients
+        self._emission_probabilities = pd.DataFrame(emission_probabilities)
+
+        self._validate()
+
+    @property
+    def n_components(self):
+        return self._mixing_coefficients.shape[1]
+
+    @property
+    def n_datasets(self):
+        return self._mixing_coefficients.shape[0]
+
+    @property
+    def n_dimensions(self):
+        return self._emission_probabilities.shape[1]
+
+    @property
+    def mixing_coefficients(self):
+        return self._mixing_coefficients
+
+    @property
+    def emission_probabilities(self):
+        return self._emission_probabilities
+
+
+
 class ConvergenceStatus(object):
 
     converged = None
