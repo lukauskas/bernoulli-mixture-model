@@ -15,7 +15,7 @@ from bernoullimix._bernoulli import probability_z_o_given_theta_c, \
 _EPSILON = np.finfo(np.float).eps
 
 
-class MixtureModel(object):
+class MultiDatasetMixtureModel(object):
     _mixing_coefficients = None
     _emission_probabilities = None
 
@@ -48,37 +48,40 @@ class MixtureModel(object):
 
         self._validate()
 
-    def log_likelihood(self, datasets, weights=None):
+    def _validate_data(self, data, dataset_id_column, weight_column):
+        columns = data.columns
 
-        if not isinstance(datasets, list):
-            datasets = [datasets]
+        if weight_column not in columns:
+            raise ValueError('Weight collumn {!r} not found in data columns'.format(weight_column))
+        elif dataset_id_column not in columns:
+            raise ValueError('Dataset id column {!r} not found in data columns'.format(dataset_id_column))
 
-        datasets = [pd.DataFrame(d) for d in datasets]
+        data_columns = self.data_index
+        data_columns_isin = data_columns.isin(data)
 
-        if len(datasets) != self.n_datasets:
-            raise ValueError('{} datasets provided, but expected {}'.format(len(datasets),
-                                                                            self.n_datasets))
+        if not data_columns_isin.all():
+            not_found = data_columns[~data_columns_isin]
+            raise ValueError('Some expected data columns {!r} not in data'.format(not_found))
 
-        for i, dataset in enumerate(datasets):
-            if not dataset.columns.equals(self.emission_probabilities.columns):
-                raise ValueError('Dataset #{} columns do not '
-                                 'match the emission probability columns:\n'
-                                 '{!r} != {!r}'.format(i, dataset.columns,
-                                                       self.emission_probabilities.columns))
+        dataset_index_unique = data[dataset_id_column].unique()
+        dataset_index = self.data_index
 
-        if weights is None:
-            weights = []
+        if set(dataset_index_unique) != set(dataset_index):
+            raise ValueError('Dataset id column does not match the dataset index for mixing coefficients')
 
-            for d in datasets:
-                w = pd.Series(np.ones(len(d)), index=d.index)
-                weights.append(w)
 
-        if len(weights) != self.n_datasets:
-            raise ValueError('{} weights provided, but expected {}'.format(len(weights),
-                                                                           self.n_datasets))
-        for i, (w, d) in enumerate(zip(weights, datasets)):
-            if not d.index.equals(w.index):
-                raise ValueError('Dataset #{} index does not match the corresponding weights index')
+        weights = data[weight_column]
+
+        if not np.all(weights > 0):
+            raise ValueError('Provided weights have to be >0')
+
+    def _log_likelihood_for_row(self, data_row, mu):
+        return 1
+
+    def log_likelihood(self, data, dataset_id_column='dataset_id', weight_column='weight'):
+        self._validate_data(data, dataset_id_column=dataset_id_column, weight_column=weight_column)
+
+        
 
     @property
     def n_components(self):
@@ -86,11 +89,19 @@ class MixtureModel(object):
 
     @property
     def n_datasets(self):
-        return self._mixing_coefficients.shape[0]
+        return len(self.datasets_index)
+
+    @property
+    def datasets_index(self):
+        return self.mixing_coefficients.index
 
     @property
     def n_dimensions(self):
-        return self._emission_probabilities.shape[1]
+        return len(self.data_index)
+
+    @property
+    def data_index(self):
+        return self.emission_probabilities.columns
 
     @property
     def mixing_coefficients(self):

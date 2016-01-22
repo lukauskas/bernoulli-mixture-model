@@ -6,107 +6,162 @@ from numpy.testing import assert_array_almost_equal
 from bernoullimix import BernoulliMixture
 import pandas as pd
 
-from bernoullimix.mixture import MixtureModel
+from bernoullimix.mixture import MultiDatasetMixtureModel
 
 
 class TestLogLikelihoodNew(unittest.TestCase):
 
-    def test_log_likelihood_validates_dataset_counts(self):
+    def test_log_likelihood_checks_that_dataset_id_and_weight_columns_exist(self):
         """
-        Given datasets, log likelihood should validate that appropriate amount of datasets is
-        given (to match the number of priors)
+        log likelihood function should validate that data has dataset_id and weight columns
+        :return:
         """
 
-        dataset = pd.DataFrame([[False, True, False],
-                                [False, False, False]],
-                               columns=['a', 'b', 'c'])
+        dataset_no_weight = pd.DataFrame([[False, True, False, 0],
+                                          [False, False, False, 0]],
+                                          columns=['a', 'b', 'c', 'dataset_id'])
+
+        dataset_no_dataset_id = pd.DataFrame([[False, True, False, 1],
+                                          [False, False, False, 1]],
+                                          columns=['a', 'b', 'c', 'weight'])
 
         es = pd.DataFrame([[0.1, 0.2, 0.6],
                            [0.3, 0.2, 0.1],
                            [0.2, 0.1, 0.4]],
-                          columns=dataset.columns)
+                          columns=['a', 'b', 'c'])
 
         ms_one = pd.Series([0.1, 0.5, 0.4], index=es.index)
-        ms_two = pd.DataFrame([[0.1, 0.5, 0.4],
-                               [0.2, 0.2, 0.6]], columns=es.index)
 
-        mixture_one_dataset = MixtureModel(ms_one, es)
-        mixture_two_datasets = MixtureModel(ms_two, es)
+        mixture = MultiDatasetMixtureModel(ms_one, es)
 
-        self.assertRaises(ValueError, mixture_one_dataset.log_likelihood, [dataset, dataset])
-        self.assertRaises(ValueError, mixture_two_datasets.log_likelihood, [dataset])
+        self.assertRaises(ValueError, mixture.log_likelihood, dataset_no_weight,
+                          dataset_id_column='dataset_id',
+                          weight_column='weight')
 
-    def test_log_likelihood_validates_dataset_dimensions(self):
+        self.assertRaises(ValueError, mixture.log_likelihood, dataset_no_dataset_id,
+                          dataset_id_column='dataset_id',
+                          weight_column='weight')
+
+    def test_log_likelihood_validates_all_data_columns_present(self):
         """
-        Given datasets, mixture model should verify that their columns are the same as the
-        emission probability columns.
+        log likelihood function should validate that data provided has all the data columns
         """
-
-        dataset = pd.DataFrame([[False, True, False],
-                                [False, False, False]],
-                               columns=['a', 'b', 'c'])
-
-        dataset_wrong_columns = pd.DataFrame([[False, True, False],
-                                              [False, False, False]],
-                                             columns=['a', 'b', 'e'])
+        dataset = pd.DataFrame([[False, True, False, 0, 1],
+                                [False, False, False, 0, 1]],
+                                columns=['a', 'b', 'c', 'dataset_id', 'weight'])
 
         es = pd.DataFrame([[0.1, 0.2, 0.6],
                            [0.3, 0.2, 0.1],
                            [0.2, 0.1, 0.4]],
-                          columns=dataset.columns)
-
-        ms_two = pd.DataFrame([[0.1, 0.5, 0.4],
-                               [0.2, 0.2, 0.6]], columns=es.index)
-
-        mixture_two_datasets = MixtureModel(ms_two, es)
-
-        self.assertRaises(ValueError, mixture_two_datasets.log_likelihood,
-                          [dataset, dataset_wrong_columns])
-
-    def test_log_likelihood_with_weights_validates_weights(self):
-
-        dataset = pd.DataFrame([[False, True, False],
-                                [False, False, False]],
-                               columns=['a', 'b', 'c'])
-
-        es = pd.DataFrame([[0.1, 0.2, 0.6],
-                           [0.3, 0.2, 0.1],
-                           [0.2, 0.1, 0.4]],
-                          columns=dataset.columns)
+                          columns=['a', 'b', 'd']) # column d not in data
 
         ms_one = pd.Series([0.1, 0.5, 0.4], index=es.index)
-        ms_two = pd.DataFrame([[0.1, 0.5, 0.4],
-                               [0.2, 0.2, 0.6]], columns=es.index)
 
-        mixture_one_dataset = MixtureModel(ms_one, es)
-        mixture_two_datasets = MixtureModel(ms_two, es)
+        mixture = MultiDatasetMixtureModel(ms_one, es)
 
-        weights = pd.Series([1, 2], index=dataset.index)
-        weights_wrong_index = pd.Series([1, 2], index=['a', 'b'])
-        weights_wrong_dim = pd.Series([1, 2, 3])
+        self.assertRaises(ValueError, mixture.log_likelihood, dataset,
+                          dataset_id_column='dataset_id',
+                          weight_column='weight')
 
-        self.assertRaises(ValueError, mixture_one_dataset.log_likelihood,
-                          [dataset],
-                          [weights_wrong_index])
-        self.assertRaises(ValueError, mixture_one_dataset.log_likelihood,
-                          [dataset],
-                          [weights_wrong_dim])
+    def test_log_likelihood_validates_dataset_id_index(self):
+        """
+        log likelihood function should validate that dataset index corresponds to the one provided
+        """
+        dataset = pd.DataFrame([[False, True, False, 'x', 1],
+                                [False, False, False, 'y', 1]],
+                                columns=['a', 'b', 'c', 'dataset_id', 'weight'])
 
-        self.assertRaises(ValueError, mixture_one_dataset.log_likelihood,
-                          [dataset],
-                          [weights, weights])
+        es = pd.DataFrame([[0.1, 0.2, 0.6],
+                           [0.3, 0.2, 0.1],
+                           [0.2, 0.1, 0.4]],
+                          columns=['a', 'b', 'c'])
 
-        self.assertRaises(ValueError, mixture_two_datasets.log_likelihood,
-                          [dataset, dataset],
-                          [weights, weights_wrong_index])
+        ms_two = pd.DataFrame([[0.1, 0.5, 0.4], [0.1, 0.5, 0.4]],
+                              columns=es.index,
+                              index=['a', 'b'])
 
-        self.assertRaises(ValueError, mixture_two_datasets.log_likelihood,
-                          [dataset, dataset],
-                          [weights, weights_wrong_dim])
+        mixture = MultiDatasetMixtureModel(ms_two, es)
 
-        self.assertRaises(ValueError, mixture_two_datasets.log_likelihood,
-                          [dataset],
-                          [weights])
+        self.assertRaises(ValueError, mixture.log_likelihood, dataset,
+                          dataset_id_column='dataset_id',
+                          weight_column='weight')
+
+    def test_log_likelihood_validates_weights_greater_than_zero(self):
+        """
+        log likelihood function should validate that dataset weights are > 0
+        """
+        dataset_weight_zero = pd.DataFrame([[False, True, False, 'x', 1],
+                                           [False, False, False, 'y', 0]],
+                                           columns=['a', 'b', 'c', 'dataset_id', 'weight'])
+
+        dataset_weight_nan = pd.DataFrame([[False, True, False, 'x', None],
+                                           [False, False, False, 'y', 1.0]],
+                                           columns=['a', 'b', 'c', 'dataset_id', 'weight'])
+
+        dataset_weight_negative = pd.DataFrame([[False, True, False, 'x', -1],
+                                           [False, False, False, 'y', 1.0]],
+                                           columns=['a', 'b', 'c', 'dataset_id', 'weight'])
+
+        es = pd.DataFrame([[0.1, 0.2, 0.6],
+                           [0.3, 0.2, 0.1],
+                           [0.2, 0.1, 0.4]],
+                          columns=['a', 'b', 'c'])
+
+        ms_two = pd.DataFrame([[0.1, 0.5, 0.4], [0.1, 0.5, 0.4]],
+                              columns=es.index,
+                              index=['x', 'y'])
+
+        mixture = MultiDatasetMixtureModel(ms_two, es)
+
+        self.assertRaises(ValueError, mixture.log_likelihood, dataset_weight_zero,
+                          dataset_id_column='dataset_id',
+                          weight_column='weight')
+
+        self.assertRaises(ValueError, mixture.log_likelihood, dataset_weight_nan,
+                          dataset_id_column='dataset_id',
+                          weight_column='weight')
+
+        self.assertRaises(ValueError, mixture.log_likelihood, dataset_weight_negative,
+                          dataset_id_column='dataset_id',
+                          weight_column='weight')
+
+    def test_log_likelihood_produces_correct_answer(self):
+
+        sample_data = pd.DataFrame([[True, True, None, 'dataset-a', 2.5],
+                                    [False, None, False, 'dataset-b', 1],
+                                    [True, False, True, 'dataset-a', 10],
+                                    [False, False, True, 'dataset-c', 3]],
+                                   columns=['X1', 'X2', 'X3', 'dataset_id', 'weight'])
+
+        pi = pd.DataFrame([[0.6, 0.4],
+                           [0.2, 0.8],
+                           [0.5, 0.5]],
+                          index=['dataset-a', 'dataset-b', 'dataset-c'],
+                          columns=['K0', 'K1'])
+
+        p = pd.DataFrame([[0.1, 0.2, 0.3],
+                          [0.9, 0.8, 0.7],
+                          [0.2, 0.1, 0.4]],
+                         index=['K0', 'K1'],
+                         columns=['X1', 'X2', 'X3'])
+
+        mu = pd.Series([0.5, 0.25, 0.25], index=['dataset-a', 'dataset-b', 'dataset-c'])
+
+        log_likelihoods_per_row = pd.Series([
+            np.log(mu.loc['dataset-a']) + np.log(pi.loc['dataset-a']['K0'] * p.loc['K0', 'X1'] * p.loc['K0', 'X2']
+                                                 + pi.loc['dataset-a']['K1'] * p.loc['K1', 'X1'] * p.loc['K1', 'X2']),
+            np.log(mu.loc['dataset-b']) + np.log(pi.loc['dataset-b']['K0'] * (1-p.loc['K0', 'X1']) * (1-p.loc['K0', 'X3']),
+                                                 + pi.loc['dataset-b']['K1'] * (1-p.loc['K1', 'X1']) * (1-p.loc['K1', 'X3'])),
+            np.log(mu.loc['dataset-a']) + np.log(pi.loc['dataset-a']['K0'] * p.loc['K0', 'X1'] * (1 - p.loc['K0', 'X2']) * p.loc['K0', 'X3']
+                                                 + pi.loc['dataset-a']['K1'] * p.loc['K1', 'X1'] * (1- p.loc['K1', 'X2']) * p.loc['K1', 'X3']),
+            np.log(mu.loc['dataset-c']) + np.log(pi.loc['dataset-c']['K0'] * (1 - p.loc['K0', 'X1']) * (1 - p.loc['K0', 'X2']) * p.loc['K0', 'X3']
+                                                 + pi.loc['dataset-c']['K1'] * (1 - p.loc['K1', 'X1']) * (1 - p.loc['K1', 'X2']) * p.loc['K1', 'X3'])
+        ], index=sample_data.index)
+
+
+
+
+        total_log_likelihood = log_likelihoods_per_row.sum()
 
 
 

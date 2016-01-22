@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 import unittest
 import numpy as np
 from numpy.testing import assert_array_equal, assert_array_almost_equal
-from bernoullimix.mixture import BernoulliMixture, MixtureModel
+from bernoullimix.mixture import BernoulliMixture, MultiDatasetMixtureModel
 import pandas as pd
 
 from pandas.util.testing import assert_frame_equal
@@ -23,7 +23,7 @@ class TestMixtureModelInitialisation(unittest.TestCase):
                                                   [0.1, 0.4, 0.1, 0.4],
                                                   [1.0, 0.0, 0.0, 0.0]])
 
-        mixture = MixtureModel(sample_mixing_coefficients, sample_emission_probabilities)
+        mixture = MultiDatasetMixtureModel(sample_mixing_coefficients, sample_emission_probabilities)
 
         self.assertEqual(number_of_components, mixture.n_components)
         self.assertEqual(number_of_dimensions, mixture.n_dimensions)
@@ -56,7 +56,7 @@ class TestMixtureModelInitialisation(unittest.TestCase):
                                                      index=sample_mixing_coefficients.index,
                                                      columns=['a', 'b', 'c', 'd'])
 
-        mixture = MixtureModel(sample_mixing_coefficients, sample_emission_probabilities)
+        mixture = MultiDatasetMixtureModel(sample_mixing_coefficients, sample_emission_probabilities)
 
         self.assertEqual(number_of_components, mixture.n_components)
         self.assertEqual(number_of_dimensions, mixture.n_dimensions)
@@ -86,7 +86,7 @@ class TestMixtureModelInitialisation(unittest.TestCase):
                                                      index=sample_mixing_coefficients.columns,
                                                      columns=['a', 'b', 'c', 'd'])
 
-        mixture = MixtureModel(sample_mixing_coefficients, sample_emission_probabilities)
+        mixture = MultiDatasetMixtureModel(sample_mixing_coefficients, sample_emission_probabilities)
 
         self.assertEqual(number_of_components, mixture.n_components)
         self.assertEqual(number_of_dimensions, mixture.n_dimensions)
@@ -111,11 +111,11 @@ class TestMixtureModelInitialisation(unittest.TestCase):
                                                                [1.0, 0.0, 0.0, 0.0]]),
                                                      columns=['a', 'b', 'c', 'd'])
 
-        self.assertRaises(ValueError, MixtureModel,
+        self.assertRaises(ValueError, MultiDatasetMixtureModel,
                           sample_mixing_coefficients_series,
                           sample_emission_probabilities)
 
-        self.assertRaises(ValueError, MixtureModel,
+        self.assertRaises(ValueError, MultiDatasetMixtureModel,
                           sample_mixing_coefficients_df,
                           sample_emission_probabilities)
 
@@ -136,11 +136,11 @@ class TestMixtureModelInitialisation(unittest.TestCase):
                                                      columns=['a', 'b', 'c', 'd'],
                                                      index=['a', 'b', 'c'])
 
-        self.assertRaises(ValueError, MixtureModel,
+        self.assertRaises(ValueError, MultiDatasetMixtureModel,
                           sample_mixing_coefficients_series,
                           sample_emission_probabilities)
 
-        self.assertRaises(ValueError, MixtureModel,
+        self.assertRaises(ValueError, MultiDatasetMixtureModel,
                           sample_mixing_coefficients_df,
                           sample_emission_probabilities)
 
@@ -161,16 +161,16 @@ class TestMixtureModelInitialisation(unittest.TestCase):
                                                                [0.1, 0.4, 0.1, 0.4],
                                                                [1.0, 0.0, 0.0, 0.0]]))
 
-        self.assertRaises(ValueError, MixtureModel,
+        self.assertRaises(ValueError, MultiDatasetMixtureModel,
                           sample_mixing_coefficients_series_a,
                           sample_emission_probabilities)
-        self.assertRaises(ValueError, MixtureModel,
+        self.assertRaises(ValueError, MultiDatasetMixtureModel,
                           sample_mixing_coefficients_series_b,
                           sample_emission_probabilities)
-        self.assertRaises(ValueError, MixtureModel,
+        self.assertRaises(ValueError, MultiDatasetMixtureModel,
                           sample_mixing_coefficients_df_a,
                           sample_emission_probabilities)
-        self.assertRaises(ValueError, MixtureModel,
+        self.assertRaises(ValueError, MultiDatasetMixtureModel,
                           sample_mixing_coefficients_df_b,
                           sample_emission_probabilities)
 
@@ -186,10 +186,10 @@ class TestMixtureModelInitialisation(unittest.TestCase):
                                                                 [0.1, 0.4, 0.1, 0.4],
                                                                 [1.0, 0.0, 0.0, 0.0]]))
 
-        self.assertRaises(ValueError, MixtureModel,
+        self.assertRaises(ValueError, MultiDatasetMixtureModel,
                           sample_mixing_coefficients_series,
                           sample_emission_probabilities_a)
-        self.assertRaises(ValueError, MixtureModel,
+        self.assertRaises(ValueError, MultiDatasetMixtureModel,
                           sample_mixing_coefficients_series,
                           sample_emission_probabilities_b)
 
