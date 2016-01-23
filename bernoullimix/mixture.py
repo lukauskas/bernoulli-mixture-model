@@ -128,6 +128,51 @@ class MultiDatasetMixtureModel(object):
         individual_lls *= data[WEIGHT_COLUMN]
         return individual_lls.sum()
 
+    def _mu_update_from_data(self, data):
+
+        counts = data[[DATASET_ID_COLUMN, WEIGHT_COLUMN]].groupby(DATASET_ID_COLUMN).sum()
+        counts = counts[WEIGHT_COLUMN]
+        total_weight = counts.sum()
+
+        counts /= total_weight
+
+        counts = counts.reindex(self.datasets_index)
+        counts.name = self.dataset_priors.name
+
+        return counts
+
+    def _pi_update_from_data(self, data, zstar):
+
+        pi = self.mixing_coefficients.copy()
+        weights = data[WEIGHT_COLUMN]
+        for dataset in self.datasets_index:
+
+            mask = data[DATASET_ID_COLUMN] == dataset
+
+            sub_weights = weights[mask]
+            sub_zstar = zstar[mask]
+
+            ans = sub_zstar.multiply(sub_weights, axis=0).sum(axis=0) / sub_weights.sum()
+
+            pi.loc[dataset] = ans
+
+        return pi
+
+    def fit(self, data, n_iter=100):
+        self._validate_data(data)
+
+        weights = data[WEIGHT_COLUMN]
+
+        previous_log_likelihood = self.log_likelihood(data)
+
+        for iteration_ in range(n_iter+1):
+
+            support = data.apply(self._support_for_row, axis=1)
+            z_star = support / support.sum(axis=1)
+
+
+
+
 
 
 
