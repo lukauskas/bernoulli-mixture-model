@@ -2,6 +2,7 @@ import unittest
 
 import numpy as np
 from numpy.testing import assert_array_almost_equal
+from pandas.util.testing import assert_series_equal
 
 from bernoullimix import BernoulliMixture
 import pandas as pd
@@ -35,13 +36,9 @@ class TestLogLikelihoodNew(unittest.TestCase):
 
         mixture = MultiDatasetMixtureModel(dataset_mu, ms_one, es)
 
-        self.assertRaises(ValueError, mixture.log_likelihood, dataset_no_weight,
-                          dataset_id_column='dataset_id',
-                          weight_column='weight')
+        self.assertRaises(ValueError, mixture.log_likelihood, dataset_no_weight)
 
-        self.assertRaises(ValueError, mixture.log_likelihood, dataset_no_dataset_id,
-                          dataset_id_column='dataset_id',
-                          weight_column='weight')
+        self.assertRaises(ValueError, mixture.log_likelihood, dataset_no_dataset_id)
 
     def test_log_likelihood_validates_all_data_columns_present(self):
         """
@@ -61,9 +58,7 @@ class TestLogLikelihoodNew(unittest.TestCase):
 
         mixture = MultiDatasetMixtureModel(dataset_mu, ms_one, es)
 
-        self.assertRaises(ValueError, mixture.log_likelihood, dataset,
-                          dataset_id_column='dataset_id',
-                          weight_column='weight')
+        self.assertRaises(ValueError, mixture.log_likelihood, dataset)
 
     def test_log_likelihood_validates_dataset_id_index(self):
         """
@@ -86,9 +81,7 @@ class TestLogLikelihoodNew(unittest.TestCase):
 
         mixture = MultiDatasetMixtureModel(dataset_mu, ms_two, es)
 
-        self.assertRaises(ValueError, mixture.log_likelihood, dataset,
-                          dataset_id_column='dataset_id',
-                          weight_column='weight')
+        self.assertRaises(ValueError, mixture.log_likelihood, dataset)
 
     def test_mixture_validates_dataset_mu_index_on_init(self):
 
@@ -134,17 +127,11 @@ class TestLogLikelihoodNew(unittest.TestCase):
 
         mixture = MultiDatasetMixtureModel(dataset_mu, ms_two, es)
 
-        self.assertRaises(ValueError, mixture.log_likelihood, dataset_weight_zero,
-                          dataset_id_column='dataset_id',
-                          weight_column='weight')
+        self.assertRaises(ValueError, mixture.log_likelihood, dataset_weight_zero)
 
-        self.assertRaises(ValueError, mixture.log_likelihood, dataset_weight_nan,
-                          dataset_id_column='dataset_id',
-                          weight_column='weight')
+        self.assertRaises(ValueError, mixture.log_likelihood, dataset_weight_nan)
 
-        self.assertRaises(ValueError, mixture.log_likelihood, dataset_weight_negative,
-                          dataset_id_column='dataset_id',
-                          weight_column='weight')
+        self.assertRaises(ValueError, mixture.log_likelihood, dataset_weight_negative)
 
     def test_log_likelihood_for_row(self):
 
@@ -204,6 +191,39 @@ class TestLogLikelihoodNew(unittest.TestCase):
         actual_log_likelihood = model.log_likelihood(sample_data)
 
         self.assertEqual(expected_log_likelihood, actual_log_likelihood)
+
+    def test_support(self):
+
+        row = pd.Series([True, False, None, 'dataset-a', 2.5],
+                         index=['X1', 'X2', 'X3', 'dataset_id', 'weight'])
+
+        pi = pd.DataFrame([[0.6, 0.4],
+                           [0.2, 0.8],
+                           [0.5, 0.5]],
+                          index=['dataset-a', 'dataset-b', 'dataset-c'],
+                          columns=['K0', 'K1'])
+
+        p = pd.DataFrame([[0.1, 0.2, 0.3],
+                          [0.9, 0.8, 0.7]],
+                         index=['K0', 'K1'],
+                         columns=['X1', 'X2', 'X3'])
+
+        mu = pd.Series([0.5, 0.25, 0.25], index=['dataset-a', 'dataset-b', 'dataset-c'])
+
+        model = MultiDatasetMixtureModel(mu, pi, p)
+
+        expected_support = pd.Series([
+            pi.loc['dataset-a', 'K0'] * p.loc['K0', 'X1'] * (1 - p.loc['K0', 'X2']),
+            pi.loc['dataset-a', 'K1'] * p.loc['K1', 'X1'] * (1 - p.loc['K1', 'X2']),
+        ], index=pi.columns)
+
+        actual_support = model._support_for_row(row)
+
+        assert_series_equal(expected_support, actual_support)
+
+
+
+
 
 class TestLogLikelihood(unittest.TestCase):
 

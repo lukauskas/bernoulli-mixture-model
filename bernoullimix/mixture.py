@@ -14,6 +14,9 @@ from bernoullimix._bernoulli import probability_z_o_given_theta_c, \
 
 _EPSILON = np.finfo(np.float).eps
 
+DATASET_ID_COLUMN = 'dataset_id'
+WEIGHT_COLUMN = 'weight'
+
 
 class MultiDatasetMixtureModel(object):
 
@@ -63,13 +66,13 @@ class MultiDatasetMixtureModel(object):
 
         self._validate_init()
 
-    def _validate_data(self, data, dataset_id_column, weight_column):
+    def _validate_data(self, data):
         columns = data.columns
 
-        if weight_column not in columns:
-            raise ValueError('Weight collumn {!r} not found in data columns'.format(weight_column))
-        elif dataset_id_column not in columns:
-            raise ValueError('Dataset id column {!r} not found in data columns'.format(dataset_id_column))
+        if WEIGHT_COLUMN not in columns:
+            raise ValueError('Weight collumn {!r} not found in data columns'.format(WEIGHT_COLUMN))
+        elif DATASET_ID_COLUMN not in columns:
+            raise ValueError('Dataset id column {!r} not found in data columns'.format(DATASET_ID_COLUMN))
 
         data_columns = self.data_index
         data_columns_isin = data_columns.isin(data)
@@ -78,45 +81,51 @@ class MultiDatasetMixtureModel(object):
             not_found = data_columns[~data_columns_isin]
             raise ValueError('Some expected data columns {!r} not in data'.format(not_found))
 
-        dataset_index_unique = data[dataset_id_column].unique()
+        dataset_index_unique = data[DATASET_ID_COLUMN].unique()
         dataset_index = self.datasets_index
 
         if set(dataset_index_unique) != set(dataset_index):
             raise ValueError('Dataset id column does not match the dataset index for mixing coefficients')
 
-
-        weights = data[weight_column]
+        weights = data[WEIGHT_COLUMN]
 
         if not np.all(weights > 0):
             raise ValueError('Provided weights have to be >0')
 
-    def _log_likelihood_for_row(self, data_row, dataset_id_column='dataset_id'):
+    def _support_for_row(self, row):
 
-        dataset_id = data_row[dataset_id_column]
+        dataset = row[DATASET_ID_COLUMN]
+        data = row[self.data_index]
 
-        mu = self.dataset_priors.loc[dataset_id]
-        pis = self.mixing_coefficients.loc[dataset_id]
+        pi = self.mixing_coefficients.loc[dataset]
         p = self.emission_probabilities
 
-        data = data_row[self.data_index]
+        ans = pd.Series(np.empty(len(pi)), index=pi.index)
 
-        ans = 0
-
-        for k in pis.index:
-            p_k = p.loc[k]
-            ans += ((p_k ** data) * (1-p_k) ** (1-data)).product() * pis.loc[k]
-
-        ans = np.log(ans) + np.log(mu)
+        for k, pi_k in pi.iteritems():
+            ans.loc[k] = pi_k * ((p.loc[k] ** data) * ((1-p.loc[k]) ** (1-data))).product()
 
         return ans
 
-    def log_likelihood(self, data, dataset_id_column='dataset_id', weight_column='weight'):
-        self._validate_data(data, dataset_id_column=dataset_id_column, weight_column=weight_column)
+    def _log_likelihood_for_row(self, data_row):
 
-        individual_lls = data.apply(lambda x: self._log_likelihood_for_row(x, dataset_id_column=dataset_id_column),
+        dataset_id = data_row[DATASET_ID_COLUMN]
+
+        mu = self.dataset_priors.loc[dataset_id]
+
+        support = self._support_for_row(data_row)
+
+        ans = np.log(support.sum()) + np.log(mu)
+
+        return ans
+
+    def log_likelihood(self, data):
+        self._validate_data(data)
+
+        individual_lls = data.apply(self._log_likelihood_for_row,
                                     axis=1)
 
-        individual_lls *= data[weight_column]
+        individual_lls *= data[WEIGHT_COLUMN]
         return individual_lls.sum()
 
 
