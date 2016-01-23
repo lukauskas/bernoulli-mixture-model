@@ -16,10 +16,12 @@ _EPSILON = np.finfo(np.float).eps
 
 
 class MultiDatasetMixtureModel(object):
+
+    _dataset_priors = None
     _mixing_coefficients = None
     _emission_probabilities = None
 
-    def _validate(self):
+    def _validate_init(self):
         if not self.mixing_coefficients.columns.equals(self.emission_probabilities.index):
             raise ValueError('The mixing coefficients index does not match emission probabilities '
                              'index {!r} != {!r}'.format(self.mixing_coefficients.columns,
@@ -30,11 +32,24 @@ class MultiDatasetMixtureModel(object):
         if not np.all(mc_sums == 1):
             raise ValueError('Mixing coefficients must sum to one')
 
+        if not self.dataset_priors.sum() == 1:
+            raise ValueError('Dataset priors must sum to one')
+
         if np.any(self.emission_probabilities < 0) or \
                 np.any(self.emission_probabilities > 1):
             raise ValueError('Emission probabilities have to be between 0 and 1')
 
-    def __init__(self, mixing_coefficients, emission_probabilities):
+        if not self._dataset_priors.index.equals(self._mixing_coefficients.index):
+            raise ValueError('Dataset priors index does not match mixing coefficients index')
+
+        if not self._mixing_coefficients.columns.equals(self._emission_probabilities.index):
+            raise ValueError('Mixing coefficient columns do not match emission probabilities index')
+
+    def __init__(self, dataset_priors, mixing_coefficients, emission_probabilities):
+
+        dataset_priors = pd.Series(dataset_priors)
+        self._dataset_priors = dataset_priors
+
         if isinstance(mixing_coefficients, pd.Series):
             mixing_coefficients = pd.DataFrame(mixing_coefficients).T
         elif isinstance(mixing_coefficients, pd.DataFrame):
@@ -46,7 +61,7 @@ class MultiDatasetMixtureModel(object):
         self._mixing_coefficients = mixing_coefficients
         self._emission_probabilities = pd.DataFrame(emission_probabilities)
 
-        self._validate()
+        self._validate_init()
 
     def _validate_data(self, data, dataset_id_column, weight_column):
         columns = data.columns
@@ -64,7 +79,7 @@ class MultiDatasetMixtureModel(object):
             raise ValueError('Some expected data columns {!r} not in data'.format(not_found))
 
         dataset_index_unique = data[dataset_id_column].unique()
-        dataset_index = self.data_index
+        dataset_index = self.datasets_index
 
         if set(dataset_index_unique) != set(dataset_index):
             raise ValueError('Dataset id column does not match the dataset index for mixing coefficients')
@@ -75,13 +90,41 @@ class MultiDatasetMixtureModel(object):
         if not np.all(weights > 0):
             raise ValueError('Provided weights have to be >0')
 
-    def _log_likelihood_for_row(self, data_row, mu):
-        return 1
+    def _log_likelihood_for_row(self, data_row, dataset_id_column='dataset_id'):
+
+        dataset_id = data_row[dataset_id_column]
+
+        mu = self.dataset_priors.loc[dataset_id]
+        pis = self.mixing_coefficients.loc[dataset_id]
+        p = self.emission_probabilities
+
+        data = data_row[self.data_index]
+
+        ans = 0
+
+        for k in pis.index:
+            p_k = p.loc[k]
+            ans += ((p_k ** data) * (1-p_k) ** (1-data)).product() * pis.loc[k]
+
+        ans = np.log(ans) + np.log(mu)
+
+        return ans
 
     def log_likelihood(self, data, dataset_id_column='dataset_id', weight_column='weight'):
         self._validate_data(data, dataset_id_column=dataset_id_column, weight_column=weight_column)
 
-        
+        individual_lls = data.apply(lambda x: self._log_likelihood_for_row(x, dataset_id_column=dataset_id_column),
+                                    axis=1)
+
+        individual_lls *= data[weight_column]
+        return individual_lls.sum()
+
+
+
+
+    @property
+    def dataset_priors(self):
+        return self._dataset_priors
 
     @property
     def n_components(self):
@@ -93,7 +136,7 @@ class MultiDatasetMixtureModel(object):
 
     @property
     def datasets_index(self):
-        return self.mixing_coefficients.index
+        return self._dataset_priors.index
 
     @property
     def n_dimensions(self):

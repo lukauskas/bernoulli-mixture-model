@@ -30,9 +30,10 @@ class TestLogLikelihoodNew(unittest.TestCase):
                            [0.2, 0.1, 0.4]],
                           columns=['a', 'b', 'c'])
 
+        dataset_mu = pd.Series([1])
         ms_one = pd.Series([0.1, 0.5, 0.4], index=es.index)
 
-        mixture = MultiDatasetMixtureModel(ms_one, es)
+        mixture = MultiDatasetMixtureModel(dataset_mu, ms_one, es)
 
         self.assertRaises(ValueError, mixture.log_likelihood, dataset_no_weight,
                           dataset_id_column='dataset_id',
@@ -53,11 +54,12 @@ class TestLogLikelihoodNew(unittest.TestCase):
         es = pd.DataFrame([[0.1, 0.2, 0.6],
                            [0.3, 0.2, 0.1],
                            [0.2, 0.1, 0.4]],
-                          columns=['a', 'b', 'd']) # column d not in data
+                          columns=['a', 'b', 'd'])  # column d not in data
 
+        dataset_mu = pd.Series([1])
         ms_one = pd.Series([0.1, 0.5, 0.4], index=es.index)
 
-        mixture = MultiDatasetMixtureModel(ms_one, es)
+        mixture = MultiDatasetMixtureModel(dataset_mu, ms_one, es)
 
         self.assertRaises(ValueError, mixture.log_likelihood, dataset,
                           dataset_id_column='dataset_id',
@@ -71,6 +73,8 @@ class TestLogLikelihoodNew(unittest.TestCase):
                                 [False, False, False, 'y', 1]],
                                 columns=['a', 'b', 'c', 'dataset_id', 'weight'])
 
+        dataset_mu = pd.Series([0.1, 0.9], index=['a', 'b'])
+
         es = pd.DataFrame([[0.1, 0.2, 0.6],
                            [0.3, 0.2, 0.1],
                            [0.2, 0.1, 0.4]],
@@ -80,11 +84,26 @@ class TestLogLikelihoodNew(unittest.TestCase):
                               columns=es.index,
                               index=['a', 'b'])
 
-        mixture = MultiDatasetMixtureModel(ms_two, es)
+        mixture = MultiDatasetMixtureModel(dataset_mu, ms_two, es)
 
         self.assertRaises(ValueError, mixture.log_likelihood, dataset,
                           dataset_id_column='dataset_id',
                           weight_column='weight')
+
+    def test_mixture_validates_dataset_mu_index_on_init(self):
+
+        dataset_mu = pd.Series([0.1, 0.9], index=['x', 'z'])
+
+        es = pd.DataFrame([[0.1, 0.2, 0.6],
+                           [0.3, 0.2, 0.1],
+                           [0.2, 0.1, 0.4]],
+                          columns=['a', 'b', 'c'])
+
+        ms_two = pd.DataFrame([[0.1, 0.5, 0.4], [0.1, 0.5, 0.4]],
+                              columns=es.index,
+                              index=['x', 'y'])
+
+        self.assertRaises(ValueError, MultiDatasetMixtureModel, dataset_mu, ms_two, es)
 
     def test_log_likelihood_validates_weights_greater_than_zero(self):
         """
@@ -107,11 +126,13 @@ class TestLogLikelihoodNew(unittest.TestCase):
                            [0.2, 0.1, 0.4]],
                           columns=['a', 'b', 'c'])
 
+        dataset_mu = pd.Series([0.1, 0.9], index=['x', 'y'])
+
         ms_two = pd.DataFrame([[0.1, 0.5, 0.4], [0.1, 0.5, 0.4]],
                               columns=es.index,
                               index=['x', 'y'])
 
-        mixture = MultiDatasetMixtureModel(ms_two, es)
+        mixture = MultiDatasetMixtureModel(dataset_mu, ms_two, es)
 
         self.assertRaises(ValueError, mixture.log_likelihood, dataset_weight_zero,
                           dataset_id_column='dataset_id',
@@ -125,7 +146,36 @@ class TestLogLikelihoodNew(unittest.TestCase):
                           dataset_id_column='dataset_id',
                           weight_column='weight')
 
-    def test_log_likelihood_produces_correct_answer(self):
+    def test_log_likelihood_for_row(self):
+
+        row = pd.Series([True, False, None, 'dataset-a', 2.5],
+                         index=['X1', 'X2', 'X3', 'dataset_id', 'weight'])
+
+        pi = pd.DataFrame([[0.6, 0.4],
+                           [0.2, 0.8],
+                           [0.5, 0.5]],
+                          index=['dataset-a', 'dataset-b', 'dataset-c'],
+                          columns=['K0', 'K1'])
+
+        p = pd.DataFrame([[0.1, 0.2, 0.3],
+                          [0.9, 0.8, 0.7]],
+                         index=['K0', 'K1'],
+                         columns=['X1', 'X2', 'X3'])
+
+        mu = pd.Series([0.5, 0.25, 0.25], index=['dataset-a', 'dataset-b', 'dataset-c'])
+
+        model = MultiDatasetMixtureModel(mu, pi, p)
+
+        expected_log_likelihood = np.log(mu.loc['dataset-a']) + np.log(
+            sum([pi.loc['dataset-a', k] * p.loc[k, 'X1'] * (1-p.loc[k, 'X2']) for k in ['K0', 'K1']])
+        )
+
+        actual_log_likelihood = model._log_likelihood_for_row(row)
+
+        self.assertEqual(expected_log_likelihood, actual_log_likelihood)
+
+
+    def test_log_likelihood_weighs_data_correctly(self):
 
         sample_data = pd.DataFrame([[True, True, None, 'dataset-a', 2.5],
                                     [False, None, False, 'dataset-b', 1],
@@ -140,30 +190,20 @@ class TestLogLikelihoodNew(unittest.TestCase):
                           columns=['K0', 'K1'])
 
         p = pd.DataFrame([[0.1, 0.2, 0.3],
-                          [0.9, 0.8, 0.7],
-                          [0.2, 0.1, 0.4]],
+                          [0.9, 0.8, 0.7]],
                          index=['K0', 'K1'],
                          columns=['X1', 'X2', 'X3'])
 
         mu = pd.Series([0.5, 0.25, 0.25], index=['dataset-a', 'dataset-b', 'dataset-c'])
 
-        log_likelihoods_per_row = pd.Series([
-            np.log(mu.loc['dataset-a']) + np.log(pi.loc['dataset-a']['K0'] * p.loc['K0', 'X1'] * p.loc['K0', 'X2']
-                                                 + pi.loc['dataset-a']['K1'] * p.loc['K1', 'X1'] * p.loc['K1', 'X2']),
-            np.log(mu.loc['dataset-b']) + np.log(pi.loc['dataset-b']['K0'] * (1-p.loc['K0', 'X1']) * (1-p.loc['K0', 'X3']),
-                                                 + pi.loc['dataset-b']['K1'] * (1-p.loc['K1', 'X1']) * (1-p.loc['K1', 'X3'])),
-            np.log(mu.loc['dataset-a']) + np.log(pi.loc['dataset-a']['K0'] * p.loc['K0', 'X1'] * (1 - p.loc['K0', 'X2']) * p.loc['K0', 'X3']
-                                                 + pi.loc['dataset-a']['K1'] * p.loc['K1', 'X1'] * (1- p.loc['K1', 'X2']) * p.loc['K1', 'X3']),
-            np.log(mu.loc['dataset-c']) + np.log(pi.loc['dataset-c']['K0'] * (1 - p.loc['K0', 'X1']) * (1 - p.loc['K0', 'X2']) * p.loc['K0', 'X3']
-                                                 + pi.loc['dataset-c']['K1'] * (1 - p.loc['K1', 'X1']) * (1 - p.loc['K1', 'X2']) * p.loc['K1', 'X3'])
-        ], index=sample_data.index)
+        model = MultiDatasetMixtureModel(mu, pi, p)
 
+        individual_lls = sample_data.apply(model._log_likelihood_for_row, axis=1)
 
+        expected_log_likelihood = (individual_lls * sample_data['weight']).sum()
+        actual_log_likelihood = model.log_likelihood(sample_data)
 
-
-        total_log_likelihood = log_likelihoods_per_row.sum()
-
-
+        self.assertEqual(expected_log_likelihood, actual_log_likelihood)
 
 class TestLogLikelihood(unittest.TestCase):
 
