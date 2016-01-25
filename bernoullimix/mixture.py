@@ -107,25 +107,26 @@ class MultiDatasetMixtureModel(object):
 
         return ans
 
-    def _log_likelihood_for_row(self, data_row):
+    def _support(self, data):
+        return data.apply(self._support_for_row, axis=1)
 
-        dataset_id = data_row[DATASET_ID_COLUMN]
+    def _individual_log_likelihoods(self, data):
 
-        mu = self.dataset_priors.loc[dataset_id]
+        def ll_row(row):
+            dataset_id = row[DATASET_ID_COLUMN]
+            mu = self.dataset_priors.loc[dataset_id]
+            support = self._support_for_row(row)
+            ans = np.log(support.sum()) + np.log(mu)
 
-        support = self._support_for_row(data_row)
+            return ans
 
-        ans = np.log(support.sum()) + np.log(mu)
-
-        return ans
+        return data.apply(ll_row, axis=1) * data[WEIGHT_COLUMN]
 
     def log_likelihood(self, data):
         self._validate_data(data)
 
-        individual_lls = data.apply(self._log_likelihood_for_row,
-                                    axis=1)
+        individual_lls = self._individual_log_likelihoods(data)
 
-        individual_lls *= data[WEIGHT_COLUMN]
         return individual_lls.sum()
 
     def _mu_update_from_data(self, data):

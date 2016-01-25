@@ -133,10 +133,10 @@ class TestLogLikelihoodNew(unittest.TestCase):
 
         self.assertRaises(ValueError, mixture.log_likelihood, dataset_weight_negative)
 
-    def test_log_likelihood_for_row(self):
+    def test_individual_log_likelihood(self):
 
-        row = pd.Series([True, False, None, 'dataset-a', 2.5],
-                         index=['X1', 'X2', 'X3', 'dataset_id', 'weight'])
+        row = pd.DataFrame([[True, False, None, 'dataset-a', 2.5]],
+                             columns=['X1', 'X2', 'X3', 'dataset_id', 'weight'])
 
         pi = pd.DataFrame([[0.6, 0.4],
                            [0.2, 0.8],
@@ -153,14 +153,12 @@ class TestLogLikelihoodNew(unittest.TestCase):
 
         model = MultiDatasetMixtureModel(mu, pi, p)
 
-        expected_log_likelihood = np.log(mu.loc['dataset-a']) + np.log(
+        expected_log_likelihood = pd.Series([2.5 * (np.log(mu.loc['dataset-a']) + np.log(
             sum([pi.loc['dataset-a', k] * p.loc[k, 'X1'] * (1-p.loc[k, 'X2']) for k in ['K0', 'K1']])
-        )
+        ))], index=row.index)
 
-        actual_log_likelihood = model._log_likelihood_for_row(row)
-
-        self.assertEqual(expected_log_likelihood, actual_log_likelihood)
-
+        actual_log_likelihood = model._individual_log_likelihoods(row)
+        assert_series_equal(actual_log_likelihood, expected_log_likelihood)
 
     def test_log_likelihood_weighs_data_correctly(self):
 
@@ -185,17 +183,16 @@ class TestLogLikelihoodNew(unittest.TestCase):
 
         model = MultiDatasetMixtureModel(mu, pi, p)
 
-        individual_lls = sample_data.apply(model._log_likelihood_for_row, axis=1)
+        individual_lls = model._individual_log_likelihoods(sample_data)
+        expected_log_likelihood = individual_lls.sum()
 
-        expected_log_likelihood = (individual_lls * sample_data['weight']).sum()
         actual_log_likelihood = model.log_likelihood(sample_data)
 
         self.assertEqual(expected_log_likelihood, actual_log_likelihood)
 
     def test_support(self):
-
-        row = pd.Series([True, False, None, 'dataset-a', 2.5],
-                         index=['X1', 'X2', 'X3', 'dataset_id', 'weight'])
+        row = pd.DataFrame([[True, False, None, 'dataset-a', 2.5]],
+                           columns=['X1', 'X2', 'X3', 'dataset_id', 'weight'])
 
         pi = pd.DataFrame([[0.6, 0.4],
                            [0.2, 0.8],
@@ -212,14 +209,14 @@ class TestLogLikelihoodNew(unittest.TestCase):
 
         model = MultiDatasetMixtureModel(mu, pi, p)
 
-        expected_support = pd.Series([
+        expected_support = pd.DataFrame([[
             pi.loc['dataset-a', 'K0'] * p.loc['K0', 'X1'] * (1 - p.loc['K0', 'X2']),
             pi.loc['dataset-a', 'K1'] * p.loc['K1', 'X1'] * (1 - p.loc['K1', 'X2']),
-        ], index=pi.columns)
+        ]], columns=pi.columns, index=row.index)
 
-        actual_support = model._support_for_row(row)
+        actual_support = model._support(row)
 
-        assert_series_equal(expected_support, actual_support)
+        assert_frame_equal(expected_support, actual_support)
 
     def test_mu_update_from_data(self):
 
