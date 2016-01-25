@@ -32,7 +32,7 @@ class MultiDatasetMixtureModel(object):
 
         mc_sums = self.mixing_coefficients.sum(axis='columns')
 
-        if not np.all(mc_sums == 1):
+        if not np.all(np.abs(mc_sums - 1) <= np.finfo(float).eps):
             raise ValueError('Mixing coefficients must sum to one')
 
         if not self.dataset_priors.sum() == 1:
@@ -173,23 +173,48 @@ class MultiDatasetMixtureModel(object):
 
         return new_p
 
-    def fit(self, data, n_iter=100):
+    def fit(self, data, n_iter=100, eps=1e-6, verbose=True):
         self._validate_data(data)
-
-        weights = data[WEIGHT_COLUMN]
 
         previous_log_likelihood = self.log_likelihood(data)
 
-        for iteration_ in range(n_iter+1):
+        if verbose:
+            print('Starting log likelihood: {}'.format(previous_log_likelihood))
+
+        for iteration_ in range(n_iter):
+
+            if verbose:
+                print('Iteration #{}'.format(iteration_))
 
             support = data.apply(self._support_for_row, axis=1)
-            z_star = support / support.sum(axis=1)
+            z_star = support.divide(support.sum(axis=1), axis=0)
 
+            new_mu = self._mu_update_from_data(data)
+            new_pi = self._pi_update_from_data(data, z_star)
+            new_p = self._p_update_from_data(data, z_star)
 
+            self._dataset_priors = new_mu
+            self._mixing_coefficients = new_pi
+            self._emission_probabilities = new_p
 
+            current_log_likelihood = self.log_likelihood(data)
 
+            diff = current_log_likelihood - previous_log_likelihood
+            if verbose:
+                print('Likelihood increased by: {}'.format(diff))
 
+            assert diff > 0, \
+                'Log likelihood decreased in iteration {}'.format(n_iter)
 
+            if diff <= eps:
+                if verbose:
+                    print('Converged')
+                return True, n_iter
+
+        if verbose:
+            print('Did not converge')
+
+        return False, n_iter
 
     @property
     def dataset_priors(self):
