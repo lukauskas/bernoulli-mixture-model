@@ -158,6 +158,21 @@ class MultiDatasetMixtureModel(object):
 
         return pi
 
+    def _p_update_from_data(self, data, zstar):
+        old_p = self.emission_probabilities
+        new_p = old_p.copy()
+        zstar_times_weight = zstar.multiply(data[WEIGHT_COLUMN], axis=0)
+        zstar_times_weight_sum = zstar_times_weight.sum()
+
+        observations = data[self.data_index]
+
+        for k in new_p.index:
+            xstar = observations.fillna(old_p.loc[k])
+
+            new_p.loc[k] = xstar.multiply(zstar_times_weight[k], axis=0).sum() / zstar_times_weight_sum[k]
+
+        return new_p
+
     def fit(self, data, n_iter=100):
         self._validate_data(data)
 

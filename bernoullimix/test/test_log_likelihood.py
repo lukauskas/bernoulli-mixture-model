@@ -292,6 +292,49 @@ class TestLogLikelihoodNew(unittest.TestCase):
         pi_actual = model._pi_update_from_data(sample_data, zstar)
         assert_frame_equal(pi_expected, pi_actual)
 
+    def test_p_update_from_data(self):
+
+        sample_data = pd.DataFrame([[True, True, None, 'dataset-a', 2.5],
+                                    [False, None, False, 'dataset-b', 1.5],
+                                    [True, False, True, 'dataset-a', 5],
+                                    [False, False, True, 'dataset-c', 1]],
+                                   columns=['X1', 'X2', 'X3', 'dataset_id', 'weight'])
+
+        pi = pd.DataFrame([[0.6, 0.4],
+                           [0.2, 0.8],
+                           [0.5, 0.5]],
+                          index=['dataset-a', 'dataset-b', 'dataset-c'],
+                          columns=['K0', 'K1'])
+
+        p = pd.DataFrame([[0.1, 0.2, 0.3],
+                          [0.9, 0.8, 0.7]],
+                         index=['K0', 'K1'],
+                         columns=['X1', 'X2', 'X3'])
+
+        mu = pd.Series([0.1, 0.8, 0.1], index=['dataset-a', 'dataset-b', 'dataset-c'])
+
+        model = MultiDatasetMixtureModel(mu, pi, p)
+
+        zstar = pd.DataFrame([[0.9, 0.1],
+                              [0.1, 0.9],
+                              [0.5, 0.5],
+                              [0.4, 0.6]],
+                             index=sample_data.index,
+                             columns=pi.columns)
+
+        expected_p = pd.DataFrame(
+            [np.array([2.5 * 0.9 + 5 * 0.5, 2.5 * 0.9 + 1.5 * 0.1 * 0.2, 2.5 * 0.9 * 0.3 + 5 * 0.5 + 1 * 0.4]) / (0.9 * 2.5 + 0.1 * 1.5 + 0.5 * 5 + 0.4 * 1),
+             np.array([2.5 * 0.1 + 5 * 0.5, 2.5 * 0.1 + 1.5 * 0.9 * 0.8, 2.5 * 0.1 * 0.7 + 5 * 0.5 + 1 * 0.6]) / (0.1 * 2.5 + 0.9 * 1.5 + 0.5 * 5 + 0.6 * 1)],
+            index=p.index,
+            columns=p.columns,
+        )
+
+        actual_p = model._p_update_from_data(sample_data, zstar)
+
+        assert_frame_equal(expected_p, actual_p)
+
+
+
 
 class TestLogLikelihood(unittest.TestCase):
 
