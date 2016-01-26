@@ -201,7 +201,7 @@ class MultiDatasetMixtureModel(object):
         assert WEIGHT_COLUMN in dataset.columns
 
         counter = Counter()
-        cols = list(dataset.columns - [WEIGHT_COLUMN])
+        cols = [c for c in dataset.columns if c != WEIGHT_COLUMN]
 
         for ix, row in dataset.iterrows():
             tuple_row = tuple([x if not _isnan(x) else None for x in row[cols]])
@@ -231,20 +231,23 @@ class MultiDatasetMixtureModel(object):
         if verbose:
             print('Starting log likelihood: {}'.format(previous_log_likelihood))
 
-        iteration_ = 0
+        iteration = 0
         converged = False
 
-        for iteration_ in range(1, n_iter+1):
+        while True:
+            iteration += 1
+            if iteration > n_iter:
+                break
 
             if verbose:
-                print('Iteration #{}'.format(iteration_))
+                print('Iteration #{}'.format(iteration))
 
             z_star = previous_support.divide(previous_support.sum(axis=1), axis=0)
 
             new_pi = self._pi_update_from_data(data, z_star)
             new_p = self._p_update_from_data(data, z_star)
 
-            if iteration_ == 0:
+            if iteration == 0:
                 new_mu = self._mu_update_from_data(data)
                 self._dataset_priors = new_mu
                 log_mus = self._log_mus(data)
@@ -274,7 +277,7 @@ class MultiDatasetMixtureModel(object):
             previous_log_likelihood = current_log_likelihood
             previous_support = support
 
-        return converged, iteration_, current_log_likelihood
+        return converged, iteration, current_log_likelihood
 
     @property
     def dataset_priors(self):
