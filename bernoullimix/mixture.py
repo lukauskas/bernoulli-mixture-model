@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from collections import Counter
 
 import numpy as np
 import pandas as pd
@@ -187,7 +188,34 @@ class MultiDatasetMixtureModel(object):
 
         return new_p
 
-    def fit(self, data, n_iter=100, eps=1e-6, verbose=True):
+    @classmethod
+    def collapse_dataset(cls, dataset):
+
+        def _isnan(x):
+            try:
+                return np.isnan(x)
+            except TypeError:
+                return x is None
+
+        assert DATASET_ID_COLUMN in dataset.columns
+        assert WEIGHT_COLUMN in dataset.columns
+
+        counter = Counter()
+        cols = list(dataset.columns - [WEIGHT_COLUMN])
+
+        for ix, row in dataset.iterrows():
+            tuple_row = tuple([x if not _isnan(x) else None for x in row[cols]])
+            counter[tuple_row] += row[WEIGHT_COLUMN]
+
+        new_df = []
+        for row, weight in counter.items():
+            row = row + (weight,)
+            new_df.append(row)
+
+        new_df = pd.DataFrame(new_df, columns=cols + [WEIGHT_COLUMN])
+        return new_df
+
+    def fit(self, data, n_iter=100, eps=_EPSILON, verbose=True):
         self._validate_data(data)
 
         weights = data[WEIGHT_COLUMN]
@@ -234,7 +262,7 @@ class MultiDatasetMixtureModel(object):
             if verbose:
                 print('Likelihood {}: (diff: {})'.format(current_log_likelihood, diff))
 
-            assert diff > 0, \
+            assert diff >= -np.finfo(float).eps, \
                 'Log likelihood decreased in iteration {}'.format(n_iter)
 
             if diff <= eps:

@@ -287,6 +287,47 @@ class TestLogLikelihoodNew(unittest.TestCase):
         pi_actual = model._pi_update_from_data(sample_data, zstar)
         assert_frame_equal(pi_expected, pi_actual)
 
+    def test_dataset_collapse(self):
+        sample_data = pd.DataFrame([[True, True, None, 'dataset-a', 2.5],   # A
+                                    [False, None, False, 'dataset-b', 1.5],  # B
+                                    [True, True, None, 'dataset-a', 3.5],  # A
+                                    [True, False, True, 'dataset-a', 5],  # C
+                                    [False, False, True, 'dataset-c', 1],  # D
+                                    [True, False, True, 'dataset-a', 3.5],  # C
+                                    [True, False, True, 'dataset-a', 2],  # C
+                                    [False, False, True, 'dataset-c', 1.5],  # D
+                                    [None, None, True, 'dataset-c', 1.5],  # E,
+                                    [None, None, True, 'dataset-b', 1],  # F,
+                                    [None, None, True, 'dataset-c', 2.5],  # E,
+                                    [None, None, True, 'dataset-b', 2.1],  # F,
+                                    [True, True, np.nan, 'dataset-a', 15],  # A (with nan)
+                                    ],
+                                   columns=['X1', 'X2', 'X3', 'dataset_id', 'weight'])
+
+        expected_collapsed = pd.DataFrame([[True, True, None, 'dataset-a', 2.5 + 3.5 + 15],   # A
+                                    [False, None, False, 'dataset-b', 1.5],  # B
+                                    [True, False, True, 'dataset-a', 5 + 3.5 + 2],  # C
+                                    [False, False, True, 'dataset-c', 1 + 1.5],  # D
+                                    [None, None, True, 'dataset-c', 1.5 + 2.5],  # E,
+                                    [None, None, True, 'dataset-b', 1 + 2.1],  # F,
+                                    ],
+                                   columns=['X1', 'X2', 'X3', 'dataset_id', 'weight'])
+
+        expected_collapsed.sort_values(by='weight', inplace=True)
+        # sorting messes up indices
+        expected_collapsed.index = range(len(expected_collapsed))
+
+        actual_collapsed = MultiDatasetMixtureModel.collapse_dataset(sample_data)
+        actual_collapsed.sort_values(by='weight', inplace=True)
+        actual_collapsed.index = range(len(actual_collapsed))  # Fix sorting index
+
+        print('Expected')
+        print(expected_collapsed)
+        print('\nActual:')
+        print(actual_collapsed)
+        print()
+        assert_frame_equal(expected_collapsed, actual_collapsed)
+
     def test_p_update_from_data(self):
 
         sample_data = pd.DataFrame([[True, True, None, 'dataset-a', 2.5],
