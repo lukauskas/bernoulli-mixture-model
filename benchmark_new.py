@@ -79,7 +79,7 @@ def main(max_iter):
 
     model = MultiDatasetMixtureModel(mu, pi, p)
 
-    model.fit(data, n_iter=max_iter)
+    print(model.fit(data, n_iter=max_iter))
 
 
 if __name__ == '__main__':
