@@ -92,23 +92,31 @@ class MultiDatasetMixtureModel(object):
         if not np.all(weights > 0):
             raise ValueError('Provided weights have to be >0')
 
-    def _support_for_row(self, row):
+    def _support(self, data):
 
-        dataset = row[DATASET_ID_COLUMN]
-        data = row[self.data_index]
+        pis = self.mixing_coefficients.loc[data[DATASET_ID_COLUMN]]
+        pis.index = data.index
 
-        pi = self.mixing_coefficients.loc[dataset]
         p = self.emission_probabilities
 
-        ans = pd.Series(np.empty(len(pi)), index=pi.index)
+        data = data[self.data_index]
 
-        for k, pi_k in pi.iteritems():
-            ans.loc[k] = pi_k * ((p.loc[k] ** data) * ((1-p.loc[k]) ** (1-data))).product()
+        support = pd.DataFrame(np.empty((len(data), len(pis.columns))),
+                               index=data.index, columns=pis.columns)
 
-        return ans
+        for k in pis.columns:
+            pi_k = pis[k]
+            p_k = p.loc[k]
 
-    def _support(self, data):
-        return data.apply(self._support_for_row, axis=1)
+            support_k = pi_k * data.apply(lambda x: ((p_k**x) * ((1-p_k) ** (1-x))).product(), axis=1)
+
+            support[k] = support_k
+
+        return support
+
+    def _individual_log_likelihoods_from_support_log_mus_and_weight(self, support, log_mus, weights):
+        support_sum = support.sum(axis=1).apply(np.log)
+        return (support_sum + log_mus) * weights
 
     def _individual_log_likelihoods(self, data):
 
@@ -117,15 +125,21 @@ class MultiDatasetMixtureModel(object):
         log_mus = self.dataset_priors.loc[data[DATASET_ID_COLUMN]].apply(np.log)
         log_mus.index = data.index
 
-        support_sum = support.sum(axis=1).apply(np.log)
-        return (support_sum + log_mus) * data[WEIGHT_COLUMN]
+        return self._individual_log_likelihoods_from_support_log_mus_and_weight(support, log_mus,
+                                                                                data[WEIGHT_COLUMN])
+
+    def _log_likelihood_from_support_log_mus_and_weight(self, support, log_mus, weights):
+        return self._individual_log_likelihoods_from_support_log_mus_and_weight(support, log_mus, weights).sum()
 
     def log_likelihood(self, data):
         self._validate_data(data)
 
-        individual_lls = self._individual_log_likelihoods(data)
+        support = self._support(data)
 
-        return individual_lls.sum()
+        log_mus = self.dataset_priors.loc[data[DATASET_ID_COLUMN]].apply(np.log)
+        log_mus.index = data.index
+
+        return self._log_likelihood_from_support_log_mus_and_weight(support, log_mus, data[WEIGHT_COLUMN])
 
     def _mu_update_from_data(self, data):
 
@@ -185,7 +199,7 @@ class MultiDatasetMixtureModel(object):
             if verbose:
                 print('Iteration #{}'.format(iteration_))
 
-            support = data.apply(self._support_for_row, axis=1)
+            support = self._support(data)
             z_star = support.divide(support.sum(axis=1), axis=0)
 
             new_mu = self._mu_update_from_data(data)
