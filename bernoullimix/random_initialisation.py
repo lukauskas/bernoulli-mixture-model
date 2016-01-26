@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 
-from bernoullimix.mixture import BernoulliMixture
+from bernoullimix.mixture import MultiDatasetMixtureModel, DATASET_ID_COLUMN, WEIGHT_COLUMN
 
 
 def _adjust_probabilities(unadjusted_array, epsilon, domain=(0, 1)):
@@ -113,7 +113,7 @@ def random_mixture_generator(number_of_components,
                              epsilon=0.005,
                              alpha=0.75):
     """
-    Returns a generator for `BernoulliMixture` initialiser.
+    Returns a generator for `MultiDatasetBernoulli` initialiser.
     The mixing coefficients are always chosen uniform.
 
     Emission probabilities are generated from
@@ -134,9 +134,19 @@ def random_mixture_generator(number_of_components,
 
     dataset = pd.DataFrame(dataset)
 
-    random = np.random.RandomState(random_state)
+    assert DATASET_ID_COLUMN in dataset.columns
+    assert WEIGHT_COLUMN in dataset.columns
 
-    mixing_coefficients = np.repeat(1/number_of_components, number_of_components)
+    data = dataset[dataset.columns - [DATASET_ID_COLUMN, WEIGHT_COLUMN]]
+    dataset_id_counts = dataset[DATASET_ID_COLUMN].value_counts()
+
+    mu = dataset_id_counts / dataset_id_counts.sum()
+
+    random = np.random.RandomState(random_state)
+    components_index = ['K{}'.format(k) for k in range(number_of_components)]
+    mixing_coefficients = pd.DataFrame([np.repeat(1/number_of_components, number_of_components)],
+                                       index=mu.index,
+                                       columns=components_index)
 
     random_domain = (0, 1)
     dataset_domain = (0, 1)
@@ -146,12 +156,12 @@ def random_mixture_generator(number_of_components,
                                        alpha=alpha)
     while True:
 
-        N, D = dataset.shape
+        N, D = data.shape
 
         random_emissions = _random_numbers_within_domain(random, random_domain,
                                                          (number_of_components, D))
 
-        random_row_emissions = _random_rows_from_dataset(dataset, n_rows=number_of_components,
+        random_row_emissions = _random_rows_from_dataset(data, n_rows=number_of_components,
                                                          random=random)
 
         random_row_emissions = np.asarray(random_row_emissions, dtype=bool)
@@ -159,6 +169,10 @@ def random_mixture_generator(number_of_components,
         emissions = alpha * random_emissions + (1-alpha) * random_row_emissions
         emissions = _adjust_probabilities(emissions, epsilon, domain=expected_domain)
 
-        yield BernoulliMixture(mixing_coefficients, emissions)
+        emissions = pd.DataFrame(emissions,
+                                 index=components_index,
+                                 columns=data.columns)
+
+        yield MultiDatasetMixtureModel(mu, mixing_coefficients, emissions)
 
 

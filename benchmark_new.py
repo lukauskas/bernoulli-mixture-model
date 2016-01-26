@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 
 from bernoullimix.mixture import MultiDatasetMixtureModel
+from bernoullimix.random_initialisation import random_mixture_generator
+
 
 def load_data(random_state):
 
@@ -68,16 +70,14 @@ def main(max_iter):
     np.random.seed(RANDOM_STATE)
     data = load_data(random_state=RANDOM_STATE)
 
-    mu, pi, p = get_init_params(data, RANDOM_STATE)
+    model = next(random_mixture_generator(10, data, random_state=RANDOM_STATE))
 
     print('MU:')
-    print(mu)
+    print(model.dataset_priors)
     print('PI:')
-    print(pi.sum(axis='columns'))
+    print(model.mixing_coefficients)
     print('P:')
-    print(p)
-
-    model = MultiDatasetMixtureModel(mu, pi, p)
+    print(model.emission_probabilities)
 
     print(model.fit(data, n_iter=max_iter))
 
