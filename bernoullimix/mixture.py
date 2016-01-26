@@ -108,8 +108,9 @@ class MultiDatasetMixtureModel(object):
             pi_k = pis[k]
             p_k = p.loc[k]
 
-            support_k = pi_k * data.apply(lambda x: ((p_k**x) * ((1-p_k) ** (1-x))).product(), axis=1)
-
+            p_k = pd.DataFrame([p.loc[k]], index=data.index)
+         
+            support_k = pi_k * p_k.mask(data==False, 1-p_k).mask(data.isnull()).product(axis=1)
             support[k] = support_k
 
         return support
