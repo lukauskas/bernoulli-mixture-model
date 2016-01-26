@@ -106,10 +106,9 @@ class MultiDatasetMixtureModel(object):
 
         for k in pis.columns:
             pi_k = pis[k]
-            p_k = p.loc[k]
 
             p_k = pd.DataFrame([p.loc[k]], index=data.index)
-         
+
             support_k = pi_k * p_k.mask(data==False, 1-p_k).mask(data.isnull()).product(axis=1)
             support[k] = support_k
 
@@ -132,13 +131,16 @@ class MultiDatasetMixtureModel(object):
     def _log_likelihood_from_support_log_mus_and_weight(self, support, log_mus, weights):
         return self._individual_log_likelihoods_from_support_log_mus_and_weight(support, log_mus, weights).sum()
 
-    def log_likelihood(self, data):
-        self._validate_data(data)
-
-        support = self._support(data)
-
+    def _log_mus(self, data):
         log_mus = self.dataset_priors.loc[data[DATASET_ID_COLUMN]].apply(np.log)
         log_mus.index = data.index
+
+        return log_mus
+
+    def log_likelihood(self, data):
+        self._validate_data(data)
+        support = self._support(data)
+        log_mus = self._log_mus(data)
 
         return self._log_likelihood_from_support_log_mus_and_weight(support, log_mus, data[WEIGHT_COLUMN])
 
@@ -190,7 +192,13 @@ class MultiDatasetMixtureModel(object):
     def fit(self, data, n_iter=100, eps=1e-6, verbose=True):
         self._validate_data(data)
 
-        previous_log_likelihood = self.log_likelihood(data)
+        weights = data[WEIGHT_COLUMN]
+        previous_support = self._support(data)
+        log_mus = self._log_mus(data)
+
+        previous_log_likelihood = self._log_likelihood_from_support_log_mus_and_weight(previous_support,
+                                                                                       log_mus,
+                                                                                       weights)
 
         if verbose:
             print('Starting log likelihood: {}'.format(previous_log_likelihood))
@@ -200,22 +208,28 @@ class MultiDatasetMixtureModel(object):
             if verbose:
                 print('Iteration #{}'.format(iteration_))
 
-            support = self._support(data)
-            z_star = support.divide(support.sum(axis=1), axis=0)
+            z_star = previous_support.divide(previous_support.sum(axis=1), axis=0)
 
-            new_mu = self._mu_update_from_data(data)
             new_pi = self._pi_update_from_data(data, z_star)
             new_p = self._p_update_from_data(data, z_star)
 
-            self._dataset_priors = new_mu
+            if iteration_ == 0:
+                new_mu = self._mu_update_from_data(data)
+                self._dataset_priors = new_mu
+                log_mus = self._log_mus(data)
+
             self._mixing_coefficients = new_pi
             self._emission_probabilities = new_p
 
-            current_log_likelihood = self.log_likelihood(data)
+            support = self._support(data)
+
+            current_log_likelihood = self._log_likelihood_from_support_log_mus_and_weight(support,
+                                                                                          log_mus,
+                                                                                          weights)
 
             diff = current_log_likelihood - previous_log_likelihood
             if verbose:
-                print('Likelihood increased by: {}'.format(diff))
+                print('Likelihood {}: (diff: {})'.format(current_log_likelihood, diff))
 
             assert diff > 0, \
                 'Log likelihood decreased in iteration {}'.format(n_iter)
@@ -224,6 +238,9 @@ class MultiDatasetMixtureModel(object):
                 if verbose:
                     print('Converged')
                 return True, n_iter
+
+            previous_log_likelihood = current_log_likelihood
+            previous_support = support
 
         if verbose:
             print('Did not converge')
