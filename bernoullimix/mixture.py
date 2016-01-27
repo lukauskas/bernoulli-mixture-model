@@ -236,7 +236,7 @@ class MultiDatasetMixtureModel(object):
 
         while True:
             iteration += 1
-            if iteration > n_iter:
+            if n_iter is not None and iteration > n_iter:
                 break
 
             if verbose:
