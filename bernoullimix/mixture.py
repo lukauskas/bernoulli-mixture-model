@@ -178,9 +178,10 @@ class MultiDatasetMixtureModel(object):
         zstar_times_weight_sum = zstar_times_weight.sum()
 
         observations = data[self.data_index]
+        null_mask = observations.isnull()
 
         for k in new_p.index:
-            xstar = observations.fillna(old_p.loc[k])
+            xstar = observations.mask(null_mask, old_p.loc[k], axis=1)
 
             new_p.loc[k] = xstar.multiply(zstar_times_weight[k], axis=0).sum()
 
