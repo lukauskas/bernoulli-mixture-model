@@ -173,18 +173,23 @@ class MultiDatasetMixtureModel(object):
 
     def _p_update_from_data(self, data, zstar):
         old_p = self.emission_probabilities
-        new_p = old_p.copy()
         zstar_times_weight = zstar.multiply(data[WEIGHT_COLUMN], axis=0)
         zstar_times_weight_sum = zstar_times_weight.sum()
 
         observations = data[self.data_index]
         null_mask = observations.isnull()
 
-        for k in new_p.index:
+        new_p = np.empty(shape=old_p.shape)
+
+        for k_i, k in enumerate(old_p.index):
             xstar = observations.mask(null_mask, old_p.loc[k], axis=1)
 
-            new_p.loc[k] = xstar.multiply(zstar_times_weight[k], axis=0).sum()
+            zstar_times_weight_k = zstar_times_weight[k]
+            ans = zstar_times_weight_k.dot(xstar)
 
+            new_p[k_i] = ans
+
+        new_p = pd.DataFrame(new_p, index=old_p.index, columns=old_p.columns)
         new_p = new_p.divide(zstar_times_weight_sum, axis=0)
 
         return new_p
