@@ -97,18 +97,30 @@ class MultiDatasetMixtureModel(object):
 
         data = data[self.data_index]
 
-        support = pd.DataFrame(np.empty((len(data), len(pis.columns))),
-                               index=data.index, columns=pis.columns,
-                               )
+        data_not_null_mask = ~data.isnull()
 
-        for k in pis.columns:
+
+        support = np.empty((len(data), len(pis.columns)),
+                           dtype=float,
+                           order='F')
+        #
+        # support = pd.DataFrame(np.empty((len(data), len(pis.columns))),
+        #                        index=data.index, columns=pis.columns,
+        #                        )
+
+        for k_i, k in enumerate(pis.columns):
             pi_k = pis[k]
 
-            p_k = pd.DataFrame([p.loc[k]], index=data.index)
+            p_k = np.repeat([p.loc[k]], len(data), 0)
+            p_k = np.where(data, p_k, 1-p_k)
+            p_k = np.where(data_not_null_mask, p_k, np.nan)
 
-            support_k = pi_k * p_k.mask(data==False, 1-p_k).mask(data.isnull()).product(axis=1)
-            support[k] = support_k
+            p_k = pd.DataFrame(p_k, index=data.index, columns=p.columns)
 
+            support_k = p_k.product(axis=1) * pi_k
+            support[:, k_i] = support_k
+
+        support = pd.DataFrame(support, index=data.index, columns=pis.columns)
         return support
 
     def _individual_log_likelihoods_from_support_log_mus_and_weight(self, support, log_mus, weights):
