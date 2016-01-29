@@ -189,12 +189,14 @@ class MultiDatasetMixtureModel(object):
         zstar_times_weight_sum = zstar_times_weight.sum()
 
         observations = data[self.data_index]
-        null_mask = observations.isnull()
+        not_null_mask = ~observations.isnull()
 
         new_p = np.empty(shape=old_p.shape)
 
         for k_i, k in enumerate(old_p.index):
-            xstar = observations.mask(null_mask, old_p.loc[k], axis=1)
+
+            old_p_square = np.repeat([old_p.loc[k]], len(observations), 0)
+            xstar = np.where(not_null_mask, observations, old_p_square)
 
             zstar_times_weight_k = zstar_times_weight[k]
             ans = zstar_times_weight_k.dot(xstar)

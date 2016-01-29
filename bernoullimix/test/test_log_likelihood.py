@@ -368,4 +368,3 @@ class TestLogLikelihoodNew(unittest.TestCase):
         actual_p = model._p_update_from_data(sample_data, zstar)
 
         assert_frame_equal(expected_p, actual_p)
-
