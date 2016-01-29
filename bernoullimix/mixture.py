@@ -8,7 +8,7 @@ from collections import Counter
 import numpy as np
 import pandas as pd
 
-from bernoullimix._mixture import zstar_dot_xstar, partial_support
+from bernoullimix._mixture import partial_support, p_update_unnormalised
 
 _EPSILON = np.finfo(np.float).eps
 
@@ -165,9 +165,10 @@ class MultiDatasetMixtureModel(object):
 
     def _pi_update_from_data(self, data, zstar):
 
-        pi = self.mixing_coefficients.copy()
+        pi = np.empty(self._mixing_coefficients.shape)
+
         weights = data[WEIGHT_COLUMN]
-        for dataset in self.datasets_index:
+        for i, dataset in enumerate(self.datasets_index):
 
             mask = data[DATASET_ID_COLUMN] == dataset
 
@@ -176,8 +177,9 @@ class MultiDatasetMixtureModel(object):
 
             ans = sub_zstar.multiply(sub_weights, axis=0).sum(axis=0) / sub_weights.sum()
 
-            pi.loc[dataset] = ans
+            pi[i] = ans
 
+        pi = pd.DataFrame(pi, index=self.mixing_coefficients.index, columns=self.mixing_coefficients.columns)
         return pi
 
     def _p_update_from_data(self, weights, data_as_bool, not_null_mask, zstar):
@@ -186,18 +188,8 @@ class MultiDatasetMixtureModel(object):
         zstar_times_weight = zstar.multiply(weights, axis=0)
         zstar_times_weight_sum = zstar_times_weight.sum()
 
-        new_p = np.empty(shape=old_p.shape)
-
-        for k_i, k in enumerate(old_p.index):
-            zstar_times_weight_k = zstar_times_weight[k]
-            old_p_k = old_p.loc[k]
-            ans = zstar_dot_xstar(zstar_times_weight_k.values,
-                                  data_as_bool.values,
-                                  not_null_mask.values,
-                                  old_p_k.values)
-
-            new_p[k_i] = ans
-
+        new_p = p_update_unnormalised(data_as_bool.values, not_null_mask.values,
+                                      zstar_times_weight.values, old_p.values)
         new_p = pd.DataFrame(new_p, index=old_p.index, columns=old_p.columns)
         new_p = new_p.divide(zstar_times_weight_sum, axis=0)
 

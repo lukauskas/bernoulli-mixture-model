@@ -1,31 +1,33 @@
 import numpy as np
 cimport numpy as np
+cimport cython
 
-cpdef zstar_dot_xstar(np.ndarray[np.float64_t, ndim=1] zstar_times_weight_k,
-                      np.ndarray[np.uint8_t, ndim=2, cast=True] observations,
-                      np.ndarray[np.uint8_t, ndim=2, cast=True] not_null_mask,
-                      np.ndarray[np.float64_t, ndim=1] old_p_k):
-
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cpdef p_update_unnormalised(np.ndarray[np.uint8_t, ndim=2, cast=True] observations,
+                            np.ndarray[np.uint8_t, ndim=2, cast=True] not_null_mask,
+                            np.float64_t[:,:] zstar_times_weight,
+                            np.float64_t[:,:] old_p):
     cdef int N = observations.shape[0]
     cdef int D = observations.shape[1]
+    cdef int K = old_p.shape[0]
 
-    cdef int n;
-    cdef int d;
+    cdef np.ndarray[np.float64_t, ndim=2] new_p = np.zeros((K, D))
 
-    cdef np.ndarray[np.float64_t, ndim=1] new_p = np.zeros(D)
-
-    for d in range(D):
-        for n in range(N):
-            if not_null_mask[n, d]:
-                new_p[d] += observations[n,d] * zstar_times_weight_k[n]
-            else:
-                new_p[d] += old_p_k[d] * zstar_times_weight_k[n]
-
+    for k in range(K):
+        for d in range(D):
+            for n in range(N):
+                if not_null_mask[n, d]:
+                    new_p[k, d] += observations[n, d] * zstar_times_weight[n, k]
+                else:
+                    new_p[k, d] += old_p[k, d] * zstar_times_weight[n, k]
     return new_p
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
 cpdef partial_support(np.ndarray[np.uint8_t, ndim=2, cast=True] observations,
                       np.ndarray[np.uint8_t, ndim=2, cast=True] not_null_mask,
-                      np.ndarray[np.float64_t, ndim=1] p_k):
+                      np.float64_t[:] p_k):
 
 
     cdef int N = observations.shape[0]
