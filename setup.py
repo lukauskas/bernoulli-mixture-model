@@ -6,7 +6,7 @@ from Cython.Build import cythonize
 
 here = path.abspath(path.dirname(__file__))
 
-extensions = "bernoullimix/_bernoulli.pyx"
+extensions = "bernoullimix/_mixture.pyx"
 
 setup(
     name='bernoullimix',

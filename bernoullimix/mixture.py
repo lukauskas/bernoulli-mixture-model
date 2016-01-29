@@ -8,6 +8,8 @@ from collections import Counter
 import numpy as np
 import pandas as pd
 
+from bernoullimix._mixture import zstar_dot_xstar
+
 _EPSILON = np.finfo(np.float).eps
 
 DATASET_ID_COLUMN = 'dataset_id'
@@ -191,15 +193,17 @@ class MultiDatasetMixtureModel(object):
         observations = data[self.data_index]
         not_null_mask = ~observations.isnull()
 
+        observations_as_bool = observations.astype(bool)
+
         new_p = np.empty(shape=old_p.shape)
 
         for k_i, k in enumerate(old_p.index):
-
-            old_p_square = np.repeat([old_p.loc[k]], len(observations), 0)
-            xstar = np.where(not_null_mask, observations, old_p_square)
-
             zstar_times_weight_k = zstar_times_weight[k]
-            ans = zstar_times_weight_k.dot(xstar)
+            old_p_k = old_p.loc[k]
+            ans = zstar_dot_xstar(zstar_times_weight_k.values,
+                                  observations_as_bool.values,
+                                  not_null_mask.values,
+                                  old_p_k.values)
 
             new_p[k_i] = ans
 
