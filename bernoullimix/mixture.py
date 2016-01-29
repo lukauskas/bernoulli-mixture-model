@@ -302,6 +302,19 @@ class MultiDatasetMixtureModel(object):
         return len(self.datasets_index)
 
     @property
+    def n_free_parameters(self):
+
+        mu_free_parameter_count = self.n_datasets - 1
+        pi_free_parameter_count = self.n_datasets * (self.n_components - 1)
+
+        p_free_parameter_count = self.n_components * self.n_dimensions
+
+        return mu_free_parameter_count + pi_free_parameter_count + p_free_parameter_count
+
+    def BIC(self, log_likelihood, n_observations):
+        return -2 * log_likelihood + self.n_free_parameters * np.log(n_observations)
+
+    @property
     def datasets_index(self):
         return self._dataset_priors.index
 
