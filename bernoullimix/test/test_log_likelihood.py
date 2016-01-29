@@ -212,7 +212,9 @@ class TestLogLikelihoodNew(unittest.TestCase):
             pi.loc['dataset-a', 'K1'] * p.loc['K1', 'X1'] * (1 - p.loc['K1', 'X2']),
         ]], columns=pi.columns, index=row.index)
 
-        actual_support = model._support(row)
+        dataset_ids = row['dataset_id']
+
+        actual_support = model._support(dataset_ids, *model._to_bool(row))
 
         assert_frame_equal(expected_support, actual_support)
 
@@ -365,6 +367,10 @@ class TestLogLikelihoodNew(unittest.TestCase):
             columns=p.columns,
         )
 
-        actual_p = model._p_update_from_data(sample_data, zstar)
+        data_as_bool, not_null_mask = model._to_bool(sample_data)
+
+        actual_p = model._p_update_from_data(sample_data['weight'],
+                                             data_as_bool, not_null_mask,
+                                             zstar)
 
         assert_frame_equal(expected_p, actual_p)
