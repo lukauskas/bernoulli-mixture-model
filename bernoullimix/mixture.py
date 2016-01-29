@@ -8,7 +8,7 @@ from collections import Counter
 import numpy as np
 import pandas as pd
 
-from bernoullimix._mixture import zstar_dot_xstar
+from bernoullimix._mixture import zstar_dot_xstar, partial_support
 
 _EPSILON = np.finfo(np.float).eps
 
@@ -98,28 +98,20 @@ class MultiDatasetMixtureModel(object):
         p = self.emission_probabilities
 
         data = data[self.data_index]
+        not_null_mask = ~data.isnull()
 
-        data_not_null_mask = ~data.isnull()
-
+        data_as_bool = data.astype(bool)
 
         support = np.empty((len(data), len(pis.columns)),
                            dtype=float,
                            order='F')
-        #
-        # support = pd.DataFrame(np.empty((len(data), len(pis.columns))),
-        #                        index=data.index, columns=pis.columns,
-        #                        )
 
         for k_i, k in enumerate(pis.columns):
             pi_k = pis[k]
 
-            p_k = np.repeat([p.loc[k]], len(data), 0)
-            p_k = np.where(data, p_k, 1-p_k)
-            p_k = np.where(data_not_null_mask, p_k, np.nan)
+            ps = partial_support(data_as_bool.values, not_null_mask.values, p.loc[k].values)
 
-            p_k = pd.DataFrame(p_k, index=data.index, columns=p.columns)
-
-            support_k = p_k.product(axis=1) * pi_k
+            support_k = ps * pi_k
             support[:, k_i] = support_k
 
         support = pd.DataFrame(support, index=data.index, columns=pis.columns)
