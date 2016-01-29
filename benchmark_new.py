@@ -80,7 +80,7 @@ def main(max_iter):
     print('P:')
     print(model.emission_probabilities)
 
-    print(model.fit(data, n_iter=max_iter))
+    print(model.fit(data, n_iter=max_iter, verbose=False))
 
 
 if __name__ == '__main__':
