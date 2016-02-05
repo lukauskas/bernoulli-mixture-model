@@ -175,7 +175,10 @@ class MultiDatasetMixtureModel(object):
             sub_weights = weights[mask]
             sub_zstar = zstar[mask]
 
-            ans = sub_zstar.multiply(sub_weights, axis=0).sum(axis=0) / sub_weights.sum()
+            _smoothing_coefficient = 1
+
+            ans = sub_zstar.multiply(sub_weights, axis=0).sum(axis=0) + _smoothing_coefficient
+            ans /= sub_weights.sum() + _smoothing_coefficient * len(ans)
 
             pi[i] = ans
 
