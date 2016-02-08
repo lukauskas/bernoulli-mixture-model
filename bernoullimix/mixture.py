@@ -222,8 +222,16 @@ class MultiDatasetMixtureModel(object):
         new_df = pd.DataFrame(new_df, columns=cols + [WEIGHT_COLUMN])
         return new_df
 
-    def fit(self, data, n_iter=100, eps=_EPSILON, verbose=True):
+    @classmethod
+    def cls_logger(cls):
+        import logging
+        return logging.getLogger('bernoullimix.mixture.MultiDatasetMixtureModel')
+
+    def fit(self, data, n_iter=100, eps=_EPSILON, logger=None):
         self._validate_data(data)
+
+        if logger is None:
+            logger = self.cls_logger()
 
         dataset_ids = data[DATASET_ID_COLUMN]
         data_as_bool, not_null_mask = self._to_bool(data)
@@ -238,19 +246,21 @@ class MultiDatasetMixtureModel(object):
 
         previous_log_likelihood = current_log_likelihood
 
-        if verbose:
-            print('Starting log likelihood: {}'.format(previous_log_likelihood))
+        logger.debug('Starting mu:\n{!r}'.format(self.dataset_priors))
+        logger.debug('Starting pi:\n{!r}'.format(self.mixing_coefficients))
+        logger.debug('Starting p:\n{!r}'.format(self.emission_probabilities))
+
+        logger.debug('Starting log likelihood: {}'.format(previous_log_likelihood))
 
         iteration = 0
         converged = False
 
-        while True:
-            iteration += 1
-            if n_iter is not None and iteration > n_iter:
-                break
+        DEBUG_EVERY_X_ITERATIONS = 100
 
-            if verbose:
-                print('Iteration #{}'.format(iteration))
+        while True:
+            if n_iter is not None and iteration >= n_iter:
+                break
+            iteration += 1
 
             z_star = previous_support.divide(previous_support.sum(axis=1), axis=0)
 
@@ -272,15 +282,15 @@ class MultiDatasetMixtureModel(object):
                                                                                           weights)
 
             diff = current_log_likelihood - previous_log_likelihood
-            if verbose:
-                print('Likelihood {}: (diff: {})'.format(current_log_likelihood, diff))
+            if iteration % DEBUG_EVERY_X_ITERATIONS == 0:
+                logger.debug('Iteration #{}. Likelihood {}: '
+                             '(diff: {})'.format(iteration, current_log_likelihood, diff))
 
             assert diff >= -np.finfo(float).eps, \
                 'Log likelihood decreased in iteration {}'.format(n_iter)
 
             if diff <= eps:
-                if verbose:
-                    print('Converged')
+                logger.debug('Converged at iteration {}'.format(iteration))
                 converged = True
                 break
 
