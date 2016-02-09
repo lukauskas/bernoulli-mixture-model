@@ -23,6 +23,8 @@ class MultiDatasetMixtureModel(object):
     _emission_probabilities = None
 
     def _validate_init(self):
+        logger = self.cls_logger()
+
         if not self.mixing_coefficients.columns.equals(self.emission_probabilities.index):
             raise ValueError('The mixing coefficients index does not match emission probabilities '
                              'index {!r} != {!r}'.format(self.mixing_coefficients.columns,
@@ -30,7 +32,9 @@ class MultiDatasetMixtureModel(object):
 
         mc_sums = self.mixing_coefficients.sum(axis='columns')
 
-        if not np.all(np.abs(mc_sums - 1) <= np.finfo(float).eps):
+        if not np.all(np.abs(mc_sums - 1) <= np.finfo(float).resolution):
+            logger.error('Mixing coefficients do not sum to one. Difference: \n{!r}'.format(
+                np.abs(mc_sums - 1)))
             raise ValueError('Mixing coefficients must sum to one')
 
         if not self.dataset_priors.sum() == 1:
