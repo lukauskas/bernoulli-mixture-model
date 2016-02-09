@@ -43,27 +43,6 @@ def load_data(random_state):
 
     return training_data
 
-
-def get_init_params(data, random_state):
-
-    data_cols = data.columns - ['dataset_id', 'weight']
-
-    random = np.random.RandomState(random_state)
-
-    mu = data.dataset_id.value_counts() / len(data)
-    mu.name = 'mu'
-
-    K = 10
-    D = len(data_cols)
-    C = len(mu)
-
-    pi = pd.DataFrame(random.rand(C, K), index=mu.index, columns=["K{}".format(k) for k in range(K)])
-    pi = pi.divide(pi.sum(axis=1), axis=0)
-
-    p = pd.DataFrame(random.rand(K, D), index=pi.columns, columns=data_cols)
-
-    return mu, pi, p
-
 def main(max_iter):
 
     RANDOM_STATE = 125
