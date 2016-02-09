@@ -89,23 +89,24 @@ def _random_numbers_within_domain(random, domain, shape):
 
 def _random_rows_from_dataset(dataset, n_rows, random):
     random_rows = random.randint(len(dataset), size=n_rows)
-    random_row_emissions = dataset.iloc[random_rows, :]
+    random_row_emissions = dataset.iloc[random_rows].copy()
 
-    def _replace_nones_with_guesses(x):
-        nulls = x.isnull()
+    for column_name in random_row_emissions.columns:
+        nulls = random_row_emissions[column_name].isnull()
         n_nulls = nulls.sum()
 
-        if n_nulls == 0:
-            return x
-        else:
-            x = x.copy()
-            random_bools = np.array(random.randint(2, size=n_nulls), dtype=bool)
-            x.loc[nulls] = random_bools
+        if not n_nulls:
+            continue
 
-            return x
 
-    return random_row_emissions.apply(_replace_nones_with_guesses).astype(bool)
+        random_binary_ints = random.randint(2, size=n_nulls)
 
+        random_bools = np.array(random_binary_ints, dtype=bool)
+        random_row_emissions.loc[nulls, column_name] = random_bools
+
+    assert random_row_emissions.isnull().sum().sum() == 0
+
+    return random_row_emissions.astype(bool)
 
 def random_mixture_generator(number_of_components,
                              dataset,

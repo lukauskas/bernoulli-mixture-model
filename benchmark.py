@@ -39,7 +39,7 @@ def load_data(random_state):
     training_data = pd.concat((up_missing, bottom_missing, even_missing))
     training_data['weight'] = 1
 
-    training_data = MultiDatasetMixtureModel.collapse_dataset(training_data)
+    training_data = MultiDatasetMixtureModel.collapse_dataset(training_data, sort_results=True)
 
     return training_data
 

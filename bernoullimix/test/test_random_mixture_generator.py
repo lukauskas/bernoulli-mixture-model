@@ -208,8 +208,8 @@ class TestRandomInitialiserSeeding(unittest.TestCase):
 
         seed = 12345
 
-        times_to_try = 100
-        mixtures_to_generate = 100
+        times_to_try = 10
+        mixtures_to_generate = 10
         number_of_components = 3
 
         initial_try = list(itertools.islice(random_mixture_generator(number_of_components,

@@ -193,7 +193,7 @@ class MultiDatasetMixtureModel(object):
         return new_p
 
     @classmethod
-    def collapse_dataset(cls, dataset):
+    def collapse_dataset(cls, dataset, sort_results=False):
 
         def _isnan(x):
             try:
@@ -217,6 +217,11 @@ class MultiDatasetMixtureModel(object):
             new_df.append(row)
 
         new_df = pd.DataFrame(new_df, columns=cols + [WEIGHT_COLUMN])
+        if sort_results:
+            new_df.sort(columns=[WEIGHT_COLUMN] + cols,
+                        ascending=[False] + [True] * len(cols),
+                        inplace=True)
+
         return new_df
 
     @classmethod
