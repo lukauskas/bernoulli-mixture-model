@@ -6,7 +6,7 @@ cimport cython
 @cython.wraparound(False)
 cpdef p_update(np.ndarray[np.uint8_t, ndim=2, cast=True] observations,
                np.ndarray[np.uint8_t, ndim=2, cast=True] not_null_mask,
-               np.float64_t[:,:] zstar,
+               np.float64_t[::1,:] zstar,
                np.float64_t[:] weight,
                np.float64_t[:,:] old_p):
 
@@ -46,7 +46,7 @@ cpdef partial_support(np.ndarray[np.uint8_t, ndim=2, cast=True] observations,
     cdef int N = observations.shape[0]
     cdef int D = observations.shape[1]
 
-    cdef np.ndarray[np.float64_t, ndim=1] ans = np.empty(N)
+    cdef np.ndarray[np.float64_t, ndim=1] ans = np.empty(N, order='F', dtype=np.float64)
     cdef np.float64_t row_ans
 
     for n in range(N):

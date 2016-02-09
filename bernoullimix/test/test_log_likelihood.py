@@ -212,9 +212,9 @@ class TestLogLikelihoodNew(unittest.TestCase):
             pi.loc['dataset-a', 'K1'] * p.loc['K1', 'X1'] * (1 - p.loc['K1', 'X2']),
         ]], columns=pi.columns, index=row.index)
 
-        dataset_ids = row['dataset_id']
+        dataset_ids_as_ilocs = model._dataset_ids_as_pis_ilocs(row)
 
-        actual_support = model._support(dataset_ids, *model._to_bool(row))
+        actual_support = model._support(dataset_ids_as_ilocs, *model._to_bool(row))
 
         assert_frame_equal(expected_support, actual_support)
 
