@@ -9,9 +9,11 @@ import numpy as np
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from bernoullimix.random_initialisation import _adjust_probabilities, _expected_domain, \
-    _random_numbers_within_domain, _random_rows_from_dataset
+    _random_numbers_within_domain, _random_rows_from_dataset, random_mixture_generator
 
 import pandas as pd
+import itertools
+
 
 
 class TestProbabilityAdjustment(unittest.TestCase):
@@ -194,3 +196,31 @@ class TestRandomNumberGeneration(unittest.TestCase):
             answers.add(random_rows)
 
         self.assertSetEqual(expected_answers, answers)
+
+class TestRandomInitialiserSeeding(unittest.TestCase):
+
+    def test_random_initialiser_always_returns_the_same_model_with_the_same_seed(self):
+
+        data = pd.DataFrame([[True, False, None, 'dataset-a', 2.5],
+                             [False, False, None, 'dataset-a', 2.5],
+                             [False, True, True, 'dataset-a', 2.5]],
+                            columns=['X1', 'X2', 'X3', 'dataset_id', 'weight'])
+
+        seed = 12345
+
+        times_to_try = 100
+        mixtures_to_generate = 100
+        number_of_components = 3
+
+        initial_try = list(itertools.islice(random_mixture_generator(number_of_components,
+                                                                     data,
+                                                                     random_state=seed),
+                                            mixtures_to_generate))
+
+        for attempt in range(1, times_to_try+1):
+            current_try = list(itertools.islice(random_mixture_generator(number_of_components,
+                                                                         data,
+                                                                         random_state=seed),
+                                                mixtures_to_generate))
+
+            self.assertListEqual(initial_try, current_try)
