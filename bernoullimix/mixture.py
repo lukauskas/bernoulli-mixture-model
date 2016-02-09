@@ -8,7 +8,7 @@ from collections import Counter
 import numpy as np
 import pandas as pd
 
-from bernoullimix._mixture import partial_support, p_update_unnormalised
+from bernoullimix._mixture import partial_support, p_update
 
 _EPSILON = np.finfo(np.float).eps
 
@@ -189,13 +189,14 @@ class MultiDatasetMixtureModel(object):
     def _p_update_from_data(self, weights, data_as_bool, not_null_mask, zstar):
         old_p = self.emission_probabilities
 
-        zstar_times_weight = zstar.multiply(weights, axis=0)
-        zstar_times_weight_sum = zstar_times_weight.sum()
+        # zstar_times_weight = zstar.multiply(weights, axis=0)
+        # zstar_times_weight_sum = zstar_times_weight.sum()
 
-        new_p = p_update_unnormalised(data_as_bool.values, not_null_mask.values,
-                                      zstar_times_weight.values, old_p.values)
+        new_p = p_update(data_as_bool.values, not_null_mask.values,
+                         zstar.values, weights.values,
+                         old_p.values)
         new_p = pd.DataFrame(new_p, index=old_p.index, columns=old_p.columns)
-        new_p = new_p.divide(zstar_times_weight_sum, axis=0)
+        # new_p = new_p.divide(zstar_times_weight_sum, axis=0)
 
         return new_p
 
@@ -240,7 +241,8 @@ class MultiDatasetMixtureModel(object):
         dataset_ids = data[DATASET_ID_COLUMN]
         data_as_bool, not_null_mask = self._to_bool(data)
 
-        weights = data[WEIGHT_COLUMN]
+        weights = data[WEIGHT_COLUMN].astype(np.float)
+
         previous_support = self._support(dataset_ids, data_as_bool, not_null_mask)
         log_mus = self._log_mus(data)
 

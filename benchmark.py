@@ -80,11 +80,14 @@ def main(max_iter):
     print('P:')
     print(model.emission_probabilities)
 
-    print(model.fit(data, n_iter=max_iter, verbose=False))
+    print(model.fit(data, n_iter=max_iter))
 
 
 if __name__ == '__main__':
     import sys
+    import logging
+    logging.basicConfig()
+    logging.getLogger().setLevel(logging.DEBUG)
 
     try:
         max_iter = int(sys.argv[1])
