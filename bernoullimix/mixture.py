@@ -343,3 +343,7 @@ class MultiDatasetMixtureModel(object):
     def emission_probabilities(self):
         return self._emission_probabilities
 
+    def __eq__(self, other):
+        return self.dataset_priors.equals(other.dataset_priors) \
+               and self.mixing_coefficients.equals(other.mixing_coefficients) \
+               and self.emission_probabilities.equals(other.emission_probabilities)
