@@ -8,7 +8,7 @@ from collections import Counter
 import numpy as np
 import pandas as pd
 
-from bernoullimix._mixture import partial_support, p_update
+from bernoullimix._mixture import support_c, p_update
 
 _EPSILON = np.finfo(np.float).eps
 
@@ -103,26 +103,12 @@ class MultiDatasetMixtureModel(object):
         return data_as_bool, not_null_mask
 
     def _support(self, dataset_ids_as_ilocs, data_as_bool, not_null_mask):
+        support = support_c(data_as_bool.values, not_null_mask.values,
+                            dataset_ids_as_ilocs.values,
+                            self.mixing_coefficients.values,
+                            self.emission_probabilities.values)
 
-        mixing_coefs = self.mixing_coefficients
-        pis = mixing_coefs.iloc[dataset_ids_as_ilocs]
-        pis.index = dataset_ids_as_ilocs.index
-
-        p = self.emission_probabilities
-
-        support = np.empty((len(data_as_bool), len(mixing_coefs.columns)),
-                           dtype=float,
-                           order='F')
-
-        for k_i, k in enumerate(mixing_coefs.columns):
-            pi_k = pis.iloc[:, k_i]
-
-            ps = partial_support(data_as_bool.values, not_null_mask.values, p.loc[k].values)
-
-            support_k = ps * pi_k
-            support[:, k_i] = support_k
-
-        support = pd.DataFrame(support, index=data_as_bool.index, columns=mixing_coefs.columns)
+        support = pd.DataFrame(support, index=data_as_bool.index, columns=self.mixing_coefficients.columns)
         return support
 
     def _individual_log_likelihoods_from_support_log_mus_and_weight(self, support, log_mus, weights):

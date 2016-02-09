@@ -36,28 +36,35 @@ cpdef p_update(np.ndarray[np.uint8_t, ndim=2, cast=True] observations,
 
     return new_p
 
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef partial_support(np.ndarray[np.uint8_t, ndim=2, cast=True] observations,
-                      np.ndarray[np.uint8_t, ndim=2, cast=True] not_null_mask,
-                      np.float64_t[:] p_k):
+cpdef support_c(np.ndarray[np.uint8_t, ndim=2, cast=True] observations,
+                np.ndarray[np.uint8_t, ndim=2, cast=True] not_null_mask,
+                np.int_t[:] dataset_ids_as_ilocs,
+                np.float64_t[:,:] pi,
+                np.float64_t[:,:] p):
 
 
     cdef int N = observations.shape[0]
     cdef int D = observations.shape[1]
-
-    cdef np.ndarray[np.float64_t, ndim=1] ans = np.empty(N, order='F', dtype=np.float64)
+    cdef int K = pi.shape[1]
+    cdef int n_datasets = pi.shape[0]
     cdef np.float64_t row_ans
 
-    for n in range(N):
-        row_ans = 1
-        for d in range(D):
-            if not_null_mask[n, d]:
-                if observations[n, d]:
-                    row_ans *= p_k[d]
-                else:
-                    row_ans *= 1-p_k[d]
+    cdef np.ndarray[np.float64_t, ndim=2] ans = np.empty((N, K), dtype=float, order='F')
 
-        ans[n] = row_ans
+    for k in range(K):
+        for n in range(N):
+
+            row_ans = 1
+            for d in range(D):
+                if not_null_mask[n, d]:
+                    if observations[n, d]:
+                        row_ans *= p[k, d]
+                    else:
+                        row_ans *= 1-p[k, d]
+
+            ans[n, k] = row_ans * pi[dataset_ids_as_ilocs[n], k]
 
     return ans
