@@ -360,12 +360,85 @@ class TestLogLikelihoodNew(unittest.TestCase):
                              index=sample_data.index,
                              columns=pi.columns)
 
+        denominators = pd.Series([0.9 * 2.5 + 0.1 * 1.5 + 0.5 * 5 + 0.4 * 1,
+                                  0.1 * 2.5 + 0.9 * 1.5 + 0.5 * 5 + 0.6 * 1],
+                                 index=p.index)
+
+        denominators = pd.concat([denominators] * len(p.columns), axis=1)
+        denominators.columns = p.columns
+
         expected_p = pd.DataFrame(
-            [np.array([2.5 * 0.9 + 5 * 0.5, 2.5 * 0.9 + 1.5 * 0.1 * 0.2, 2.5 * 0.9 * 0.3 + 5 * 0.5 + 1 * 0.4]) / (0.9 * 2.5 + 0.1 * 1.5 + 0.5 * 5 + 0.4 * 1),
-             np.array([2.5 * 0.1 + 5 * 0.5, 2.5 * 0.1 + 1.5 * 0.9 * 0.8, 2.5 * 0.1 * 0.7 + 5 * 0.5 + 1 * 0.6]) / (0.1 * 2.5 + 0.9 * 1.5 + 0.5 * 5 + 0.6 * 1)],
+            [np.array([2.5 * 0.9 + 5 * 0.5, 2.5 * 0.9 + 1.5 * 0.1 * 0.2,
+                       2.5 * 0.9 * 0.3 + 5 * 0.5 + 1 * 0.4]),
+             np.array([2.5 * 0.1 + 5 * 0.5, 2.5 * 0.1 + 1.5 * 0.9 * 0.8,
+                       2.5 * 0.1 * 0.7 + 5 * 0.5 + 1 * 0.6])],
             index=p.index,
             columns=p.columns,
         )
+
+        expected_p /= denominators
+
+        data_as_bool, not_null_mask = model._to_bool(sample_data)
+
+        actual_p = model._p_update_from_data(sample_data['weight'],
+                                             data_as_bool, not_null_mask,
+                                             zstar)
+
+        assert_frame_equal(expected_p, actual_p)
+
+    def test_p_update_with_priors(self):
+        sample_data = pd.DataFrame([[True, True, None, 'dataset-a', 2.5],
+                                    [False, None, False, 'dataset-b', 1.5],
+                                    [True, False, True, 'dataset-a', 5],
+                                    [False, False, True, 'dataset-c', 1]],
+                                   columns=['X1', 'X2', 'X3', 'dataset_id', 'weight'])
+
+        pi = pd.DataFrame([[0.6, 0.4],
+                           [0.2, 0.8],
+                           [0.5, 0.5]],
+                          index=['dataset-a', 'dataset-b', 'dataset-c'],
+                          columns=['K0', 'K1'])
+
+        p = pd.DataFrame([[0.1, 0.2, 0.3],
+                          [0.9, 0.8, 0.7]],
+                         index=['K0', 'K1'],
+                         columns=['X1', 'X2', 'X3'])
+
+        p_priors = pd.DataFrame([[1, 2],
+                                 [3, 4],
+                                 [5, 6]], index=p.columns, columns=['alpha', 'beta'])
+
+        mu = pd.Series([0.1, 0.8, 0.1], index=['dataset-a', 'dataset-b', 'dataset-c'])
+
+        model = MultiDatasetMixtureModel(mu, pi, p, prior_emission_probabilities=p_priors)
+
+        zstar = pd.DataFrame([[0.9, 0.1],
+                              [0.1, 0.9],
+                              [0.5, 0.5],
+                              [0.4, 0.6]],
+                             index=sample_data.index,
+                             columns=pi.columns)
+
+        denominators = pd.Series([0.9 * 2.5 + 0.1 * 1.5 + 0.5 * 5 + 0.4 * 1,
+                                  0.1 * 2.5 + 0.9 * 1.5 + 0.5 * 5 + 0.6 * 1],
+                                 index=p.index)
+
+        denominators = pd.concat([denominators]*len(p.columns), axis=1)
+        denominators.columns = p.columns
+
+        expected_p = pd.DataFrame(
+            [np.array([2.5 * 0.9 + 5 * 0.5, 2.5 * 0.9 + 1.5 * 0.1 * 0.2,
+                       2.5 * 0.9 * 0.3 + 5 * 0.5 + 1 * 0.4]),
+             np.array([2.5 * 0.1 + 5 * 0.5, 2.5 * 0.1 + 1.5 * 0.9 * 0.8,
+                       2.5 * 0.1 * 0.7 + 5 * 0.5 + 1 * 0.6])],
+            index=p.index,
+            columns=p.columns,
+        )
+
+        expected_p += p_priors['alpha'] - 1
+        denominators += p_priors['alpha'] + p_priors['beta'] - 1
+
+        expected_p /= denominators
 
         data_as_bool, not_null_mask = model._to_bool(sample_data)
 
