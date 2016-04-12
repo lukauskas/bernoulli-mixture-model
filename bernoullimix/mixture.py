@@ -90,7 +90,7 @@ class MultiDatasetMixtureModel(object):
         else:
             prior_mixing_coefficients = pd.Series(prior_mixing_coefficients,
                                                   index=self._mixing_coefficients.columns)
-        self._prior_mixing_coefficients = prior_mixing_coefficients
+        self._prior_mixing_coefficients = prior_mixing_coefficients.astype(np.float64)
 
         if prior_emission_probabilities is None:
             prior_emission_probabilities = pd.DataFrame(
@@ -115,7 +115,7 @@ class MultiDatasetMixtureModel(object):
                                                         index=self._emission_probabilities.columns,
                                                         columns=['alpha', 'beta'])
 
-        self._prior_emission_probabilities = prior_emission_probabilities
+        self._prior_emission_probabilities = prior_emission_probabilities.astype(np.float64)
 
         self._validate_init()
 
@@ -247,10 +247,12 @@ class MultiDatasetMixtureModel(object):
 
         # zstar_times_weight = zstar.multiply(weights, axis=0)
         # zstar_times_weight_sum = zstar_times_weight.sum()
-
+        p_priors = self.prior_emission_probabilities.values
+        print(p_priors)
         new_p = p_update(data_as_bool.values, not_null_mask.values,
                          zstar.values, weights.values,
-                         old_p.values)
+                         old_p.values,
+                         p_priors)
         new_p = pd.DataFrame(new_p, index=old_p.index, columns=old_p.columns)
         # new_p = new_p.divide(zstar_times_weight_sum, axis=0)
 
@@ -418,7 +420,7 @@ class MultiDatasetMixtureModel(object):
 
     @property
     def prior_emission_probabilities(self):
-        return self._emission_probabilities
+        return self._prior_emission_probabilities
 
     def __eq__(self, other):
         return self.dataset_priors.equals(other.dataset_priors) \

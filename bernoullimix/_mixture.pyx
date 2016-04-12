@@ -8,7 +8,8 @@ cpdef p_update(np.ndarray[np.uint8_t, ndim=2, cast=True] observations,
                np.ndarray[np.uint8_t, ndim=2, cast=True] not_null_mask,
                np.float64_t[::1,:] zstar,
                np.float64_t[:] weight,
-               np.float64_t[:,:] old_p):
+               np.float64_t[:,:] old_p,
+               np.float64_t[:,:] p_priors):
 
     cdef int N = observations.shape[0]
     cdef int D = observations.shape[1]
@@ -32,7 +33,8 @@ cpdef p_update(np.ndarray[np.uint8_t, ndim=2, cast=True] observations,
                     new_p[k, d] += old_p[k, d] * zstar_times_weight
 
         for d in range(D):
-            new_p[k, d] /= weight_sum
+            new_p[k, d] += p_priors[d, 0] - 1 # plus alpha_d - 1
+            new_p[k, d] /= weight_sum + p_priors[d, 0] + p_priors[d, 1] - 2 # + alpha_d + beta_d - 2
 
     return new_p
 

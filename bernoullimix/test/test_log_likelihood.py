@@ -500,7 +500,7 @@ class TestLogLikelihoodNew(unittest.TestCase):
         )
 
         expected_p += p_priors['alpha'] - 1
-        denominators += p_priors['alpha'] + p_priors['beta'] - 1
+        denominators += p_priors['alpha'] + p_priors['beta'] - 2
 
         expected_p /= denominators
 
