@@ -44,7 +44,21 @@ cpdef support_c(np.ndarray[np.uint8_t, ndim=2, cast=True] observations,
                 np.int_t[:] dataset_ids_as_ilocs,
                 np.float64_t[:,:] pi,
                 np.float64_t[:,:] p):
+    """
+    Computes unnormalised `z*`.
+    That is, for all rows i and components k, it computes
 
+    pi_k,c * product( p_{k,d}^{x_d^(i)} (1-p_{k,d})^(1 - x_d^(i))) for all d in observed variables for i
+
+    where c is the index of dataset that generated row i
+
+    :param observations:
+    :param not_null_mask:
+    :param dataset_ids_as_ilocs:
+    :param pi:
+    :param p:
+    :return:
+    """
 
     cdef int N = observations.shape[0]
     cdef int D = observations.shape[1]

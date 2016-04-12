@@ -32,7 +32,7 @@ class MultiDatasetMixtureModel(object):
 
         mc_sums = self.mixing_coefficients.sum(axis='columns')
 
-        if not np.all(np.abs(mc_sums - 1) <= np.finfo(float).resolution):
+        if not np.all(np.abs(mc_sums - 1) <= 10 * np.finfo(float).resolution):
             logger.error('Mixing coefficients do not sum to one. Difference: \n{!r}'.format(
                 np.abs(mc_sums - 1)))
             raise ValueError('Mixing coefficients must sum to one')
@@ -110,6 +110,19 @@ class MultiDatasetMixtureModel(object):
 
         support = pd.DataFrame(support, index=data_as_bool.index, columns=self.mixing_coefficients.columns)
         return support
+
+    def responsibilities(self, dataset):
+        # TODO: make sure to figure out what happens when we do not know the dataset_ids
+
+        dataset_ids_as_ilocs = self._dataset_ids_as_pis_ilocs(dataset)
+        data_as_bool, not_null_mask = self._to_bool(dataset)
+        support = self._support(dataset_ids_as_ilocs, data_as_bool, not_null_mask)
+        responsibilities = support.divide(support.sum(axis=1), axis=0)
+
+        return responsibilities
+
+
+
 
     def _individual_log_likelihoods_from_support_log_mus_and_weight(self, support, log_mus, weights):
         support_sum = support.sum(axis=1).apply(np.log)
