@@ -252,7 +252,6 @@ class MultiDatasetMixtureModel(object):
         # zstar_times_weight = zstar.multiply(weights, axis=0)
         # zstar_times_weight_sum = zstar_times_weight.sum()
         p_priors = self.prior_emission_probabilities.values
-        print(p_priors)
         new_p = p_update(data_as_bool.values, not_null_mask.values,
                          zstar.values, weights.values,
                          old_p.values,
