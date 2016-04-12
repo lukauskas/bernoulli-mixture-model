@@ -10,8 +10,10 @@ from bernoullimix.mixture import WEIGHT_COLUMN
 from bernoullimix.random_initialisation import random_mixture_generator
 import pandas as pd
 
-def _initializer(data, random_state, n_mixtures_to_search, fit_kwargs):
-    global g_data, g_random_state, g_n_mixtures_to_search, g_fit_kwargs
+def _initializer(data, random_state, n_mixtures_to_search, fit_kwargs,
+                 prior_mixing_coefficients, prior_emission_probabilities):
+    global g_data, g_random_state, g_n_mixtures_to_search, g_fit_kwargs, \
+        g_prior_mixing_coefficients, g_prior_emission_probabilities
 
     n_mixtures_to_search = int(n_mixtures_to_search)
     g_n_mixtures_to_search = n_mixtures_to_search
@@ -20,12 +22,17 @@ def _initializer(data, random_state, n_mixtures_to_search, fit_kwargs):
     g_random_state = random_state
     g_fit_kwargs = fit_kwargs
 
+    g_prior_mixing_coefficients = prior_mixing_coefficients
+    g_prior_emission_probabilities = prior_emission_probabilities
 
 def _map_function(k):
-    global g_data, g_random_state, g_n_mixtures_to_search, g_fit_kwargs
+    global g_data, g_random_state, g_n_mixtures_to_search, g_fit_kwargs, \
+        g_prior_mixing_coefficients, g_prior_emission_probabilities
 
     generator = random_mixture_generator(k, g_data,
-                                         random_state=g_random_state)
+                                         random_state=g_random_state,
+                                         prior_emission_probabilities=g_prior_emission_probabilities,
+                                         prior_mixing_coefficients=g_prior_mixing_coefficients)
 
     mixtures = list(itertools.islice(generator, g_n_mixtures_to_search))
 
@@ -48,13 +55,16 @@ def _map_function(k):
 def search_k(k_range_to_search, data, mixtures_per_k=10,
              random_state=None,
              n_jobs=1,
+             prior_mixing_coefficients=None,
+             prior_emission_probabilities=None,
              **fit_kwargs):
 
     data = MultiDatasetMixtureModel.collapse_dataset(data)
 
     pool = multiprocessing.Pool(processes=n_jobs,
                                 initializer=_initializer,
-                                initargs=(data, random_state, mixtures_per_k, fit_kwargs)
+                                initargs=(data, random_state, mixtures_per_k, fit_kwargs,
+                                          prior_mixing_coefficients, prior_emission_probabilities)
                                 )
 
     results = pool.map(_map_function, k_range_to_search)

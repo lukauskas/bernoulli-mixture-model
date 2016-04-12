@@ -64,7 +64,6 @@ def _expected_domain(range_a, range_b, alpha):
 
     return tuple(range_a * alpha + range_b * (1-alpha))
 
-
 def _random_numbers_within_domain(random, domain, shape):
     """
     Generates random numbers within the specified domain
@@ -112,7 +111,9 @@ def random_mixture_generator(number_of_components,
                              dataset,
                              random_state=None,
                              epsilon=0.005,
-                             alpha=0.75):
+                             alpha=0.75,
+                             prior_mixing_coefficients=None,
+                             prior_emission_probabilities=None):
     """
     Returns a generator for `MultiDatasetBernoulli` initialiser.
     The mixing coefficients are always chosen uniform.
@@ -130,6 +131,8 @@ def random_mixture_generator(number_of_components,
     :param random_state: random seed
     :param epsilon: probabilities will be adjusted to be within range [epsilon, 1-epsilon]
     :param alpha: mixing coefficient for random coefficient and random row from data
+    :param prior_mixing_coefficients: priors for MAP estimation of mixing coefficients
+    :param prior_emission_probabilities: priors for MAP estimation of emission probabilities
     :return:
     """
 
@@ -174,6 +177,8 @@ def random_mixture_generator(number_of_components,
                                  index=components_index,
                                  columns=data.columns)
 
-        yield MultiDatasetMixtureModel(mu, mixing_coefficients, emissions)
+        yield MultiDatasetMixtureModel(mu, mixing_coefficients, emissions,
+                                       prior_emission_probabilities=prior_emission_probabilities,
+                                       prior_mixing_coefficients=prior_mixing_coefficients)
 
 
