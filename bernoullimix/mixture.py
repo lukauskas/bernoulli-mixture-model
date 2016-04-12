@@ -227,6 +227,8 @@ class MultiDatasetMixtureModel(object):
 
         pi = np.empty(self._mixing_coefficients.shape)
 
+        pi_priors = self.prior_mixing_coefficients
+
         weights = data[WEIGHT_COLUMN]
         for i, dataset in enumerate(self.datasets_index):
 
@@ -235,7 +237,9 @@ class MultiDatasetMixtureModel(object):
             sub_weights = weights[mask]
             sub_zstar = zstar[mask]
 
-            ans = sub_zstar.multiply(sub_weights, axis=0).sum(axis=0) / sub_weights.sum()
+            ans = sub_zstar.multiply(sub_weights, axis=0).sum(axis=0)
+            ans += pi_priors - 1
+            ans /= sub_weights.sum() + pi_priors.sum() - self.n_components
 
             pi[i] = ans
 

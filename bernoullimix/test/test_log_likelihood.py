@@ -319,7 +319,7 @@ class TestLogLikelihoodNew(unittest.TestCase):
 
         mu = pd.Series([0.1, 0.8, 0.1], index=['dataset-a', 'dataset-b', 'dataset-c'])
 
-        model = MultiDatasetMixtureModel(mu, pi, p)
+        model = MultiDatasetMixtureModel(mu, pi, p, prior_mixing_coefficients=pi_prior)
 
         zstar = pd.DataFrame([[0.9, 0.1],
                               [0.1, 0.9],
