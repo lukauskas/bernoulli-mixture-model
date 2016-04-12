@@ -22,6 +22,9 @@ class MultiDatasetMixtureModel(object):
     _mixing_coefficients = None
     _emission_probabilities = None
 
+    _prior_mixing_coefficients = None
+    _prior_emission_probabilities = None
+
     def _validate_init(self):
         logger = self.cls_logger()
 
@@ -50,7 +53,20 @@ class MultiDatasetMixtureModel(object):
         if not self._mixing_coefficients.columns.equals(self._emission_probabilities.index):
             raise ValueError('Mixing coefficient columns do not match emission probabilities index')
 
-    def __init__(self, dataset_priors, mixing_coefficients, emission_probabilities):
+        if not self._prior_mixing_coefficients.index.equals(self._mixing_coefficients.columns):
+            raise ValueError('Mixing coefficient columns must equal the index of their priors')
+
+        if list(self._prior_emission_probabilities.columns) != ['alpha', 'beta']:
+            raise ValueError('Prior emission probabilities should have alpha and beta for columns')
+
+        if not self._prior_emission_probabilities.index.equals(
+                self._emission_probabilities.columns):
+            raise ValueError(
+                'Prior emission probabilities index should be the same as emission probs')
+
+    def __init__(self, dataset_priors, mixing_coefficients, emission_probabilities,
+                 prior_mixing_coefficients=None,
+                 prior_emission_probabilities=None):
 
         dataset_priors = pd.Series(dataset_priors)
         self._dataset_priors = dataset_priors
@@ -65,6 +81,41 @@ class MultiDatasetMixtureModel(object):
 
         self._mixing_coefficients = mixing_coefficients
         self._emission_probabilities = pd.DataFrame(emission_probabilities)
+
+        if prior_mixing_coefficients is None:
+            # dirichlet prior of one is the same as having no dirichlet prior
+            prior_mixing_coefficients = pd.Series(1, index=mixing_coefficients.columns)
+        elif isinstance(prior_mixing_coefficients, pd.Series):
+            pass
+        else:
+            prior_mixing_coefficients = pd.Series(prior_mixing_coefficients,
+                                                  index=self._mixing_coefficients.columns)
+        self._prior_mixing_coefficients = prior_mixing_coefficients
+
+        if prior_emission_probabilities is None:
+            prior_emission_probabilities = pd.DataFrame(
+                np.ones((self._emission_probabilities.shape[1], 2)),
+                index=self._emission_probabilities.columns,
+                columns=['alpha', 'beta'])
+        elif (isinstance(prior_emission_probabilities, list) or isinstance(
+                prior_emission_probabilities, tuple)) and len(prior_emission_probabilities) == 2:
+            _alpha, _beta = prior_emission_probabilities
+
+            prior_emission_probabilities = pd.concat([pd.Series(_alpha,
+                                                                index=self._emission_probabilities.columns,
+                                                                name='alpha'),
+                                                      pd.Series(_beta,
+                                                                index=self._emission_probabilities.columns,
+                                                                name='alpha'),
+                                                      ], axis=1)
+        elif isinstance(prior_emission_probabilities, pd.DataFrame):
+            pass
+        else:
+            prior_emission_probabilities = pd.DataFrame(prior_emission_probabilities,
+                                                        index=self._emission_probabilities.columns,
+                                                        columns=['alpha', 'beta'])
+
+        self._prior_emission_probabilities = prior_emission_probabilities
 
         self._validate_init()
 
@@ -359,6 +410,14 @@ class MultiDatasetMixtureModel(object):
 
     @property
     def emission_probabilities(self):
+        return self._emission_probabilities
+
+    @property
+    def prior_mixing_coefficients(self):
+        return self._prior_mixing_coefficients
+
+    @property
+    def prior_emission_probabilities(self):
         return self._emission_probabilities
 
     def __eq__(self, other):
