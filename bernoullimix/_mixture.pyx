@@ -16,23 +16,22 @@ cpdef p_update(np.ndarray[np.uint8_t, ndim=2, cast=True] observations,
 
     cdef np.ndarray[np.float64_t, ndim=2] new_p = np.zeros((K, D))
 
-    cdef np.float64_t weight_sum;
+    cdef np.float64_t[:] weight_sum;
     cdef np.float64_t zstar_times_weight;
 
     for k in range(K):
-        weight_sum = 0.0
+        weight_sum = np.zeros(D, dtype=np.float)
+
         for n in range(N):
             zstar_times_weight = zstar[n, k] * weight[n]
-            weight_sum += zstar_times_weight
 
             for d in range(D):
                 if not_null_mask[n, d]:
                     new_p[k, d] += observations[n, d] * zstar_times_weight
-                else:
-                    new_p[k, d] += old_p[k, d] * zstar_times_weight
+                    weight_sum[d] += zstar_times_weight
 
         for d in range(D):
-            new_p[k, d] /= weight_sum
+            new_p[k, d] /= weight_sum[d]
 
     return new_p
 

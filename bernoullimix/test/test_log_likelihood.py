@@ -373,4 +373,9 @@ class TestLogLikelihoodNew(unittest.TestCase):
                                              data_as_bool, not_null_mask,
                                              zstar)
 
+        print('-- expected: --')
+        print(expected_p)
+        print('-- actual: --')
+        print(actual_p)
+
         assert_frame_equal(expected_p, actual_p)
