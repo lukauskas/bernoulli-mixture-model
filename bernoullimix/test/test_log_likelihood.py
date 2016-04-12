@@ -279,12 +279,76 @@ class TestLogLikelihoodNew(unittest.TestCase):
                              columns=pi.columns)
 
         pi_expected = pd.DataFrame([
-            [(2.5 * 0.9 + 5 * 0.5) / (2.5 + 5), (2.5 * 0.1 + 5 * 0.5) / (2.5 + 5)],
-            [(1.5 * 0.1) / 1.5, (1.5 * 0.9) / 1.5],
-            [(1 * 0.4) / 1, (1 * 0.6) / 1]
+            [(2.5 * 0.9 + 5 * 0.5), (2.5 * 0.1 + 5 * 0.5)],
+            [(1.5 * 0.1), (1.5 * 0.9)],
+            [(1 * 0.4), (1 * 0.6)]
         ],
             index=pi.index,
             columns=pi.columns)
+
+        denominators = pd.DataFrame([
+            [2.5 + 5, 2.5 + 5],
+            [1.5, 1.5],
+            [1, 1]
+        ], index=pi.index, columns=pi.columns)
+
+        pi_expected /= denominators
+
+        pi_actual = model._pi_update_from_data(sample_data, zstar)
+        assert_frame_equal(pi_expected, pi_actual)
+
+    def test_pi_update_with_priors(self):
+        sample_data = pd.DataFrame([[True, True, None, 'dataset-a', 2.5],
+                                    [False, None, False, 'dataset-b', 1.5],
+                                    [True, False, True, 'dataset-a', 5],
+                                    [False, False, True, 'dataset-c', 1]],
+                                   columns=['X1', 'X2', 'X3', 'dataset_id', 'weight'])
+
+        pi = pd.DataFrame([[0.6, 0.4],
+                           [0.2, 0.8],
+                           [0.5, 0.5]],
+                          index=['dataset-a', 'dataset-b', 'dataset-c'],
+                          columns=['K0', 'K1'])
+
+        pi_prior = pd.Series([2, 3], index=pi.columns)
+
+        p = pd.DataFrame([[0.1, 0.2, 0.3],
+                          [0.9, 0.8, 0.7]],
+                         index=['K0', 'K1'],
+                         columns=['X1', 'X2', 'X3'])
+
+        mu = pd.Series([0.1, 0.8, 0.1], index=['dataset-a', 'dataset-b', 'dataset-c'])
+
+        model = MultiDatasetMixtureModel(mu, pi, p)
+
+        zstar = pd.DataFrame([[0.9, 0.1],
+                              [0.1, 0.9],
+                              [0.5, 0.5],
+                              [0.4, 0.6]],
+                             index=sample_data.index,
+                             columns=pi.columns)
+
+        pi_expected = pd.DataFrame([
+            [(2.5 * 0.9 + 5 * 0.5), (2.5 * 0.1 + 5 * 0.5)],
+            [(1.5 * 0.1), (1.5 * 0.9)],
+            [(1 * 0.4), (1 * 0.6)]
+        ],
+            index=pi.index,
+            columns=pi.columns)
+
+        pi_expected += pi_prior - 1
+
+        denominators = pd.DataFrame([
+            [2.5 + 5, 2.5 + 5],
+            [1.5, 1.5],
+            [1, 1]
+        ], index=pi.index, columns=pi.columns)
+
+        denominators += pi_prior.sum() - len(pi_prior)
+
+        pi_expected /= denominators
+
+        print (pi_expected)
 
         pi_actual = model._pi_update_from_data(sample_data, zstar)
         assert_frame_equal(pi_expected, pi_actual)
