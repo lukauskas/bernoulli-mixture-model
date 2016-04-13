@@ -261,6 +261,41 @@ class MultiDatasetMixtureModel(object):
 
         return new_p
 
+    def _log_likelihood_to_unnormalised_posterior(self, log_likelihood, compute_gammas=False):
+        """
+        Takes log likelihood and multiplies it by the unnomralised priors.
+        Used in EM estimation to track change in probability.
+        """
+
+        pi_prior = self.prior_mixing_coefficients
+        p_prior = self.prior_emission_probabilities
+
+        pi = self.mixing_coefficients
+        p = self.emission_probabilities
+
+        pi_weights = ((pi_prior - 1) * pi.apply(np.log)).sum().sum()
+
+        p_weights = p.apply(np.log) * (p_prior['alpha'] - 1)
+        p_weights += (1-p).apply(np.log) * (p_prior['beta'] - 1)
+        p_weights = p_weights.sum().sum()
+
+        weighted_log_likelihood = log_likelihood + pi_weights + p_weights
+
+        if compute_gammas:
+            from scipy.special import gammaln
+            K = self.n_components
+            T = self.n_datasets
+
+            pi_gamma = T * (gammaln(pi_prior.sum()) - pi_prior.apply(gammaln).sum())
+            p_gamma = K * (gammaln(p_prior.sum(axis=1))
+                           - gammaln(p_prior['alpha'])
+                           - gammaln(p_prior['beta'])).sum()
+
+            weighted_log_likelihood += pi_gamma + p_gamma
+
+        return weighted_log_likelihood
+
+
     @classmethod
     def collapse_dataset(cls, dataset, sort_results=False):
 

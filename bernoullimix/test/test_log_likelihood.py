@@ -3,6 +3,7 @@ import unittest
 import numpy as np
 from numpy.testing import assert_array_almost_equal
 from pandas.util.testing import assert_series_equal, assert_frame_equal
+from scipy.special import gammaln
 
 import pandas as pd
 
@@ -187,6 +188,55 @@ class TestLogLikelihoodNew(unittest.TestCase):
         actual_log_likelihood = model.log_likelihood(sample_data)
 
         self.assertEqual(expected_log_likelihood, actual_log_likelihood)
+
+    def test_posterior_calculation_from_log_likelihood(self):
+
+            pi = pd.DataFrame([[0.6, 0.4],
+                               [0.2, 0.8],
+                               [0.5, 0.5]],
+                              index=['dataset-a', 'dataset-b', 'dataset-c'],
+                              columns=['K0', 'K1'])
+
+            pi_priors = pd.Series([4, 5], index=pi.columns)
+
+            p = pd.DataFrame([[0.1, 0.2, 0.3],
+                              [0.9, 0.8, 0.7]],
+                             index=['K0', 'K1'],
+                             columns=['X1', 'X2', 'X3'])
+
+            p_priors = pd.DataFrame([[6, 7],
+                                     [8, 9],
+                                     [10, 11]], index=p.columns, columns=['alpha', 'beta'])
+
+            mu = pd.Series([0.5, 0.25, 0.25], index=['dataset-a', 'dataset-b', 'dataset-c'])
+
+            model = MultiDatasetMixtureModel(mu, pi, p, prior_mixing_coefficients=pi_priors,
+                                            prior_emission_probabilities=p_priors)
+
+            log_likelihood = np.log(1e-5)
+
+            pi_prior_weight = (pi.apply(np.log) * (pi_priors - 1)).sum().sum()
+            pi_prior_gammas = len(pi.index) * (gammaln(pi_priors.sum()) - pi_priors.apply(gammaln).sum())
+
+            p_prior_weight = (p.apply(np.log) * (p_priors['alpha'] - 1) + (1-p).apply(np.log) * (p_priors['beta'] - 1)).sum().sum()
+
+            p_prior_gammas = len(p.index) * (p_priors.sum(axis=1).apply(gammaln)
+                                             - p_priors['alpha'].apply(gammaln)
+                                             - p_priors['beta'].apply(gammaln)).sum()
+
+            expected_posterior_no_gammas = log_likelihood + pi_prior_weight + p_prior_weight
+
+            expected_posterior_with_gammas = expected_posterior_no_gammas \
+                                             + pi_prior_gammas + p_prior_gammas
+
+            posterior_no_gammas = model._log_likelihood_to_unnormalised_posterior(log_likelihood,
+                                                                                  compute_gammas=False)
+            posterior_gammas = model._log_likelihood_to_unnormalised_posterior(log_likelihood,
+                                                                               compute_gammas=True)
+
+            self.assertEqual(expected_posterior_no_gammas, posterior_no_gammas)
+            self.assertEqual(expected_posterior_with_gammas, posterior_gammas)
+
 
     def test_support(self):
         row = pd.DataFrame([[True, False, None, 'dataset-a', 2.5]],
