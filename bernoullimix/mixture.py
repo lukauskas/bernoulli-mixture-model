@@ -40,8 +40,8 @@ class MultiDatasetMixtureModel(object):
                 np.abs(mc_sums - 1)))
             raise ValueError('Mixing coefficients must sum to one')
 
-        if not self.dataset_priors.sum() == 1:
-            raise ValueError('Dataset priors must sum to one')
+        if np.abs(self.dataset_priors.sum() - 1) > 10 * np.finfo(float).resolution:
+            raise ValueError('Dataset priors must sum to one.\n{!r}'.format(self.dataset_priors))
 
         if np.any(self.emission_probabilities < 0) or \
                 np.any(self.emission_probabilities > 1):
@@ -106,7 +106,7 @@ class MultiDatasetMixtureModel(object):
                                                                 name='alpha'),
                                                       pd.Series(_beta,
                                                                 index=self._emission_probabilities.columns,
-                                                                name='alpha'),
+                                                                name='beta'),
                                                       ], axis=1)
         elif isinstance(prior_emission_probabilities, pd.DataFrame):
             pass
@@ -360,7 +360,7 @@ class MultiDatasetMixtureModel(object):
                              '(diff: {})'.format(iteration, current_log_likelihood, diff))
 
             assert diff >= -np.finfo(float).eps, \
-                'Log likelihood decreased in iteration {}'.format(n_iter)
+                'Log likelihood decreased in iteration {}. Difference: {}'.format(n_iter, diff)
 
             if diff <= eps:
                 logger.debug('Converged at iteration {}'.format(iteration))
