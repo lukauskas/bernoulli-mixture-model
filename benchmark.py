@@ -50,7 +50,9 @@ def main(max_iter):
     np.random.seed(RANDOM_STATE)
     data = load_data(random_state=RANDOM_STATE)
 
-    model = next(random_mixture_generator(10, data, random_state=RANDOM_STATE))
+    model = next(random_mixture_generator(10, data, random_state=RANDOM_STATE,
+                                          prior_mixing_coefficients=10,
+                                          prior_emission_probabilities=(10, 10)))
 
     print('MU:')
     print(model.dataset_priors)

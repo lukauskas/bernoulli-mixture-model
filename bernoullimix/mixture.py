@@ -4,11 +4,13 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from collections import Counter
+from functools import lru_cache
 
 import numpy as np
 import pandas as pd
 
 from bernoullimix._mixture import support_c, p_update
+from cached_property import cached_property
 
 _EPSILON = np.finfo(np.float).eps
 
@@ -119,6 +121,26 @@ class MultiDatasetMixtureModel(object):
 
         self._validate_init()
 
+    def sort_states_by_probabilities(self):
+        p = self.emission_probabilities
+        pi = self.mixing_coefficients
+        mu = self.dataset_priors
+        p_prior = self.prior_emission_probabilities
+        pi_prior = self.prior_mixing_coefficients
+
+        sorted_states = p.mean(axis=1).order(ascending=False).index
+
+        new_p = p.loc[sorted_states].copy()
+        new_p.index = ['S{}'.format(i) for i in range(1, len(p.index) + 1)]
+
+        new_pi = pi[sorted_states].copy()
+        new_pi.columns = new_p.index
+
+        new_pi_prior = pi_prior.loc[sorted_states].copy()
+        new_pi_prior.index = new_p.index
+
+        return MultiDatasetMixtureModel(mu, new_pi, new_p, new_pi_prior, p_prior)
+
     def _validate_data(self, data):
         columns = data.columns
 
@@ -223,37 +245,59 @@ class MultiDatasetMixtureModel(object):
 
         return counts
 
-    def _pi_update_from_data(self, data, zstar):
+    @cached_property
+    def _prior_mixing_coefficient_denominator_adjustment(self):
+        return self.prior_mixing_coefficients.sum() - self.n_components
+
+    def _dataset_masks(self, data):
+        masks = {}
+        for dataset in self.datasets_index:
+            masks[dataset] = data[DATASET_ID_COLUMN] == dataset
+        return masks
+
+    def _dataset_weight_sums(self, data, masks=None):
+        if masks is None:
+            masks = self._dataset_masks(data)
+        return pd.Series([data[masks[dataset]][WEIGHT_COLUMN].sum()
+                          for dataset in self.datasets_index],
+                         index=self.datasets_index)
+
+    def _pi_update(self, zstar_times_weight, masks, weight_sums):
 
         pi = np.empty(self._mixing_coefficients.shape)
+        pi_priors_minus_one = self.prior_mixing_coefficients - 1
+        pi_prior_adjustment = self._prior_mixing_coefficient_denominator_adjustment
 
-        pi_priors = self.prior_mixing_coefficients
-
-        weights = data[WEIGHT_COLUMN]
         for i, dataset in enumerate(self.datasets_index):
+            mask = masks[dataset]
 
-            mask = data[DATASET_ID_COLUMN] == dataset
-
-            sub_weights = weights[mask]
-            sub_zstar = zstar[mask]
-
-            ans = sub_zstar.multiply(sub_weights, axis=0).sum(axis=0)
-            ans += pi_priors - 1
-            ans /= sub_weights.sum() + pi_priors.sum() - self.n_components
+            ans = zstar_times_weight[mask].sum(axis=0)
+            ans += pi_priors_minus_one
+            ans /= weight_sums.loc[dataset] + pi_prior_adjustment
 
             pi[i] = ans
 
-        pi = pd.DataFrame(pi, index=self.mixing_coefficients.index, columns=self.mixing_coefficients.columns)
+        pi = pd.DataFrame(pi, index=self.mixing_coefficients.index,
+                          columns=self.mixing_coefficients.columns)
         return pi
 
-    def _p_update_from_data(self, weights, data_as_bool, not_null_mask, zstar):
+    def _pi_update_from_data(self, data, zstar):
+
+        masks = self._dataset_masks(data)
+        weight_sums = self._dataset_weight_sums(data, masks)
+
+        weights = data[WEIGHT_COLUMN]
+        zstar_times_weight = zstar.multiply(weights, axis=0)
+
+        return self._pi_update(zstar_times_weight, masks, weight_sums)
+
+    def _p_update_from_data(self, zstar_times_weight, data_as_bool, not_null_mask):
         old_p = self.emission_probabilities
 
-        # zstar_times_weight = zstar.multiply(weights, axis=0)
         # zstar_times_weight_sum = zstar_times_weight.sum()
         p_priors = self.prior_emission_probabilities.values
         new_p = p_update(data_as_bool.values, not_null_mask.values,
-                         zstar.values, weights.values,
+                         zstar_times_weight.values,
                          old_p.values,
                          p_priors)
         new_p = pd.DataFrame(new_p, index=old_p.index, columns=old_p.columns)
@@ -261,7 +305,7 @@ class MultiDatasetMixtureModel(object):
 
         return new_p
 
-    def _log_likelihood_to_unnormalised_posterior(self, log_likelihood, compute_gammas=False):
+    def _unnormalised_posterior(self, log_likelihood, compute_gammas=False):
         """
         Takes log likelihood and multiplies it by the unnomralised priors.
         Used in EM estimation to track change in probability.
@@ -353,27 +397,34 @@ class MultiDatasetMixtureModel(object):
                                                                                       weights)
 
         previous_log_likelihood = current_log_likelihood
+        previous_posterior = self._unnormalised_posterior(previous_log_likelihood,
+                                                                       compute_gammas=False)
 
         logger.debug('Starting mu:\n{!r}'.format(self.dataset_priors))
         logger.debug('Starting pi:\n{!r}'.format(self.mixing_coefficients))
         logger.debug('Starting p:\n{!r}'.format(self.emission_probabilities))
 
         logger.debug('Starting log likelihood: {}'.format(previous_log_likelihood))
+        logger.debug('Starting unnormalised posterior: {}'.format(previous_posterior))
 
         iteration = 0
         converged = False
 
         DEBUG_EVERY_X_ITERATIONS = 100
 
+        masks = self._dataset_masks(data)
+        dataset_weight_sums = self._dataset_weight_sums(data, masks=masks)
+
         while True:
             if n_iter is not None and iteration >= n_iter:
                 break
             iteration += 1
 
-            z_star = previous_support.divide(previous_support.sum(axis=1), axis=0)
+            zstar = previous_support.divide(previous_support.sum(axis=1), axis=0)
+            zstar_times_weight = zstar.multiply(weights, axis=0)
 
-            new_pi = self._pi_update_from_data(data, z_star)
-            new_p = self._p_update_from_data(weights, data_as_bool, not_null_mask, z_star)
+            new_pi = self._pi_update(zstar_times_weight, masks, dataset_weight_sums)
+            new_p = self._p_update_from_data(zstar_times_weight, data_as_bool, not_null_mask)
 
             if iteration == 0:
                 new_mu = self._mu_update_from_data(data)
@@ -389,13 +440,16 @@ class MultiDatasetMixtureModel(object):
                                                                                           log_mus,
                                                                                           weights)
 
-            diff = current_log_likelihood - previous_log_likelihood
+            current_posterior = self._unnormalised_posterior(current_log_likelihood,
+                                                             compute_gammas=False)
+
+            diff = current_posterior - previous_posterior
             if iteration % DEBUG_EVERY_X_ITERATIONS == 0:
-                logger.debug('Iteration #{}. Likelihood {}: '
-                             '(diff: {})'.format(iteration, current_log_likelihood, diff))
+                logger.debug('Iteration #{}. Likelihood: {}. Posterior: {}'
+                             '(diff: {})'.format(iteration, current_log_likelihood, current_posterior, diff))
 
             assert diff >= -np.finfo(float).eps, \
-                'Log likelihood decreased in iteration {}. Difference: {}'.format(n_iter, diff)
+                'Unnormalised posterior decreased in iteration {}. Difference: {}'.format(n_iter, diff)
 
             if diff <= eps:
                 logger.debug('Converged at iteration {}'.format(iteration))
@@ -403,6 +457,8 @@ class MultiDatasetMixtureModel(object):
                 break
 
             previous_log_likelihood = current_log_likelihood
+            previous_posterior = current_posterior
+
             previous_support = support
 
         return converged, iteration, current_log_likelihood

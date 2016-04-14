@@ -229,10 +229,10 @@ class TestLogLikelihoodNew(unittest.TestCase):
             expected_posterior_with_gammas = expected_posterior_no_gammas \
                                              + pi_prior_gammas + p_prior_gammas
 
-            posterior_no_gammas = model._log_likelihood_to_unnormalised_posterior(log_likelihood,
-                                                                                  compute_gammas=False)
-            posterior_gammas = model._log_likelihood_to_unnormalised_posterior(log_likelihood,
-                                                                               compute_gammas=True)
+            posterior_no_gammas = model._unnormalised_posterior(log_likelihood,
+                                                                compute_gammas=False)
+            posterior_gammas = model._unnormalised_posterior(log_likelihood,
+                                                             compute_gammas=True)
 
             self.assertEqual(expected_posterior_no_gammas, posterior_no_gammas)
             self.assertEqual(expected_posterior_with_gammas, posterior_gammas)
@@ -494,9 +494,10 @@ class TestLogLikelihoodNew(unittest.TestCase):
 
         data_as_bool, not_null_mask = model._to_bool(sample_data)
 
-        actual_p = model._p_update_from_data(sample_data['weight'],
-                                             data_as_bool, not_null_mask,
-                                             zstar)
+        zstar_times_weight = zstar.multiply(sample_data['weight'], axis=0)
+
+        actual_p = model._p_update_from_data(zstar_times_weight,
+                                             data_as_bool, not_null_mask)
 
         assert_frame_equal(expected_p, actual_p)
 
@@ -555,9 +556,9 @@ class TestLogLikelihoodNew(unittest.TestCase):
         expected_p /= denominators
 
         data_as_bool, not_null_mask = model._to_bool(sample_data)
+        zstar_times_weight = zstar.multiply(sample_data['weight'], axis=0)
 
-        actual_p = model._p_update_from_data(sample_data['weight'],
-                                             data_as_bool, not_null_mask,
-                                             zstar)
+        actual_p = model._p_update_from_data(zstar_times_weight,
+                                             data_as_bool, not_null_mask)
 
         assert_frame_equal(expected_p, actual_p)
