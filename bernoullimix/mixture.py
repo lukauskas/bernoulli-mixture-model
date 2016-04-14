@@ -400,12 +400,8 @@ class MultiDatasetMixtureModel(object):
         previous_posterior = self._unnormalised_posterior(previous_log_likelihood,
                                                                        compute_gammas=False)
 
-        logger.debug('Starting mu:\n{!r}'.format(self.dataset_priors))
-        logger.debug('Starting pi:\n{!r}'.format(self.mixing_coefficients))
-        logger.debug('Starting p:\n{!r}'.format(self.emission_probabilities))
-
-        logger.debug('Starting log likelihood: {}'.format(previous_log_likelihood))
-        logger.debug('Starting unnormalised posterior: {}'.format(previous_posterior))
+        logger.debug('Starting. Log likelihood: {}.'
+                     ' Posterior: {}'.format(previous_log_likelihood, previous_posterior))
 
         iteration = 0
         converged = False
@@ -452,7 +448,12 @@ class MultiDatasetMixtureModel(object):
                 'Unnormalised posterior decreased in iteration {}. Difference: {}'.format(n_iter, diff)
 
             if diff <= eps:
-                logger.debug('Converged at iteration {}'.format(iteration))
+                logger.debug('Converged (diff: {}). '
+                             'Iteration: {}. '
+                             'LogLikelihood: {}. '
+                             'Posterior: {}'.format(diff, iteration,
+                                                    current_log_likelihood,
+                                                    current_posterior))
                 converged = True
                 break
 
