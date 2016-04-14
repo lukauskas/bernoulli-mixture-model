@@ -4,7 +4,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from collections import Counter
-from functools import lru_cache
 
 import numpy as np
 import pandas as pd
@@ -441,7 +440,7 @@ class MultiDatasetMixtureModel(object):
 
             diff = current_posterior - previous_posterior
             if iteration % DEBUG_EVERY_X_ITERATIONS == 0:
-                logger.debug('Iteration #{}. Likelihood: {}. Posterior: {}'
+                logger.debug('Iteration #{}. Likelihood: {}. Posterior: {} '
                              '(diff: {})'.format(iteration, current_log_likelihood, current_posterior, diff))
 
             assert diff >= -np.finfo(float).eps, \

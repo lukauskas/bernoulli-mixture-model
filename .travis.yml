@@ -7,8 +7,9 @@ python:
 install:
   - pip install cython
   - pip install numpy
+  - pip install scikit-learn # needed for benchmark
   - pip install .
 # command to run tests
 script: 
   - python setup.py test
-  - time python benchmark.py
+  - time python benchmark.py 500
