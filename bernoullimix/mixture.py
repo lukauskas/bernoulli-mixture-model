@@ -479,7 +479,7 @@ class MultiDatasetMixtureModel(object):
         duration_seconds = (end_time - start_time).total_seconds()
 
         _extras = dict(status='finished',
-                       converged=converged,
+                       converged='yes' if converged else 'no',
                        log_likelihood=current_log_likelihood,
                        posterior=current_posterior,
                        iteration=iteration,
