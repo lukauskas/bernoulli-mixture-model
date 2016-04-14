@@ -396,11 +396,15 @@ class MultiDatasetMixtureModel(object):
                                                                                       weights)
 
         previous_log_likelihood = current_log_likelihood
-        previous_posterior = self._unnormalised_posterior(previous_log_likelihood,
+        current_posterior = previous_posterior = self._unnormalised_posterior(previous_log_likelihood,
                                                                        compute_gammas=False)
 
-        logger.debug('Starting. Log likelihood: {}.'
-                     ' Posterior: {}'.format(previous_log_likelihood, previous_posterior))
+        _extras = dict(status='started',
+                       log_likelihood=current_log_likelihood,
+                       posterior=current_posterior)
+
+        logger.debug('BMM: {status}. Converged: {converged}. Log Likelihood: {log_likelihood}. '
+                     'Posterior: {posterior}. Last Diff: {diff}'.format(extras=_extras, **_extras))
 
         iteration = 0
         converged = False
@@ -409,6 +413,8 @@ class MultiDatasetMixtureModel(object):
 
         masks = self._dataset_masks(data)
         dataset_weight_sums = self._dataset_weight_sums(data, masks=masks)
+
+        diff = np.nan
 
         while True:
             if n_iter is not None and iteration >= n_iter:
@@ -439,9 +445,6 @@ class MultiDatasetMixtureModel(object):
                                                              compute_gammas=False)
 
             diff = current_posterior - previous_posterior
-            if iteration % DEBUG_EVERY_X_ITERATIONS == 0:
-                logger.debug('Iteration #{}. Likelihood: {}. Posterior: {} '
-                             '(diff: {})'.format(iteration, current_log_likelihood, current_posterior, diff))
 
             assert diff >= -np.finfo(float).eps, \
                 'Unnormalised posterior decreased in iteration {}. Difference: {}'.format(n_iter, diff)
@@ -456,10 +459,28 @@ class MultiDatasetMixtureModel(object):
                 converged = True
                 break
 
+            if iteration % DEBUG_EVERY_X_ITERATIONS == 0:
+                _extras = dict(status='running',
+                               log_likelihood=current_log_likelihood,
+                               posterior=current_posterior,
+                               diff=diff)
+
+                logger.debug('BMM: {status}. Log Likelihood: {log_likelihood}. '
+                             'Posterior: {posterior}. Last Diff: {diff}'.format(extras=_extras,
+                                                                                **_extras))
+
             previous_log_likelihood = current_log_likelihood
             previous_posterior = current_posterior
 
             previous_support = support
+
+        _extras = dict(status='finished', converged=converged,
+                       log_likelihood=current_log_likelihood,
+                       posterior=current_posterior,
+                       diff=diff)
+
+        logger.debug('BMM: {status}. Converged: {converged}. Log Likelihood: {log_likelihood}. '
+                     'Posterior: {posterior}. Last Diff: {diff}'.format(extras=_extras, **_extras))
 
         return converged, iteration, current_log_likelihood
 
