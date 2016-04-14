@@ -10,6 +10,7 @@ import pandas as pd
 
 from bernoullimix._mixture import support_c, p_update
 from cached_property import cached_property
+from datetime import datetime
 
 _EPSILON = np.finfo(np.float).eps
 
@@ -376,7 +377,10 @@ class MultiDatasetMixtureModel(object):
         import logging
         return logging.getLogger('bernoullimix.mixture.MultiDatasetMixtureModel')
 
-    def fit(self, data, n_iter=100, eps=_EPSILON, logger=None):
+    def fit(self, data, n_iter=None, eps=_EPSILON, logger=None):
+
+        start_time = datetime.now()
+
         self._validate_data(data)
 
         if logger is None:
@@ -403,8 +407,9 @@ class MultiDatasetMixtureModel(object):
                        log_likelihood=current_log_likelihood,
                        posterior=current_posterior)
 
-        logger.debug('BMM: {status}. Converged: {converged}. Log Likelihood: {log_likelihood}. '
-                     'Posterior: {posterior}. Last Diff: {diff}'.format(extras=_extras, **_extras))
+        logger.debug('BMM: {status}. Log Likelihood: {log_likelihood}. '
+                     'Posterior: {posterior}'.format(**_extras),
+                     extra=_extras)
 
         iteration = 0
         converged = False
@@ -450,12 +455,6 @@ class MultiDatasetMixtureModel(object):
                 'Unnormalised posterior decreased in iteration {}. Difference: {}'.format(n_iter, diff)
 
             if diff <= eps:
-                logger.debug('Converged (diff: {}). '
-                             'Iteration: {}. '
-                             'LogLikelihood: {}. '
-                             'Posterior: {}'.format(diff, iteration,
-                                                    current_log_likelihood,
-                                                    current_posterior))
                 converged = True
                 break
 
@@ -463,24 +462,36 @@ class MultiDatasetMixtureModel(object):
                 _extras = dict(status='running',
                                log_likelihood=current_log_likelihood,
                                posterior=current_posterior,
+                               iteration=iteration,
                                diff=diff)
 
-                logger.debug('BMM: {status}. Log Likelihood: {log_likelihood}. '
-                             'Posterior: {posterior}. Last Diff: {diff}'.format(extras=_extras,
-                                                                                **_extras))
+                logger.debug('BMM: {status}. Iteration: {iteration}. '
+                             'Log Likelihood: {log_likelihood}. '
+                             'Posterior: {posterior}. Last Diff: {diff}'.format(**_extras),
+                             extra=_extras)
 
             previous_log_likelihood = current_log_likelihood
             previous_posterior = current_posterior
 
             previous_support = support
 
-        _extras = dict(status='finished', converged=converged,
+        end_time = datetime.now()
+        duration_seconds = (end_time - start_time).total_seconds()
+
+        _extras = dict(status='finished',
+                       converged=converged,
                        log_likelihood=current_log_likelihood,
                        posterior=current_posterior,
-                       diff=diff)
+                       iteration=iteration,
+                       diff=diff,
+                       duration_seconds=duration_seconds)
 
-        logger.debug('BMM: {status}. Converged: {converged}. Log Likelihood: {log_likelihood}. '
-                     'Posterior: {posterior}. Last Diff: {diff}'.format(extras=_extras, **_extras))
+        logger.debug('BMM: {status}. Iteration: {iteration}. '
+                     'Converged: {converged}. Took: {duration_seconds}s. '
+                     'Log Likelihood: {log_likelihood}. '
+                     'Posterior: {posterior}. '
+                     'Last Diff: {diff} '.format(**_extras),
+                     extra=_extras)
 
         return converged, iteration, current_log_likelihood
 
