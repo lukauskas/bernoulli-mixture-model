@@ -8,6 +8,37 @@ import pandas as pd
 from bernoullimix.mixture import MultiDatasetMixtureModel
 from bernoullimix.random_initialisation import random_mixture_generator
 
+MASKS = {'top': np.array([[True, True, True, True, True, True, True, True],
+                          [True, True, True, True, True, True, True, True],
+                          [True, True, True, True, True, True, True, True],
+                          [True, True, True, True, True, True, True, True],
+                          [False, False, False, False, False, False, False, False],
+                          [False, False, False, False, False, False, False, False],
+                          [False, False, False, False, False, False, False, False],
+                          [False, False, False, False, False, False, False, False]]
+                         ),
+         'bottom': np.array([[False, False, False, False, False, False, False, False],
+                             [False, False, False, False, False, False, False, False],
+                             [False, False, False, False, False, False, False, False],
+                             [False, False, False, False, False, False, False, False],
+                             [True, True, True, True, True, True, True, True],
+                             [True, True, True, True, True, True, True, True],
+                             [True, True, True, True, True, True, True, True],
+                             [True, True, True, True, True, True, True, True]]
+                            ),
+         'stripes': np.array([[True, False, True, False, True, False, True, False],
+                              [True, False, True, False, True, False, True, False],
+                              [True, False, True, False, True, False, True, False],
+                              [True, False, True, False, True, False, True, False],
+                              [True, False, True, False, True, False, True, False],
+                              [True, False, True, False, True, False, True, False],
+                              [True, False, True, False, True, False, True, False],
+                              [True, False, True, False, True, False, True, False], ]),
+         }
+RESHAPED_MASKS = {key: np.reshape(mask, -1) for key, mask in MASKS.items()}
+
+MASK_PROPORTIONS = pd.Series([0.2, 0.3, 0.5], index=['top', 'stripes', 'bottom'])
+TRAIN_SIZE = 0.7
 
 def load_data(random_state):
 
@@ -23,45 +54,57 @@ def load_data(random_state):
     binary_digits = shuffle(binary_digits, random_state=random_state)
     labels = labels.loc[binary_digits.index]
 
-    D=len(binary_digits.columns)
+    dataset = binary_digits.copy()
+    dataset['dataset_id'] = None
+    sum_proportions = 0
+    for mask, proportion in MASK_PROPORTIONS.iteritems():
+        dataset['dataset_id'].iloc[int(sum_proportions * len(dataset)):int(
+            (sum_proportions + proportion) * len(dataset))] = mask
+        sum_proportions += proportion
 
-    up_missing = binary_digits.iloc[:len(binary_digits)//4].copy()
-    bottom_missing = binary_digits.iloc[len(binary_digits)//4:len(binary_digits)//2].copy()
-    even_missing = binary_digits.iloc[len(binary_digits)//2:].copy()
-    up_missing.iloc[:, :D//2] = None
-    bottom_missing.iloc[:, D//2:] = None
-    even_missing.iloc[:, np.arange(0, D, 2)] = None
+    for name, mask in RESHAPED_MASKS.items():
+        dataset.loc[dataset['dataset_id'] == name, ~mask] = np.nan
 
-    up_missing['dataset_id'] = 'up_missing'
-    bottom_missing['dataset_id'] = 'bottom_missing'
-    even_missing['dataset_id'] = 'even_missing'
+    dataset['weight'] = 1
 
-    training_data = pd.concat((up_missing, bottom_missing, even_missing))
-    training_data['weight'] = 1
+    from sklearn.cross_validation import train_test_split
+    train_dataset, test_dataset, train_labels, test_labels = train_test_split(dataset, labels,
+                                                                              train_size=TRAIN_SIZE,
+                                                                              random_state=random_state)
 
-    training_data = MultiDatasetMixtureModel.collapse_dataset(training_data, sort_results=True)
+    DATASETS = {'split': {'train': train_dataset, 'test': test_dataset}}
+    TRUE_STATES = {'train': train_labels, 'test': test_labels}
 
-    return training_data
+    DATASETS['unified'] = {}
+    for type_, dataset in DATASETS['split'].items():
+        unified_dataset = dataset.copy()
+        unified_dataset['dataset_id'] = 'unified'
 
-def main(max_iter):
+        DATASETS['unified'][type_] = unified_dataset
+
+    return DATASETS
+
+def main(max_iter, K):
 
     RANDOM_STATE = 125
 
     np.random.seed(RANDOM_STATE)
     data = load_data(random_state=RANDOM_STATE)
+    data = data['split']['train']
+    model = next(random_mixture_generator(K, data,
+                                          random_state=RANDOM_STATE,
+                                          prior_mixing_coefficients=1,
+                                          prior_emission_probabilities=(1, 1),
+                                          ))
 
-    model = next(random_mixture_generator(10, data, random_state=RANDOM_STATE,
-                                          prior_mixing_coefficients=10,
-                                          prior_emission_probabilities=(10, 10)))
+    # print('MU:')
+    # print(model.dataset_priors)
+    # print('PI:')
+    # print(model.mixing_coefficients)
+    # print('P:')
+    # print(model.emission_probabilities)
 
-    print('MU:')
-    print(model.dataset_priors)
-    print('PI:')
-    print(model.mixing_coefficients)
-    print('P:')
-    print(model.emission_probabilities)
-
-    print(model.fit(data, n_iter=max_iter))
+    print(model.fit(data, n_iter=max_iter, eps=1e-2))
 
 
 if __name__ == '__main__':
@@ -75,4 +118,9 @@ if __name__ == '__main__':
     except IndexError:
         max_iter = 50
 
-    main(max_iter)
+    try:
+        K = int(sys.argv[2])
+    except IndexError:
+        K = 10
+
+    main(max_iter, K)

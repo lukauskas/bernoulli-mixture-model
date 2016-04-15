@@ -128,7 +128,7 @@ class MultiDatasetMixtureModel(object):
         p_prior = self.prior_emission_probabilities
         pi_prior = self.prior_mixing_coefficients
 
-        sorted_states = p.mean(axis=1).order(ascending=False).index
+        sorted_states = pi.mean(axis=0).order(ascending=False).index
 
         new_p = p.loc[sorted_states].copy()
         new_p.index = ['S{}'.format(i) for i in range(1, len(p.index) + 1)]
@@ -140,6 +140,31 @@ class MultiDatasetMixtureModel(object):
         new_pi_prior.index = new_p.index
 
         return MultiDatasetMixtureModel(mu, new_pi, new_p, new_pi_prior, p_prior)
+
+    def components_to_true_states(self, data, true_states):
+        """
+        Computes the probability of each of the true state being generate from the component.
+        """
+
+        assert data.index.equals(true_states.index)
+
+        responsibilities = self.responsibilities(data)
+        weights = data[WEIGHT_COLUMN]
+
+        r_times_weight = responsibilities.multiply(weights, axis=0)
+        true_state_priors = true_states.value_counts() / len(true_states)
+
+        component_given_state = {}
+        for ts in true_state_priors.index:
+            unnormalised = r_times_weight[true_states == ts].sum()
+            component_given_state[ts] = unnormalised / unnormalised.sum()
+
+        component_given_state = pd.DataFrame(component_given_state).T
+        state_given_component = component_given_state.multiply(true_state_priors, axis=0)
+        state_given_component /= state_given_component.sum()
+        state_given_component = state_given_component.T
+
+        return component_given_state, state_given_component
 
     def _validate_data(self, data):
         columns = data.columns
@@ -421,6 +446,10 @@ class MultiDatasetMixtureModel(object):
 
         diff = np.nan
 
+        previous_pi = self.mixing_coefficients
+        previous_p = self.emission_probabilities
+        previous_mu = self.dataset_priors
+
         while True:
             if n_iter is not None and iteration >= n_iter:
                 break
@@ -449,10 +478,26 @@ class MultiDatasetMixtureModel(object):
             current_posterior = self._unnormalised_posterior(current_log_likelihood,
                                                              compute_gammas=False)
 
+            print(iteration, current_posterior)
             diff = current_posterior - previous_posterior
 
-            assert diff >= -np.finfo(float).eps, \
-                'Unnormalised posterior decreased in iteration {}. Difference: {}'.format(n_iter, diff)
+            try:
+                assert diff >= -np.finfo(float).eps, \
+                    'Unnormalised posterior decreased in iteration {}. Change {} -> {}'.format(iteration, previous_posterior, current_posterior)
+            except AssertionError:
+                logger.debug(
+                    'Parameters before:\nMU:\n{!r}\nPI:\n{!r}\nP:\n{!r}'.format(previous_mu,
+                                                                                previous_pi,
+                                                                                previous_p))
+                logger.debug(
+                    'Parameters after:\nMU:\n{!r}\nPI:\n{!r}\nP:\n{!r}'.format(self.dataset_priors,
+                                                                               self.mixing_coefficients,
+                                                                               self.emission_probabilities))
+
+                logger.debug('LL change: {} -> {}'.format(previous_log_likelihood, current_log_likelihood,
+                                                          current_log_likelihood-previous_log_likelihood))
+                logger.debug('Posterior change: {} -> {} ({})'.format(previous_posterior, current_posterior, diff))
+                raise
 
             if diff <= eps:
                 converged = True
@@ -472,8 +517,11 @@ class MultiDatasetMixtureModel(object):
 
             previous_log_likelihood = current_log_likelihood
             previous_posterior = current_posterior
-
             previous_support = support
+            previous_pi = self.mixing_coefficients
+            previous_p = self.emission_probabilities
+            previous_mu = self.dataset_priors
+
 
         end_time = datetime.now()
         duration_seconds = (end_time - start_time).total_seconds()
