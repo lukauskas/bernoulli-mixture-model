@@ -67,7 +67,10 @@ def search_k(k_range_to_search, data, mixtures_per_k=10,
                                           prior_mixing_coefficients, prior_emission_probabilities)
                                 )
 
-    results = pool.map(_map_function, k_range_to_search)
+    try:
+        results = pool.map(_map_function, k_range_to_search)
+    finally:
+        pool.close()
 
     results_df = {}
     results_mixtures = {}
