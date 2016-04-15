@@ -262,11 +262,42 @@ class TestLogLikelihoodNew(unittest.TestCase):
             pi.loc['dataset-a', 'K1'] * p.loc['K1', 'X1'] * (1 - p.loc['K1', 'X2']),
         ]], columns=pi.columns, index=row.index)
 
+        expected_log_support = expected_support.apply(np.log)
         dataset_ids_as_ilocs = model._dataset_ids_as_pis_ilocs(row)
 
-        actual_support = model._support(dataset_ids_as_ilocs, *model._to_bool(row))
+        actual_log_support = model._log_support(dataset_ids_as_ilocs, *model._to_bool(row))
 
-        assert_frame_equal(expected_support, actual_support)
+        assert_frame_equal(expected_log_support, actual_log_support)
+
+    def test_responsibilities_from_log_support(self):
+        data = pd.DataFrame([[True, False, None, 'dataset-a', 2.5],
+                            [False, True, True, 'dataset-b', 15],
+                            [False, False, False, 'dataset-c', 20]],
+                           columns=['X1', 'X2', 'X3', 'dataset_id', 'weight'])
+
+        pi = pd.DataFrame([[0.6, 0.4],
+                           [0.2, 0.8],
+                           [0.5, 0.5]],
+                          index=['dataset-a', 'dataset-b', 'dataset-c'],
+                          columns=['K0', 'K1'])
+
+        p = pd.DataFrame([[0.1, 0.2, 0.3],
+                          [0.9, 0.8, 0.7]],
+                         index=['K0', 'K1'],
+                         columns=['X1', 'X2', 'X3'])
+
+        mu = pd.Series([0.5, 0.25, 0.25], index=['dataset-a', 'dataset-b', 'dataset-c'])
+
+        model = MultiDatasetMixtureModel(mu, pi, p)
+
+        dataset_ids_as_ilocs = model._dataset_ids_as_pis_ilocs(data)
+        log_support = model._log_support(dataset_ids_as_ilocs, *model._to_bool(data))
+        support = np.exp(log_support)
+
+        expected_responsibilities = support.divide(support.sum(axis=1), axis=0)
+        actual_responsibilities = model._responsibilities_from_log_support(log_support)
+
+        assert_frame_equal(expected_responsibilities, actual_responsibilities)
 
     def test_mu_update_from_data(self):
 

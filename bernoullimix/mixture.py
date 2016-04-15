@@ -8,7 +8,7 @@ from collections import Counter
 import numpy as np
 import pandas as pd
 
-from bernoullimix._mixture import support_c, p_update
+from bernoullimix._mixture import log_support_c, p_update
 from cached_property import cached_property
 from datetime import datetime
 
@@ -200,30 +200,30 @@ class MultiDatasetMixtureModel(object):
 
         return data_as_bool, not_null_mask
 
-    def _support(self, dataset_ids_as_ilocs, data_as_bool, not_null_mask):
-        support = support_c(data_as_bool.values, not_null_mask.values,
-                            dataset_ids_as_ilocs.values,
-                            self.mixing_coefficients.values,
-                            self.emission_probabilities.values)
+    def _log_support(self, dataset_ids_as_ilocs, data_as_bool, not_null_mask):
+        support = log_support_c(data_as_bool.values, not_null_mask.values,
+                                dataset_ids_as_ilocs.values,
+                                self.mixing_coefficients.values,
+                                self.emission_probabilities.values)
 
         support = pd.DataFrame(support, index=data_as_bool.index, columns=self.mixing_coefficients.columns)
         return support
 
-    def responsibilities(self, dataset):
-        # TODO: make sure to figure out what happens when we do not know the dataset_ids
+    def _responsibilities_from_log_support(self, log_support):
+        log_normalisation = np.logaddexp.reduce(log_support, axis=1)
+        log_responsibilities = log_support.subtract(log_normalisation, axis=0)
+        return np.exp(log_responsibilities)
+        #responsibilities = log_support.divide(log_support.sum(axis=1), axis=0)
 
+    def responsibilities(self, dataset):
         dataset_ids_as_ilocs = self._dataset_ids_as_pis_ilocs(dataset)
         data_as_bool, not_null_mask = self._to_bool(dataset)
-        support = self._support(dataset_ids_as_ilocs, data_as_bool, not_null_mask)
-        responsibilities = support.divide(support.sum(axis=1), axis=0)
+        log_support = self._log_support(dataset_ids_as_ilocs, data_as_bool, not_null_mask)
+        return self._responsibilities_from_log_support(log_support)
 
-        return responsibilities
-
-
-
-
-    def _individual_log_likelihoods_from_support_log_mus_and_weight(self, support, log_mus, weights):
-        support_sum = support.sum(axis=1).apply(np.log)
+    def _individual_log_likelihoods_from_support_log_mus_and_weight(self, log_support, log_mus, weights):
+        support_sum = np.logaddexp.reduce(log_support, axis=1)
+        #support_sum = log_support.sum(axis=1).apply(np.log)
         return (support_sum + log_mus) * weights
 
     def _dataset_ids_as_pis_ilocs(self, data):
@@ -234,14 +234,14 @@ class MultiDatasetMixtureModel(object):
     def _individual_log_likelihoods(self, data):
         dataset_ids_as_ilocs = self._dataset_ids_as_pis_ilocs(data)
 
-        support = self._support(dataset_ids_as_ilocs, *self._to_bool(data))
+        log_support = self._log_support(dataset_ids_as_ilocs, *self._to_bool(data))
         log_mus = self._log_mus(data)
 
-        return self._individual_log_likelihoods_from_support_log_mus_and_weight(support, log_mus,
+        return self._individual_log_likelihoods_from_support_log_mus_and_weight(log_support, log_mus,
                                                                                 data[WEIGHT_COLUMN])
 
-    def _log_likelihood_from_support_log_mus_and_weight(self, support, log_mus, weights):
-        return self._individual_log_likelihoods_from_support_log_mus_and_weight(support, log_mus, weights).sum()
+    def _log_likelihood_from_support_log_mus_and_weight(self, log_support, log_mus, weights):
+        return self._individual_log_likelihoods_from_support_log_mus_and_weight(log_support, log_mus, weights).sum()
 
     def _log_mus(self, data):
         log_mus = self.dataset_priors.loc[data[DATASET_ID_COLUMN]].apply(np.log)
@@ -252,10 +252,10 @@ class MultiDatasetMixtureModel(object):
     def log_likelihood(self, data):
         self._validate_data(data)
         dataset_ids_as_ilocs = self._dataset_ids_as_pis_ilocs(data)
-        support = self._support(dataset_ids_as_ilocs, *self._to_bool(data))
+        log_support = self._log_support(dataset_ids_as_ilocs, *self._to_bool(data))
         log_mus = self._log_mus(data)
 
-        return self._log_likelihood_from_support_log_mus_and_weight(support, log_mus, data[WEIGHT_COLUMN])
+        return self._log_likelihood_from_support_log_mus_and_weight(log_support, log_mus, data[WEIGHT_COLUMN])
 
     def _mu_update_from_data(self, data):
 
@@ -417,10 +417,10 @@ class MultiDatasetMixtureModel(object):
 
         weights = data[WEIGHT_COLUMN].astype(np.float)
 
-        previous_support = self._support(dataset_ids_as_ilocs, data_as_bool, not_null_mask)
+        previous_log_support = self._log_support(dataset_ids_as_ilocs, data_as_bool, not_null_mask)
         log_mus = self._log_mus(data)
 
-        current_log_likelihood = self._log_likelihood_from_support_log_mus_and_weight(previous_support,
+        current_log_likelihood = self._log_likelihood_from_support_log_mus_and_weight(previous_log_support,
                                                                                       log_mus,
                                                                                       weights)
 
@@ -455,7 +455,7 @@ class MultiDatasetMixtureModel(object):
                 break
             iteration += 1
 
-            zstar = previous_support.divide(previous_support.sum(axis=1), axis=0)
+            zstar = self._responsibilities_from_log_support(previous_log_support)
             zstar_times_weight = zstar.multiply(weights, axis=0)
 
             new_pi = self._pi_update(zstar_times_weight, masks, dataset_weight_sums)
@@ -469,16 +469,15 @@ class MultiDatasetMixtureModel(object):
             self._mixing_coefficients = new_pi
             self._emission_probabilities = new_p
 
-            support = self._support(dataset_ids_as_ilocs, data_as_bool, not_null_mask)
+            log_support = self._log_support(dataset_ids_as_ilocs, data_as_bool, not_null_mask)
 
-            current_log_likelihood = self._log_likelihood_from_support_log_mus_and_weight(support,
+            current_log_likelihood = self._log_likelihood_from_support_log_mus_and_weight(log_support,
                                                                                           log_mus,
                                                                                           weights)
 
             current_posterior = self._unnormalised_posterior(current_log_likelihood,
                                                              compute_gammas=False)
 
-            print(iteration, current_posterior)
             diff = current_posterior - previous_posterior
 
             try:
@@ -517,7 +516,7 @@ class MultiDatasetMixtureModel(object):
 
             previous_log_likelihood = current_log_likelihood
             previous_posterior = current_posterior
-            previous_support = support
+            previous_log_support = log_support
             previous_pi = self.mixing_coefficients
             previous_p = self.emission_probabilities
             previous_mu = self.dataset_priors
