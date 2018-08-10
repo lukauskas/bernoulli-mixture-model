@@ -1,12 +1,15 @@
-# Always prefer setuptools over distutils
 import numpy
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Extension
 from os import path
 from Cython.Build import cythonize
 
 here = path.abspath(path.dirname(__file__))
 
-extensions = "bernoullimix/_mixture.pyx"
+extensions = [
+    Extension("bernoullimix._mixture",
+              ["bernoullimix/_mixture.pyx"],
+              include_dirs=[numpy.get_include()])
+]
 
 setup(
     name='bernoullimix',
@@ -79,7 +82,6 @@ setup(
     },
 
     ext_modules=cythonize(extensions),
-    include_dirs=[numpy.get_include()],
 
     test_suite='nose.collector'
 
