@@ -141,7 +141,7 @@ def random_mixture_generator(number_of_components,
     assert DATASET_ID_COLUMN in dataset.columns
     assert WEIGHT_COLUMN in dataset.columns
 
-    data = dataset[dataset.columns - [DATASET_ID_COLUMN, WEIGHT_COLUMN]]
+    data = dataset[dataset.columns.difference([DATASET_ID_COLUMN, WEIGHT_COLUMN])]
     dataset_id_counts = dataset[DATASET_ID_COLUMN].value_counts()
 
     mu = dataset_id_counts / dataset_id_counts.sum()
