@@ -18,9 +18,25 @@ DATASET_ID_COLUMN = 'dataset_id'
 WEIGHT_COLUMN = 'weight'
 
 
-class MultiDatasetMixtureModel(object):
+def _responsibilities_from_log_support(log_support):
+    log_normalisation = np.logaddexp.reduce(log_support, axis=1)
+    log_responsibilities = log_support.subtract(log_normalisation, axis=0)
+    return np.exp(log_responsibilities)
 
-    _dataset_priors = None
+
+def _individual_log_likelihoods_from_support_and_weight(log_support,
+                                                        weights):
+    support_sum = np.logaddexp.reduce(log_support, axis=1)
+    # support_sum = log_support.sum(axis=1).apply(np.log)
+    return support_sum * weights
+
+
+def _log_likelihood_from_support_and_weight(log_support, weights):
+    return _individual_log_likelihoods_from_support_and_weight(log_support,
+                                                               weights).sum()
+
+
+class MultiDatasetMixtureModel(object):
     _mixing_coefficients = None
     _emission_probabilities = None
 
@@ -42,15 +58,9 @@ class MultiDatasetMixtureModel(object):
                 np.abs(mc_sums - 1)))
             raise ValueError('Mixing coefficients must sum to one')
 
-        if np.abs(self.dataset_priors.sum() - 1) > 10 * np.finfo(float).resolution:
-            raise ValueError('Dataset priors must sum to one.\n{!r}'.format(self.dataset_priors))
-
         if np.any(self.emission_probabilities < 0) or \
                 np.any(self.emission_probabilities > 1):
             raise ValueError('Emission probabilities have to be between 0 and 1')
-
-        if not self._dataset_priors.index.equals(self._mixing_coefficients.index):
-            raise ValueError('Dataset priors index does not match mixing coefficients index')
 
         if not self._mixing_coefficients.columns.equals(self._emission_probabilities.index):
             raise ValueError('Mixing coefficient columns do not match emission probabilities index')
@@ -66,12 +76,11 @@ class MultiDatasetMixtureModel(object):
             raise ValueError(
                 'Prior emission probabilities index should be the same as emission probs')
 
-    def __init__(self, dataset_priors, mixing_coefficients, emission_probabilities,
+    def __init__(self,
+                 mixing_coefficients,
+                 emission_probabilities,
                  prior_mixing_coefficients=None,
                  prior_emission_probabilities=None):
-
-        dataset_priors = pd.Series(dataset_priors)
-        self._dataset_priors = dataset_priors
 
         if isinstance(mixing_coefficients, pd.Series):
             mixing_coefficients = pd.DataFrame(mixing_coefficients).T
@@ -124,7 +133,6 @@ class MultiDatasetMixtureModel(object):
     def sort_states_by_probabilities(self):
         p = self.emission_probabilities
         pi = self.mixing_coefficients
-        mu = self.dataset_priors
         p_prior = self.prior_emission_probabilities
         pi_prior = self.prior_mixing_coefficients
 
@@ -139,7 +147,7 @@ class MultiDatasetMixtureModel(object):
         new_pi_prior = pi_prior.loc[sorted_states].copy()
         new_pi_prior.index = new_p.index
 
-        return MultiDatasetMixtureModel(mu, new_pi, new_p, new_pi_prior, p_prior)
+        return MultiDatasetMixtureModel(new_pi, new_p, new_pi_prior, p_prior)
 
     def components_to_true_states(self, data, true_states):
         """
@@ -172,20 +180,19 @@ class MultiDatasetMixtureModel(object):
         if WEIGHT_COLUMN not in columns:
             raise ValueError('Weight collumn {!r} not found in data columns'.format(WEIGHT_COLUMN))
         elif DATASET_ID_COLUMN not in columns:
-            raise ValueError('Dataset id column {!r} not found in data columns'.format(DATASET_ID_COLUMN))
+            raise ValueError(
+                'Dataset id column {!r} not found in data columns'.format(DATASET_ID_COLUMN))
 
+        dataset_index = set(data[DATASET_ID_COLUMN].unique())
+        if not frozenset(dataset_index) == frozenset(self.datasets_index):
+            raise ValueError('Dataset ids in the data {} do not match dataset ids in model spcification {}'.format(dataset_index,
+                                                                                                                    self.datasets_index))
         data_columns = self.data_index
         data_columns_isin = data_columns.isin(data)
 
         if not data_columns_isin.all():
             not_found = data_columns[~data_columns_isin]
             raise ValueError('Some expected data columns {!r} not in data'.format(not_found))
-
-        dataset_index_unique = data[DATASET_ID_COLUMN].unique()
-        dataset_index = self.datasets_index
-
-        if set(dataset_index_unique) != set(dataset_index):
-            raise ValueError('Dataset id column does not match the dataset index for mixing coefficients')
 
         weights = data[WEIGHT_COLUMN]
 
@@ -206,25 +213,15 @@ class MultiDatasetMixtureModel(object):
                                 self.mixing_coefficients.values,
                                 self.emission_probabilities.values)
 
-        support = pd.DataFrame(support, index=data_as_bool.index, columns=self.mixing_coefficients.columns)
+        support = pd.DataFrame(support, index=data_as_bool.index,
+                               columns=self.mixing_coefficients.columns)
         return support
-
-    def _responsibilities_from_log_support(self, log_support):
-        log_normalisation = np.logaddexp.reduce(log_support, axis=1)
-        log_responsibilities = log_support.subtract(log_normalisation, axis=0)
-        return np.exp(log_responsibilities)
-        #responsibilities = log_support.divide(log_support.sum(axis=1), axis=0)
 
     def responsibilities(self, dataset):
         dataset_ids_as_ilocs = self._dataset_ids_as_pis_ilocs(dataset)
         data_as_bool, not_null_mask = self._to_bool(dataset)
         log_support = self._log_support(dataset_ids_as_ilocs, data_as_bool, not_null_mask)
-        return self._responsibilities_from_log_support(log_support)
-
-    def _individual_log_likelihoods_from_support_log_mus_and_weight(self, log_support, log_mus, weights):
-        support_sum = np.logaddexp.reduce(log_support, axis=1)
-        #support_sum = log_support.sum(axis=1).apply(np.log)
-        return (support_sum + log_mus) * weights
+        return _responsibilities_from_log_support(log_support)
 
     def _dataset_ids_as_pis_ilocs(self, data):
         dataset_ids = data[DATASET_ID_COLUMN]
@@ -235,40 +232,16 @@ class MultiDatasetMixtureModel(object):
         dataset_ids_as_ilocs = self._dataset_ids_as_pis_ilocs(data)
 
         log_support = self._log_support(dataset_ids_as_ilocs, *self._to_bool(data))
-        log_mus = self._log_mus(data)
 
-        return self._individual_log_likelihoods_from_support_log_mus_and_weight(log_support, log_mus,
-                                                                                data[WEIGHT_COLUMN])
-
-    def _log_likelihood_from_support_log_mus_and_weight(self, log_support, log_mus, weights):
-        return self._individual_log_likelihoods_from_support_log_mus_and_weight(log_support, log_mus, weights).sum()
-
-    def _log_mus(self, data):
-        log_mus = self.dataset_priors.loc[data[DATASET_ID_COLUMN]].apply(np.log)
-        log_mus.index = data.index
-
-        return log_mus
+        return _individual_log_likelihoods_from_support_and_weight(log_support,
+                                                                   data[WEIGHT_COLUMN])
 
     def log_likelihood(self, data):
         self._validate_data(data)
         dataset_ids_as_ilocs = self._dataset_ids_as_pis_ilocs(data)
         log_support = self._log_support(dataset_ids_as_ilocs, *self._to_bool(data))
-        log_mus = self._log_mus(data)
 
-        return self._log_likelihood_from_support_log_mus_and_weight(log_support, log_mus, data[WEIGHT_COLUMN])
-
-    def _mu_update_from_data(self, data):
-
-        counts = data[[DATASET_ID_COLUMN, WEIGHT_COLUMN]].groupby(DATASET_ID_COLUMN).sum()
-        counts = counts[WEIGHT_COLUMN]
-        total_weight = counts.sum()
-
-        counts /= total_weight
-
-        counts = counts.reindex(self.datasets_index)
-        counts.name = self.dataset_priors.name
-
-        return counts
+        return _log_likelihood_from_support_and_weight(log_support, data[WEIGHT_COLUMN])
 
     @cached_property
     def _prior_mixing_coefficient_denominator_adjustment(self):
@@ -345,7 +318,7 @@ class MultiDatasetMixtureModel(object):
         pi_weights = ((pi_prior - 1) * pi.apply(np.log)).sum().sum()
 
         p_weights = p.apply(np.log) * (p_prior['alpha'] - 1)
-        p_weights += (1-p).apply(np.log) * (p_prior['beta'] - 1)
+        p_weights += (1 - p).apply(np.log) * (p_prior['beta'] - 1)
         p_weights = p_weights.sum().sum()
 
         weighted_log_likelihood = log_likelihood + pi_weights + p_weights
@@ -363,7 +336,6 @@ class MultiDatasetMixtureModel(object):
             weighted_log_likelihood += pi_gamma + p_gamma
 
         return weighted_log_likelihood
-
 
     @classmethod
     def collapse_dataset(cls, dataset, sort_results=False):
@@ -418,15 +390,14 @@ class MultiDatasetMixtureModel(object):
         weights = data[WEIGHT_COLUMN].astype(np.float)
 
         previous_log_support = self._log_support(dataset_ids_as_ilocs, data_as_bool, not_null_mask)
-        log_mus = self._log_mus(data)
 
-        current_log_likelihood = self._log_likelihood_from_support_log_mus_and_weight(previous_log_support,
-                                                                                      log_mus,
-                                                                                      weights)
+        current_log_likelihood = _log_likelihood_from_support_and_weight(previous_log_support,
+                                                                         weights)
 
         previous_log_likelihood = current_log_likelihood
-        current_posterior = previous_posterior = self._unnormalised_posterior(previous_log_likelihood,
-                                                                       compute_gammas=False)
+        current_posterior = previous_posterior = self._unnormalised_posterior(
+            previous_log_likelihood,
+            compute_gammas=False)
 
         _extras = dict(status='started',
                        log_likelihood=current_log_likelihood,
@@ -448,32 +419,25 @@ class MultiDatasetMixtureModel(object):
 
         previous_pi = self.mixing_coefficients
         previous_p = self.emission_probabilities
-        previous_mu = self.dataset_priors
 
         while True:
             if n_iter is not None and iteration >= n_iter:
                 break
             iteration += 1
 
-            zstar = self._responsibilities_from_log_support(previous_log_support)
+            zstar = _responsibilities_from_log_support(previous_log_support)
             zstar_times_weight = zstar.multiply(weights, axis=0)
 
             new_pi = self._pi_update(zstar_times_weight, masks, dataset_weight_sums)
             new_p = self._p_update_from_data(zstar_times_weight, data_as_bool, not_null_mask)
-
-            if iteration == 0:
-                new_mu = self._mu_update_from_data(data)
-                self._dataset_priors = new_mu
-                log_mus = self._log_mus(data)
 
             self._mixing_coefficients = new_pi
             self._emission_probabilities = new_p
 
             log_support = self._log_support(dataset_ids_as_ilocs, data_as_bool, not_null_mask)
 
-            current_log_likelihood = self._log_likelihood_from_support_log_mus_and_weight(log_support,
-                                                                                          log_mus,
-                                                                                          weights)
+            current_log_likelihood = _log_likelihood_from_support_and_weight(log_support,
+                                                                             weights)
 
             current_posterior = self._unnormalised_posterior(current_log_likelihood,
                                                              compute_gammas=False)
@@ -482,20 +446,22 @@ class MultiDatasetMixtureModel(object):
 
             try:
                 assert diff >= -np.finfo(float).eps, \
-                    'Unnormalised posterior decreased in iteration {}. Change {} -> {}'.format(iteration, previous_posterior, current_posterior)
+                    'Unnormalised posterior decreased in iteration {}. Change {} -> {}'.format(
+                        iteration, previous_posterior, current_posterior)
             except AssertionError:
                 logger.debug(
-                    'Parameters before:\nMU:\n{!r}\nPI:\n{!r}\nP:\n{!r}'.format(previous_mu,
-                                                                                previous_pi,
-                                                                                previous_p))
-                logger.debug(
-                    'Parameters after:\nMU:\n{!r}\nPI:\n{!r}\nP:\n{!r}'.format(self.dataset_priors,
-                                                                               self.mixing_coefficients,
-                                                                               self.emission_probabilities))
+                    'Parameters before:\nPI:\n{!r}\nP:\n{!r}'.format(previous_pi, previous_p))
 
-                logger.debug('LL change: {} -> {}'.format(previous_log_likelihood, current_log_likelihood,
-                                                          current_log_likelihood-previous_log_likelihood))
-                logger.debug('Posterior change: {} -> {} ({})'.format(previous_posterior, current_posterior, diff))
+                logger.debug(
+                    'Parameters after:\n\nPI:\n{!r}\nP:\n{!r}'.format(self.mixing_coefficients,
+                                                                      self.emission_probabilities))
+
+                logger.debug(
+                    'LL change: {} -> {}'.format(previous_log_likelihood, current_log_likelihood,
+                                                 current_log_likelihood - previous_log_likelihood))
+                logger.debug(
+                    'Posterior change: {} -> {} ({})'.format(previous_posterior, current_posterior,
+                                                             diff))
                 raise
 
             if diff <= eps:
@@ -519,8 +485,6 @@ class MultiDatasetMixtureModel(object):
             previous_log_support = log_support
             previous_pi = self.mixing_coefficients
             previous_p = self.emission_probabilities
-            previous_mu = self.dataset_priors
-
 
         end_time = datetime.now()
         duration_seconds = (end_time - start_time).total_seconds()
@@ -542,9 +506,6 @@ class MultiDatasetMixtureModel(object):
 
         return converged, iteration, current_log_likelihood
 
-    @property
-    def dataset_priors(self):
-        return self._dataset_priors
 
     @property
     def n_components(self):
@@ -557,19 +518,18 @@ class MultiDatasetMixtureModel(object):
     @property
     def n_free_parameters(self):
 
-        mu_free_parameter_count = self.n_datasets - 1
         pi_free_parameter_count = self.n_datasets * (self.n_components - 1)
 
         p_free_parameter_count = self.n_components * self.n_dimensions
 
-        return mu_free_parameter_count + pi_free_parameter_count + p_free_parameter_count
+        return pi_free_parameter_count + p_free_parameter_count
 
     def BIC(self, log_likelihood, sum_of_weights):
         return -2 * log_likelihood + self.n_free_parameters * np.log(sum_of_weights)
 
     @property
     def datasets_index(self):
-        return self._dataset_priors.index
+        return self._mixing_coefficients.index
 
     @property
     def n_dimensions(self):
@@ -596,6 +556,5 @@ class MultiDatasetMixtureModel(object):
         return self._prior_emission_probabilities
 
     def __eq__(self, other):
-        return self.dataset_priors.equals(other.dataset_priors) \
-               and self.mixing_coefficients.equals(other.mixing_coefficients) \
+        return self.mixing_coefficients.equals(other.mixing_coefficients) \
                and self.emission_probabilities.equals(other.emission_probabilities)

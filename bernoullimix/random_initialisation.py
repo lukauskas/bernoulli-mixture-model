@@ -144,12 +144,10 @@ def random_mixture_generator(number_of_components,
     data = dataset[dataset.columns.difference([DATASET_ID_COLUMN, WEIGHT_COLUMN])]
     dataset_id_counts = dataset[DATASET_ID_COLUMN].value_counts()
 
-    mu = dataset_id_counts / dataset_id_counts.sum()
-
     random = np.random.RandomState(random_state)
     components_index = ['K{}'.format(k) for k in range(number_of_components)]
     mixing_coefficients = pd.DataFrame([np.repeat(1/number_of_components, number_of_components)],
-                                       index=mu.index,
+                                       index=dataset_id_counts.index,
                                        columns=components_index)
 
     random_domain = (0, 1)
@@ -177,7 +175,7 @@ def random_mixture_generator(number_of_components,
                                  index=components_index,
                                  columns=data.columns)
 
-        yield MultiDatasetMixtureModel(mu, mixing_coefficients, emissions,
+        yield MultiDatasetMixtureModel(mixing_coefficients, emissions,
                                        prior_emission_probabilities=prior_emission_probabilities,
                                        prior_mixing_coefficients=prior_mixing_coefficients)
 

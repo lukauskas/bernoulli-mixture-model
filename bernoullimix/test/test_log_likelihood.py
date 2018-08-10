@@ -7,7 +7,8 @@ from scipy.special import gammaln
 
 import pandas as pd
 
-from bernoullimix.mixture import MultiDatasetMixtureModel
+from bernoullimix.mixture import MultiDatasetMixtureModel, _responsibilities_from_log_support
+
 
 class TestLogLikelihoodNew(unittest.TestCase):
 
@@ -30,10 +31,9 @@ class TestLogLikelihoodNew(unittest.TestCase):
                            [0.2, 0.1, 0.4]],
                           columns=['a', 'b', 'c'])
 
-        dataset_mu = pd.Series([1])
         ms_one = pd.Series([0.1, 0.5, 0.4], index=es.index)
 
-        mixture = MultiDatasetMixtureModel(dataset_mu, ms_one, es)
+        mixture = MultiDatasetMixtureModel(ms_one, es)
 
         self.assertRaises(ValueError, mixture.log_likelihood, dataset_no_weight)
 
@@ -52,10 +52,9 @@ class TestLogLikelihoodNew(unittest.TestCase):
                            [0.2, 0.1, 0.4]],
                           columns=['a', 'b', 'd'])  # column d not in data
 
-        dataset_mu = pd.Series([1])
         ms_one = pd.Series([0.1, 0.5, 0.4], index=es.index)
 
-        mixture = MultiDatasetMixtureModel(dataset_mu, ms_one, es)
+        mixture = MultiDatasetMixtureModel(ms_one, es)
 
         self.assertRaises(ValueError, mixture.log_likelihood, dataset)
 
@@ -67,8 +66,6 @@ class TestLogLikelihoodNew(unittest.TestCase):
                                 [False, False, False, 'y', 1]],
                                 columns=['a', 'b', 'c', 'dataset_id', 'weight'])
 
-        dataset_mu = pd.Series([0.1, 0.9], index=['a', 'b'])
-
         es = pd.DataFrame([[0.1, 0.2, 0.6],
                            [0.3, 0.2, 0.1],
                            [0.2, 0.1, 0.4]],
@@ -78,7 +75,7 @@ class TestLogLikelihoodNew(unittest.TestCase):
                               columns=es.index,
                               index=['a', 'b'])
 
-        mixture = MultiDatasetMixtureModel(dataset_mu, ms_two, es)
+        mixture = MultiDatasetMixtureModel(ms_two, es)
 
         self.assertRaises(ValueError, mixture.log_likelihood, dataset)
 
@@ -118,13 +115,11 @@ class TestLogLikelihoodNew(unittest.TestCase):
                            [0.2, 0.1, 0.4]],
                           columns=['a', 'b', 'c'])
 
-        dataset_mu = pd.Series([0.1, 0.9], index=['x', 'y'])
-
         ms_two = pd.DataFrame([[0.1, 0.5, 0.4], [0.1, 0.5, 0.4]],
                               columns=es.index,
                               index=['x', 'y'])
 
-        mixture = MultiDatasetMixtureModel(dataset_mu, ms_two, es)
+        mixture = MultiDatasetMixtureModel(ms_two, es)
 
         self.assertRaises(ValueError, mixture.log_likelihood, dataset_weight_zero)
 
@@ -148,16 +143,14 @@ class TestLogLikelihoodNew(unittest.TestCase):
                          index=['K0', 'K1'],
                          columns=['X1', 'X2', 'X3'])
 
-        mu = pd.Series([0.5, 0.25, 0.25], index=['dataset-a', 'dataset-b', 'dataset-c'])
+        model = MultiDatasetMixtureModel(pi, p)
 
-        model = MultiDatasetMixtureModel(mu, pi, p)
-
-        expected_log_likelihood = pd.Series([2.5 * (np.log(mu.loc['dataset-a']) + np.log(
+        expected_log_likelihood = pd.Series([2.5 * (np.log(
             sum([pi.loc['dataset-a', k] * p.loc[k, 'X1'] * (1-p.loc[k, 'X2']) for k in ['K0', 'K1']])
         ))], index=row.index)
 
         actual_log_likelihood = model._individual_log_likelihoods(row)
-        assert_series_equal(actual_log_likelihood, expected_log_likelihood)
+        assert_series_equal(actual_log_likelihood, expected_log_likelihood, check_names=False)
 
     def test_log_likelihood_weighs_data_correctly(self):
 
@@ -178,9 +171,7 @@ class TestLogLikelihoodNew(unittest.TestCase):
                          index=['K0', 'K1'],
                          columns=['X1', 'X2', 'X3'])
 
-        mu = pd.Series([0.5, 0.25, 0.25], index=['dataset-a', 'dataset-b', 'dataset-c'])
-
-        model = MultiDatasetMixtureModel(mu, pi, p)
+        model = MultiDatasetMixtureModel(pi, p)
 
         individual_lls = model._individual_log_likelihoods(sample_data)
         expected_log_likelihood = individual_lls.sum()
@@ -208,10 +199,8 @@ class TestLogLikelihoodNew(unittest.TestCase):
                                      [8, 9],
                                      [10, 11]], index=p.columns, columns=['alpha', 'beta'])
 
-            mu = pd.Series([0.5, 0.25, 0.25], index=['dataset-a', 'dataset-b', 'dataset-c'])
-
-            model = MultiDatasetMixtureModel(mu, pi, p, prior_mixing_coefficients=pi_priors,
-                                            prior_emission_probabilities=p_priors)
+            model = MultiDatasetMixtureModel(pi, p, prior_mixing_coefficients=pi_priors,
+                                             prior_emission_probabilities=p_priors)
 
             log_likelihood = np.log(1e-5)
 
@@ -253,9 +242,7 @@ class TestLogLikelihoodNew(unittest.TestCase):
                          index=['K0', 'K1'],
                          columns=['X1', 'X2', 'X3'])
 
-        mu = pd.Series([0.5, 0.25, 0.25], index=['dataset-a', 'dataset-b', 'dataset-c'])
-
-        model = MultiDatasetMixtureModel(mu, pi, p)
+        model = MultiDatasetMixtureModel(pi, p)
 
         expected_support = pd.DataFrame([[
             pi.loc['dataset-a', 'K0'] * p.loc['K0', 'X1'] * (1 - p.loc['K0', 'X2']),
@@ -286,48 +273,17 @@ class TestLogLikelihoodNew(unittest.TestCase):
                          index=['K0', 'K1'],
                          columns=['X1', 'X2', 'X3'])
 
-        mu = pd.Series([0.5, 0.25, 0.25], index=['dataset-a', 'dataset-b', 'dataset-c'])
-
-        model = MultiDatasetMixtureModel(mu, pi, p)
+        model = MultiDatasetMixtureModel(pi, p)
 
         dataset_ids_as_ilocs = model._dataset_ids_as_pis_ilocs(data)
         log_support = model._log_support(dataset_ids_as_ilocs, *model._to_bool(data))
         support = np.exp(log_support)
 
         expected_responsibilities = support.divide(support.sum(axis=1), axis=0)
-        actual_responsibilities = model._responsibilities_from_log_support(log_support)
+        actual_responsibilities = _responsibilities_from_log_support(log_support)
 
         assert_frame_equal(expected_responsibilities, actual_responsibilities)
 
-    def test_mu_update_from_data(self):
-
-        sample_data = pd.DataFrame([[True, True, None, 'dataset-a', 2.5],
-                                    [False, None, False, 'dataset-b', 1.5],
-                                    [True, False, True, 'dataset-a', 5],
-                                    [False, False, True, 'dataset-c', 1]],
-                                   columns=['X1', 'X2', 'X3', 'dataset_id', 'weight'])
-
-        pi = pd.DataFrame([[0.6, 0.4],
-                           [0.2, 0.8],
-                           [0.5, 0.5]],
-                          index=['dataset-a', 'dataset-b', 'dataset-c'],
-                          columns=['K0', 'K1'])
-
-        p = pd.DataFrame([[0.1, 0.2, 0.3],
-                          [0.9, 0.8, 0.7]],
-                         index=['K0', 'K1'],
-                         columns=['X1', 'X2', 'X3'])
-
-        mu = pd.Series([0.1, 0.8, 0.1], index=['dataset-a', 'dataset-b', 'dataset-c'])
-
-        model = MultiDatasetMixtureModel(mu, pi, p)
-
-        expected_updated_mu = pd.Series([0.75, 0.15, 0.1],
-                                        index=['dataset-a', 'dataset-b', 'dataset-c'])
-
-        actual_updated_mu = model._mu_update_from_data(sample_data)
-
-        assert_series_equal(expected_updated_mu, actual_updated_mu, check_names=False)
 
     def test_pi_update_from_data(self):
 
@@ -348,9 +304,7 @@ class TestLogLikelihoodNew(unittest.TestCase):
                          index=['K0', 'K1'],
                          columns=['X1', 'X2', 'X3'])
 
-        mu = pd.Series([0.1, 0.8, 0.1], index=['dataset-a', 'dataset-b', 'dataset-c'])
-
-        model = MultiDatasetMixtureModel(mu, pi, p)
+        model = MultiDatasetMixtureModel(pi, p)
 
         zstar = pd.DataFrame([[0.9, 0.1],
                               [0.1, 0.9],
@@ -398,9 +352,7 @@ class TestLogLikelihoodNew(unittest.TestCase):
                          index=['K0', 'K1'],
                          columns=['X1', 'X2', 'X3'])
 
-        mu = pd.Series([0.1, 0.8, 0.1], index=['dataset-a', 'dataset-b', 'dataset-c'])
-
-        model = MultiDatasetMixtureModel(mu, pi, p, prior_mixing_coefficients=pi_prior)
+        model = MultiDatasetMixtureModel(pi, p, prior_mixing_coefficients=pi_prior)
 
         zstar = pd.DataFrame([[0.9, 0.1],
                               [0.1, 0.9],
@@ -429,7 +381,7 @@ class TestLogLikelihoodNew(unittest.TestCase):
 
         pi_expected /= denominators
 
-        print (pi_expected)
+        print(pi_expected)
 
         pi_actual = model._pi_update_from_data(sample_data, zstar)
         assert_frame_equal(pi_expected, pi_actual)
@@ -494,9 +446,7 @@ class TestLogLikelihoodNew(unittest.TestCase):
                          index=['K0', 'K1'],
                          columns=['X1', 'X2', 'X3'])
 
-        mu = pd.Series([0.1, 0.8, 0.1], index=['dataset-a', 'dataset-b', 'dataset-c'])
-
-        model = MultiDatasetMixtureModel(mu, pi, p)
+        model = MultiDatasetMixtureModel(pi, p)
 
         zstar = pd.DataFrame([[0.9, 0.1],
                               [0.1, 0.9],
@@ -554,9 +504,7 @@ class TestLogLikelihoodNew(unittest.TestCase):
                                  [3, 4],
                                  [5, 6]], index=p.columns, columns=['alpha', 'beta'])
 
-        mu = pd.Series([0.1, 0.8, 0.1], index=['dataset-a', 'dataset-b', 'dataset-c'])
-
-        model = MultiDatasetMixtureModel(mu, pi, p, prior_emission_probabilities=p_priors)
+        model = MultiDatasetMixtureModel(pi, p, prior_emission_probabilities=p_priors)
 
         zstar = pd.DataFrame([[0.9, 0.1],
                               [0.1, 0.9],
