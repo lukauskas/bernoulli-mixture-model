@@ -8,7 +8,8 @@ from collections import Counter
 import numpy as np
 import pandas as pd
 
-from bernoullimix._mixture import log_support_c, p_update
+from bernoullimix._mixture import log_support_c, p_update, unnormalised_pi_weights, \
+    unnormalised_p_weights
 from cached_property import cached_property
 from datetime import datetime
 
@@ -97,10 +98,11 @@ class MultiDatasetMixtureModel(object):
             # dirichlet prior of one is the same as having no dirichlet prior
             prior_mixing_coefficients = pd.Series(1, index=mixing_coefficients.columns)
         elif isinstance(prior_mixing_coefficients, pd.Series):
+            prior_mixing_coefficients = prior_mixing_coefficients.loc[mixing_coefficients.columns]
             pass
         else:
             prior_mixing_coefficients = pd.Series(prior_mixing_coefficients,
-                                                  index=self._mixing_coefficients.columns)
+                                                  index=mixing_coefficients.columns)
         self._prior_mixing_coefficients = prior_mixing_coefficients.astype(np.float64)
 
         if prior_emission_probabilities is None:
@@ -120,7 +122,8 @@ class MultiDatasetMixtureModel(object):
                                                                 name='beta'),
                                                       ], axis=1)
         elif isinstance(prior_emission_probabilities, pd.DataFrame):
-            pass
+            # Make sure it's two-d
+            prior_emission_probabilities = prior_emission_probabilities[['alpha', 'beta']]
         else:
             prior_emission_probabilities = pd.DataFrame(prior_emission_probabilities,
                                                         index=self._emission_probabilities.columns,
@@ -203,8 +206,10 @@ class MultiDatasetMixtureModel(object):
 
         data = data[self.data_index]
         not_null_mask = ~data.isnull()
-        data_as_bool = data.astype(bool)
+        # Fill nans as 2
+        data_as_bool = data.fillna(2).astype(np.uint8)
 
+        not_null_mask = not_null_mask.astype(np.uint8)
         return data_as_bool, not_null_mask
 
     def _log_support(self, dataset_ids_as_ilocs, data_as_bool, not_null_mask):
@@ -275,7 +280,8 @@ class MultiDatasetMixtureModel(object):
 
             pi[i] = ans
 
-        pi = pd.DataFrame(pi, index=self.mixing_coefficients.index,
+        pi = pd.DataFrame(pi,
+                          index=self.mixing_coefficients.index,
                           columns=self.mixing_coefficients.columns)
         return pi
 
@@ -310,16 +316,15 @@ class MultiDatasetMixtureModel(object):
         """
 
         pi_prior = self.prior_mixing_coefficients
+        pi = self.mixing_coefficients
+        pi_weights = unnormalised_pi_weights(pi_prior.values, pi.values)
+
         p_prior = self.prior_emission_probabilities
 
-        pi = self.mixing_coefficients
         p = self.emission_probabilities
 
-        pi_weights = ((pi_prior - 1) * pi.apply(np.log)).sum().sum()
+        p_weights = unnormalised_p_weights(p_prior.values, p.values)
 
-        p_weights = p.apply(np.log) * (p_prior['alpha'] - 1)
-        p_weights += (1 - p).apply(np.log) * (p_prior['beta'] - 1)
-        p_weights = p_weights.sum().sum()
 
         weighted_log_likelihood = log_likelihood + pi_weights + p_weights
 

@@ -67,7 +67,7 @@ def load_data(random_state):
 
     dataset['weight'] = 1
 
-    from sklearn.cross_validation import train_test_split
+    from sklearn.model_selection import train_test_split
     train_dataset, test_dataset, train_labels, test_labels = train_test_split(dataset, labels,
                                                                               train_size=TRAIN_SIZE,
                                                                               random_state=random_state)
@@ -93,8 +93,8 @@ def main(max_iter, K):
     data = data['split']['train']
     model = next(random_mixture_generator(K, data,
                                           random_state=RANDOM_STATE,
-                                          prior_mixing_coefficients=1,
-                                          prior_emission_probabilities=(1, 1),
+                                          prior_mixing_coefficients=2,
+                                          prior_emission_probabilities=(2, 2),
                                           ))
 
     # print('MU:')
@@ -102,7 +102,7 @@ def main(max_iter, K):
     # print('PI:')
     # print(model.mixing_coefficients)
     # print('P:')
-    # print(model.emission_probabilities)
+    # print(model.emission_probabilities.min().min(), model.emission_probabilities.max().max())
 
     print(model.fit(data, n_iter=max_iter, eps=1e-2))
 
@@ -116,7 +116,7 @@ if __name__ == '__main__':
     try:
         max_iter = int(sys.argv[1])
     except IndexError:
-        max_iter = 50
+        max_iter = 1000
 
     try:
         K = int(sys.argv[2])

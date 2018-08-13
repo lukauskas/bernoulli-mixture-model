@@ -205,9 +205,12 @@ class TestLogLikelihoodNew(unittest.TestCase):
             log_likelihood = np.log(1e-5)
 
             pi_prior_weight = (pi.apply(np.log) * (pi_priors - 1)).sum().sum()
+
+
             pi_prior_gammas = len(pi.index) * (gammaln(pi_priors.sum()) - pi_priors.apply(gammaln).sum())
 
             p_prior_weight = (p.apply(np.log) * (p_priors['alpha'] - 1) + (1-p).apply(np.log) * (p_priors['beta'] - 1)).sum().sum()
+
 
             p_prior_gammas = len(p.index) * (p_priors.sum(axis=1).apply(gammaln)
                                              - p_priors['alpha'].apply(gammaln)
@@ -223,8 +226,8 @@ class TestLogLikelihoodNew(unittest.TestCase):
             posterior_gammas = model._unnormalised_posterior(log_likelihood,
                                                              compute_gammas=True)
 
-            self.assertEqual(expected_posterior_no_gammas, posterior_no_gammas)
-            self.assertEqual(expected_posterior_with_gammas, posterior_gammas)
+            self.assertAlmostEqual(expected_posterior_no_gammas, posterior_no_gammas)
+            self.assertAlmostEqual(expected_posterior_with_gammas, posterior_gammas)
 
 
     def test_support(self):
