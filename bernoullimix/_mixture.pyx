@@ -91,6 +91,45 @@ cpdef p_update(np.uint8_t[:,:] observations,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
+cpdef pi_update_c(np.float64_t[:,:] zstar_times_weight,
+                np.uint8_t [:] memberships,
+                np.float64_t[:] weight_sums,
+                np.float64_t[:] pi_prior,
+                int n_datasets,
+                ):
+
+    cdef int N = zstar_times_weight.shape[0]
+    cdef int K = zstar_times_weight.shape[1]
+
+    cdef int i, k, dataset
+
+
+    cdef np.ndarray[np.float64_t, ndim=2] ans = np.zeros((n_datasets, K), dtype=np.float64)
+
+    cdef np.float64_t prior_denominator = 0
+
+    with nogil:
+        for k in range(K):
+            prior_denominator += pi_prior[k]
+        prior_denominator -= K
+
+        for i in range(N):
+            dataset = memberships[i]
+            for k in range(K):
+                ans[dataset, k] += zstar_times_weight[i, k]
+
+        for dataset in range(n_datasets):
+            for k in range(K):
+                ans[dataset, k] += pi_prior[k] - 1
+                ans[dataset, k] /= weight_sums[dataset] + prior_denominator
+
+    return ans
+
+
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
 cpdef log_support_c(np.uint8_t[:,:] observations,
                     np.uint8_t[:,:] not_null_mask,
                     np.int_t[:] dataset_ids_as_ilocs,

@@ -39,6 +39,7 @@ RESHAPED_MASKS = {key: np.reshape(mask, -1) for key, mask in MASKS.items()}
 
 MASK_PROPORTIONS = pd.Series([0.2, 0.3, 0.5], index=['top', 'stripes', 'bottom'])
 TRAIN_SIZE = 0.7
+N_REPEATS = 3
 
 def load_data(random_state):
 
@@ -91,20 +92,22 @@ def main(max_iter, K):
     np.random.seed(RANDOM_STATE)
     data = load_data(random_state=RANDOM_STATE)
     data = data['split']['train']
-    model = next(random_mixture_generator(K, data,
-                                          random_state=RANDOM_STATE,
-                                          prior_mixing_coefficients=2,
-                                          prior_emission_probabilities=(2, 2),
-                                          ))
 
-    # print('MU:')
-    # print(model.dataset_priors)
-    # print('PI:')
-    # print(model.mixing_coefficients)
-    # print('P:')
-    # print(model.emission_probabilities.min().min(), model.emission_probabilities.max().max())
+    for i in range(N_REPEATS):
+        model = next(random_mixture_generator(K, data,
+                                              random_state=RANDOM_STATE,
+                                              prior_mixing_coefficients=2,
+                                              prior_emission_probabilities=(2, 2),
+                                              ))
 
-    print(model.fit(data, n_iter=max_iter, eps=1e-2))
+        # print('MU:')
+        # print(model.dataset_priors)
+        # print('PI:')
+        # print(model.mixing_coefficients)
+        # print('P:')
+        # print(model.emission_probabilities.min().min(), model.emission_probabilities.max().max())
+
+        print(model.fit(data, n_iter=max_iter, eps=1e-2))
 
 
 if __name__ == '__main__':

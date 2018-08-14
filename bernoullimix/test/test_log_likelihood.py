@@ -480,7 +480,7 @@ class TestLogLikelihoodNew(unittest.TestCase):
 
         zstar_times_weight = zstar.multiply(sample_data['weight'], axis=0)
 
-        actual_p = model._p_update_from_data(zstar_times_weight,
+        actual_p = model._p_update_from_data(zstar_times_weight.values,
                                              data_as_bool, not_null_mask)
 
         assert_frame_equal(expected_p, actual_p)
@@ -540,7 +540,7 @@ class TestLogLikelihoodNew(unittest.TestCase):
         data_as_bool, not_null_mask = model._to_bool(sample_data)
         zstar_times_weight = zstar.multiply(sample_data['weight'], axis=0)
 
-        actual_p = model._p_update_from_data(zstar_times_weight,
+        actual_p = model._p_update_from_data(zstar_times_weight.values,
                                              data_as_bool, not_null_mask)
 
         assert_frame_equal(expected_p, actual_p)

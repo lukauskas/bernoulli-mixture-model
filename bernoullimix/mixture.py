@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 
 from bernoullimix._mixture import log_support_c, p_update, unnormalised_pi_weights, \
-    unnormalised_p_weights
+    unnormalised_p_weights, pi_update_c
 from cached_property import cached_property
 from datetime import datetime
 
@@ -253,32 +253,29 @@ class MultiDatasetMixtureModel(object):
         return self.prior_mixing_coefficients.sum() - self.n_components
 
     def _dataset_masks(self, data):
-        masks = {}
+        masks = []
         for dataset in self.datasets_index:
-            masks[dataset] = data[DATASET_ID_COLUMN] == dataset
+            masks.append(data[DATASET_ID_COLUMN] == dataset)
+        masks = pd.DataFrame(masks, index=self.datasets_index)
         return masks
 
-    def _dataset_weight_sums(self, data, masks=None):
-        if masks is None:
-            masks = self._dataset_masks(data)
-        return pd.Series([data[masks[dataset]][WEIGHT_COLUMN].sum()
-                          for dataset in self.datasets_index],
-                         index=self.datasets_index)
+    def _encoded_memberships(self, data):
+        # Let's hope we will never have >256 datasets?
+        return data[DATASET_ID_COLUMN].apply(self.datasets_index.get_loc).astype(np.uint8)
 
-    def _pi_update(self, zstar_times_weight, masks, weight_sums):
+    def _dataset_weight_sums(self, data):
+        ans = data.groupby(DATASET_ID_COLUMN)[WEIGHT_COLUMN].sum()
+        ans = ans.loc[self.datasets_index].astype(np.float64)
 
-        pi = np.empty(self._mixing_coefficients.shape)
-        pi_priors_minus_one = self.prior_mixing_coefficients - 1
-        pi_prior_adjustment = self._prior_mixing_coefficient_denominator_adjustment
+        return ans
 
-        for i, dataset in enumerate(self.datasets_index):
-            mask = masks[dataset]
+    def _pi_update(self, zstar_times_weight, memberships, weight_sums):
 
-            ans = zstar_times_weight[mask].sum(axis=0)
-            ans += pi_priors_minus_one
-            ans /= weight_sums.loc[dataset] + pi_prior_adjustment
-
-            pi[i] = ans
+        pi = pi_update_c(zstar_times_weight,
+                         memberships,
+                         weight_sums,
+                         self.prior_mixing_coefficients.values,
+                         self.n_datasets)
 
         pi = pd.DataFrame(pi,
                           index=self.mixing_coefficients.index,
@@ -287,13 +284,13 @@ class MultiDatasetMixtureModel(object):
 
     def _pi_update_from_data(self, data, zstar):
 
-        masks = self._dataset_masks(data)
-        weight_sums = self._dataset_weight_sums(data, masks)
+        memberships = self._encoded_memberships(data).values
+        weight_sums = self._dataset_weight_sums(data).values
 
         weights = data[WEIGHT_COLUMN]
         zstar_times_weight = zstar.multiply(weights, axis=0)
 
-        return self._pi_update(zstar_times_weight, masks, weight_sums)
+        return self._pi_update(zstar_times_weight.values, memberships, weight_sums)
 
     def _p_update_from_data(self, zstar_times_weight, data_as_bool, not_null_mask):
         old_p = self.emission_probabilities
@@ -301,7 +298,7 @@ class MultiDatasetMixtureModel(object):
         # zstar_times_weight_sum = zstar_times_weight.sum()
         p_priors = self.prior_emission_probabilities.values
         new_p = p_update(data_as_bool.values, not_null_mask.values,
-                         zstar_times_weight.values,
+                         zstar_times_weight,
                          old_p.values,
                          p_priors)
         new_p = pd.DataFrame(new_p, index=old_p.index, columns=old_p.columns)
@@ -417,8 +414,8 @@ class MultiDatasetMixtureModel(object):
 
         DEBUG_EVERY_X_ITERATIONS = 100
 
-        masks = self._dataset_masks(data)
-        dataset_weight_sums = self._dataset_weight_sums(data, masks=masks)
+        memberships = self._encoded_memberships(data).values
+        dataset_weight_sums = self._dataset_weight_sums(data).values
 
         diff = np.nan
 
@@ -431,9 +428,9 @@ class MultiDatasetMixtureModel(object):
             iteration += 1
 
             zstar = _responsibilities_from_log_support(previous_log_support)
-            zstar_times_weight = zstar.multiply(weights, axis=0)
+            zstar_times_weight = zstar.multiply(weights, axis=0).values
 
-            new_pi = self._pi_update(zstar_times_weight, masks, dataset_weight_sums)
+            new_pi = self._pi_update(zstar_times_weight, memberships, dataset_weight_sums)
             new_p = self._p_update_from_data(zstar_times_weight, data_as_bool, not_null_mask)
 
             self._mixing_coefficients = new_pi
