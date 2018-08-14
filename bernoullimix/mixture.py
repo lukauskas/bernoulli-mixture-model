@@ -11,7 +11,7 @@ import pandas as pd
 from bernoullimix._mixture import log_support_c, p_update, unnormalised_pi_weights, \
     unnormalised_p_weights, pi_update_c
 from cached_property import cached_property
-from datetime import datetime
+import time
 
 _EPSILON = np.finfo(np.float).eps
 
@@ -378,7 +378,7 @@ class MultiDatasetMixtureModel(object):
 
     def fit(self, data, n_iter=None, eps=_EPSILON, logger=None):
 
-        start_time = datetime.now()
+        start_time = time.process_time()
 
         self._validate_data(data)
 
@@ -422,6 +422,7 @@ class MultiDatasetMixtureModel(object):
         previous_pi = self.mixing_coefficients
         previous_p = self.emission_probabilities
 
+        time_since_previous_iteration_block = time.time()
         while True:
             if n_iter is not None and iteration >= n_iter:
                 break
@@ -471,16 +472,19 @@ class MultiDatasetMixtureModel(object):
                 break
 
             if iteration % DEBUG_EVERY_X_ITERATIONS == 0:
+                current_time = time.process_time()
+                duration_iteration = current_time - time_since_previous_iteration_block
                 _extras = dict(status='running',
                                log_likelihood=current_log_likelihood,
                                posterior=current_posterior,
                                iteration=iteration,
+                               duration=duration_iteration,
                                diff=diff)
-
-                logger.debug('BMM: {status}. Iteration: {iteration}. '
+                logger.debug('BMM: {status}. Iteration: {iteration}. Took: {duration:.2f} seconds '
                              'Log Likelihood: {log_likelihood}. '
                              'Posterior: {posterior}. Last Diff: {diff}'.format(**_extras),
                              extra=_extras)
+                time_since_previous_iteration_block = time.process_time()
 
             previous_log_likelihood = current_log_likelihood
             previous_posterior = current_posterior
@@ -488,8 +492,8 @@ class MultiDatasetMixtureModel(object):
             previous_pi = self.mixing_coefficients
             previous_p = self.emission_probabilities
 
-        end_time = datetime.now()
-        duration_seconds = (end_time - start_time).total_seconds()
+        end_time = time.process_time()
+        duration_seconds = (end_time - start_time)
 
         _extras = dict(status='finished',
                        converged='yes' if converged else 'no',
