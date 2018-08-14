@@ -428,7 +428,7 @@ class MultiDatasetMixtureModel(object):
             iteration += 1
 
             zstar = _responsibilities_from_log_support(previous_log_support)
-            zstar_times_weight = zstar.multiply(weights, axis=0).values
+            zstar_times_weight = zstar.multiply(weights.values, axis=0).values
 
             new_pi = self._pi_update(zstar_times_weight, memberships, dataset_weight_sums)
             new_p = self._p_update_from_data(zstar_times_weight, data_as_bool, not_null_mask)
