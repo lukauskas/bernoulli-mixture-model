@@ -50,6 +50,8 @@ def _map_function(k, n_mixtures_to_search, data,
     best_result['BIC'] = best_mixture.BIC(best_result['log_likelihood'],
                                           data[WEIGHT_COLUMN].sum())
 
+    best_result['ICL'] = best_mixture.ICL(data)
+
     return best_result, best_mixture
 
 
