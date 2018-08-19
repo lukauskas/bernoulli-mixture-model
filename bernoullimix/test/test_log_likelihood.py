@@ -544,3 +544,95 @@ class TestLogLikelihoodNew(unittest.TestCase):
                                              data_as_bool, not_null_mask)
 
         assert_frame_equal(expected_p, actual_p)
+
+    def test_mle_estimate_for_states(self):
+        log_support = pd.DataFrame([
+            [-1.0, -2.0, -3.0],
+            [1.0, 2.0, 3.0],
+            [0.0, 0.1, 0.0],
+            [-10.0, -0.5, 0.0]],
+            index=['a', 'b', 'c', 'd'], columns=['K1', 'K2', 'K3']
+        )
+
+        expected_mle_states = pd.Series(['K1', 'K3', 'K2', 'K3'],
+                                        index=log_support.index)
+
+        actual_mle_states = MultiDatasetMixtureModel._mle_states(log_support)
+
+        assert_series_equal(expected_mle_states, actual_mle_states, check_names=False)
+
+    def test_mle_support_for_states_data(self):
+
+        row = pd.DataFrame([[True, False, None, 'dataset-a', 2.5]],
+                           columns=['X1', 'X2', 'X3', 'dataset_id', 'weight'])
+
+        pi = pd.DataFrame([[0.6, 0.4],
+                           [0.2, 0.8],
+                           [0.5, 0.5]],
+                          index=['dataset-a', 'dataset-b', 'dataset-c'],
+                          columns=['K0', 'K1'])
+
+        p = pd.DataFrame([[0.1, 0.2, 0.3],
+                          [0.9, 0.8, 0.7]],
+                         index=['K0', 'K1'],
+                         columns=['X1', 'X2', 'X3'])
+
+        model = MultiDatasetMixtureModel(pi, p)
+
+        # see the test for log_support for how the expected support of:
+        #       K0     K1
+        # 0  0.048  0.072
+        # has been estimated, making $K1$ the most likely state
+
+        expected_mle_states = pd.Series(['K1'], index=row.index)
+        actual_mle_states = model.mle_states(row)
+
+        assert_series_equal(expected_mle_states, actual_mle_states, check_names=False)
+
+    def test_complete_likelihood_for_icl(self):
+
+        data = pd.DataFrame([[False, False, None, 'dataset-a', 2.5],
+                             [True, False, False, 'dataset-b', 3],
+                             [True, None, False, 'dataset-c', 1],
+                             [False, True, False, 'dataset-a', 2]],
+                            columns=['X1', 'X2', 'X3', 'dataset_id', 'weight'])
+
+        pi = pd.DataFrame([[0.6, 0.4],
+                           [0.2, 0.8],
+                           [0.5, 0.5]],
+                          index=['dataset-a', 'dataset-b', 'dataset-c'],
+                          columns=['K0', 'K1'])
+
+        p = pd.DataFrame([[0.1, 0.2, 0.3],
+                          [0.98, 0.89, 0.51]],
+                         index=['K0', 'K1'],
+                         columns=['X1', 'X2', 'X3'])
+
+        model = MultiDatasetMixtureModel(pi, p)
+        mle_states = model.mle_states(data)
+
+        expected_ans = 0
+        for ix, state in mle_states.iteritems():
+            dataset = data.loc[ix, 'dataset_id']
+
+            row_ans = np.log(pi.loc[dataset, state])
+
+            for col, x_ik in data.loc[ix].iteritems():
+                if col in ['dataset_id', 'weight']:
+                    continue
+
+                if x_ik is None:
+                    if p.loc[state, col] >= 0.5:
+                        x_ik = 1
+                    else:
+                        x_ik = 0
+
+                if x_ik == 1:
+                    row_ans += np.log(p.loc[state, col])
+                else:
+                    row_ans += np.log(1 - p.loc[state, col])
+
+            expected_ans += row_ans * data.loc[ix, 'weight']
+
+        actual_ans = model.complete_mle_log_likelihood(data)
+        self.assertAlmostEqual(expected_ans, actual_ans)

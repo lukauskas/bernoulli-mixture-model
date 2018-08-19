@@ -38,10 +38,9 @@ MASKS = {'top': np.array([[True, True, True, True, True, True, True, True],
 RESHAPED_MASKS = {key: np.reshape(mask, -1) for key, mask in MASKS.items()}
 
 MASK_PROPORTIONS = pd.Series([0.2, 0.3, 0.5], index=['top', 'stripes', 'bottom'])
-TRAIN_SIZE = 0.7
 N_REPEATS = 3
 
-def load_data(random_state):
+def load_digits(random_state):
 
     import sklearn.datasets
     digits_dataset = sklearn.datasets.load_digits()
@@ -53,7 +52,6 @@ def load_data(random_state):
 
     from sklearn.utils import shuffle
     binary_digits = shuffle(binary_digits, random_state=random_state)
-    labels = labels.loc[binary_digits.index]
 
     dataset = binary_digits.copy()
     dataset['dataset_id'] = None
@@ -68,30 +66,27 @@ def load_data(random_state):
 
     dataset['weight'] = 1
 
-    from sklearn.model_selection import train_test_split
-    train_dataset, test_dataset, train_labels, test_labels = train_test_split(dataset, labels,
-                                                                              train_size=TRAIN_SIZE,
-                                                                              random_state=random_state)
+    return dataset
 
-    DATASETS = {'split': {'train': train_dataset, 'test': test_dataset}}
-    TRUE_STATES = {'train': train_labels, 'test': test_labels}
 
-    DATASETS['unified'] = {}
-    for type_, dataset in DATASETS['split'].items():
-        unified_dataset = dataset.copy()
-        unified_dataset['dataset_id'] = 'unified'
+def load_random(rows, columns, random_state):
+    random = np.random.RandomState(random_state)
+    data = random.binomial(1, 0.5, size=rows*columns).reshape(rows, columns)
 
-        DATASETS['unified'][type_] = unified_dataset
+    data = pd.DataFrame(data)
+    data['dataset_id'] = 'test'
+    data['weight'] = 1
 
-    return DATASETS
+    return data
 
 def main(max_iter, K):
 
     RANDOM_STATE = 125
 
     np.random.seed(RANDOM_STATE)
-    data = load_data(random_state=RANDOM_STATE)
-    data = data['split']['train']
+    # data = load_digits(random_state=RANDOM_STATE)
+    data = load_random(10000, 20, random_state=RANDOM_STATE)
+    print('Dataset shape: {:,}x{:,}'.format(data.shape[0], data.shape[1]))
 
     for i in range(N_REPEATS):
         model = next(random_mixture_generator(K, data,

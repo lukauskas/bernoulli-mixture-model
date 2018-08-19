@@ -177,7 +177,7 @@ class MultiDatasetMixtureModel(object):
 
         return component_given_state, state_given_component
 
-    def _validate_data(self, data):
+    def _validate_data(self, data, allow_not_exact_match_for_dataset=False):
         columns = data.columns
 
         if WEIGHT_COLUMN not in columns:
@@ -187,9 +187,15 @@ class MultiDatasetMixtureModel(object):
                 'Dataset id column {!r} not found in data columns'.format(DATASET_ID_COLUMN))
 
         dataset_index = set(data[DATASET_ID_COLUMN].unique())
-        if not frozenset(dataset_index) == frozenset(self.datasets_index):
-            raise ValueError('Dataset ids in the data {} do not match dataset ids in model spcification {}'.format(dataset_index,
-                                                                                                                    self.datasets_index))
+
+        if not allow_not_exact_match_for_dataset:
+            if not frozenset(dataset_index) == frozenset(self.datasets_index):
+                raise ValueError('Dataset ids in the data {} do not match dataset ids in model spcification {}'.format(dataset_index,
+                                                                                                                        self.datasets_index))
+        else:
+            if len(frozenset(dataset_index) - frozenset(self.datasets_index)):
+                raise ValueError('Dataset ids {} not defined by model'.format(frozenset(dataset_index) - frozenset(self.datasets_index)))
+
         data_columns = self.data_index
         data_columns_isin = data_columns.isin(data)
 
@@ -521,6 +527,59 @@ class MultiDatasetMixtureModel(object):
     def n_datasets(self):
         return len(self.datasets_index)
 
+    @classmethod
+    def _mle_states(cls, log_support):
+        """
+        Computes the most likely states to have generated each of the data points
+        from the provided log support
+
+        :param log_support: N x K matrix, suggesting the support from state k for each of the N datapoints
+        :return:
+        """
+        return log_support.idxmax(axis=1)
+
+    def mle_states(self, dataset):
+        """
+        Returns most likely states to have generated each of the dataset points from the model
+
+        :param dataset: dataset
+        :return:
+        """
+        self._validate_data(dataset, allow_not_exact_match_for_dataset=True)
+        dataset_ids_as_ilocs = self._dataset_ids_as_pis_ilocs(dataset)
+        log_support = self._log_support(dataset_ids_as_ilocs, *self._to_bool(dataset))
+        return self._mle_states(log_support)
+
+    def complete_mle_log_likelihood(self, dataset):
+        self._validate_data(dataset, allow_not_exact_match_for_dataset=True)
+        dataset_ids_as_ilocs = self._dataset_ids_as_pis_ilocs(dataset)
+
+        bool_data, not_null_mask = self._to_bool(dataset)
+        log_support = self._log_support(dataset_ids_as_ilocs, bool_data, not_null_mask)
+
+        # First part of the data (observed given MLE state)
+        ans = log_support.max(axis=1)
+
+        # Second part of the data (contribution from hidden datapoints)
+        states = self._mle_states(log_support)
+
+        hidden_p_additions = self.emission_probabilities
+
+        # mle estimate for x_i,d given state is 1 if p_k,d >= 0.5 else 0
+        # since we will multiply that by log probability almost immediately, we do it here:
+        hidden_p_additions = hidden_p_additions.applymap(lambda p: np.log(p) if p >= 0.5 else np.log(1-p))
+        # then the hidden components only contribute the above where the data is null
+        hidden_p_additions = hidden_p_additions.loc[states]
+        # Replace index
+        hidden_p_additions.index = not_null_mask.index
+        ans += hidden_p_additions[~(not_null_mask.astype(bool))].sum(axis=1)
+
+        # Remember the weights!
+        ans *= dataset[WEIGHT_COLUMN]
+        return ans.sum()
+
+
+
     @property
     def n_free_parameters(self):
 
@@ -532,6 +591,10 @@ class MultiDatasetMixtureModel(object):
 
     def BIC(self, log_likelihood, sum_of_weights):
         return -2 * log_likelihood + self.n_free_parameters * np.log(sum_of_weights)
+
+    def ICL(self, dataset):
+        ll = self.complete_mle_log_likelihood(dataset)
+        return -2 * ll + self.n_free_parameters * np.log(dataset[WEIGHT_COLUMN].sum())
 
     @property
     def datasets_index(self):
