@@ -54,7 +54,7 @@ class MultiDatasetMixtureModel(object):
 
         mc_sums = self.mixing_coefficients.sum(axis='columns')
 
-        if not np.all(np.abs(mc_sums - 1) <= 10 * np.finfo(float).resolution):
+        if not np.allclose(mc_sums, 1.0):
             logger.error('Mixing coefficients do not sum to one. Difference: \n{!r}'.format(
                 np.abs(mc_sums - 1)))
             raise ValueError('Mixing coefficients must sum to one')
